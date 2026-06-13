@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat ~/.claude.json 2>/dev/null || echo \"NOT FOUND\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"premium dark e-commerce D2C landing page scooter accessory conversion\" --design-system -p \"E-Carpet\")",
+      "Bash(cp __TRACKED_VAR__/Logo.png public/images/Logo.png)",
+      "Bash(cp '__TRACKED_VAR__/Photo trottinette sur tapis .png' public/images/Photo_trottinette_sur_tapis_.png)",
+      "Bash(cp '__TRACKED_VAR__/Enroulé sans fond.png' public/images/Enroule__sans_fond.png)",
+      "Bash(cp '__TRACKED_VAR__/Photo produit fond blanc.png' public/images/Photo_produit_fond_blanc.png)",
+      "Bash(cp __TRACKED_VAR__/Rebord.png public/images/Rebord.png)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python3 -)",
+      "WebFetch(domain:unsplash.com)",
+      "Bash(sips -g pixelWidth -g pixelHeight \"Photo lille.png\" \"Photo Livreur E Carpet 2.png\" \"IMG_4075.jpg\" \"LOGO E-CARPET 2.png\" \"Design sans titre-10.png\" \"Gemini_Generated_Image_lw3bbglw3bbglw3b-removebg-preview copie 3.png\")",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(mdls -name kMDItemCodecs -name kMDItemPixelWidth -name kMDItemPixelHeight -name kMDItemDurationSeconds \"Sans titre.mov\")",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(brew --version)",
+      "Bash(mkdir -p video)",
+      "Bash(avconvert --preset PresetMVK720p540 --source \"/Users/thomasozenne/Desktop/IA/Sans titre.mov\" --output \"video/probleme.mp4\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(avconvert --source \"/Users/thomasozenne/Desktop/IA/Sans titre.mov\" --preset Preset1280x720 --output \"video/probleme.mp4\" --replace)",
+      "Bash(mdls -name kMDItemCodecs -name kMDItemPixelWidth -name kMDItemPixelHeight probleme.mp4)",
+      "Bash(git rev-parse *)",
+      "Bash(ls vite.config.*)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"E-Carpet landing page — ready for GitHub Pages\")",
+      "Bash(git branch *)"
+    ]
+  }
+}
