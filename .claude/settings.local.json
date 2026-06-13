@@ -30,7 +30,8 @@
       "Bash(git init *)",
       "Bash(git add *)",
       "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"E-Carpet landing page — ready for GitHub Pages\")",
-      "Bash(git branch *)"
+      "Bash(git branch *)",
+      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Switch deploy config to Netlify\")"
     ]
   }
 }
