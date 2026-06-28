@@ -54,7 +54,12 @@
       "Bash(python3 -c 'from PIL import Image;im=Image.open\\('\\\\''__TRACKED_VAR__'\\\\''\\);print\\(im.mode\\)')",
       "WebFetch(domain:e-carpet.shop)",
       "Bash(node -e \"import\\('./src/data/articles.js'\\).then\\(m=>{console.log\\('total:',m.ARTICLES.length,'| publiés au 2026-06-16:',m.getPublishedArticles\\(new Date\\('2026-06-16'\\)\\).map\\(a=>a.date\\), '| dates:', m.ARTICLES.map\\(a=>a.date\\).join\\(', '\\)\\)}\\)\")",
-      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Thème cuivre, blog, avis, pages légales, influenceurs, favicon, vidéo boucle\")"
+      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Thème cuivre, blog, avis, pages légales, influenceurs, favicon, vidéo boucle\")",
+      "Bash(git remote *)",
+      "Bash(git ls-remote *)",
+      "Bash(git fetch *)",
+      "Bash(git rebase *)",
+      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Update local settings\")"
     ]
   }
 }
