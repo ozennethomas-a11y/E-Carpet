@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "../i18n/LanguageContext";
 import { LANGUAGES } from "../i18n/translations";
 import { AMAZON_URL } from "../config";
+import { navigate } from "../navigation";
 
 export default function Navbar() {
   const { t, lang, setLang } = useLang();
@@ -19,6 +20,7 @@ export default function Navbar() {
     { href: "#features", label: t.nav.features },
     { href: "#reviews", label: t.nav.reviews },
     { href: "#faq", label: t.nav.faq },
+    { href: "/blog", label: t.nav.blog, route: true },
   ];
 
   return (
@@ -35,13 +37,18 @@ export default function Navbar() {
             : "border-transparent bg-transparent"
         }`}
       >
-        <a href="#" className="cursor-pointer" aria-label="E-Carpet — retour en haut">
+        <a href="#" className="cursor-pointer" aria-label="E-Carpet · retour en haut">
           <img src="/images/new/logo-grey.png" alt="E-Carpet" className="h-7 w-auto sm:h-8" />
         </a>
 
         <div className="hidden items-center gap-8 md:flex">
           {links.map((l) => (
-            <a key={l.href} href={l.href} className="text-sm text-zinc-400 transition-colors duration-200 hover:text-white cursor-pointer">
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={l.route ? (e) => { e.preventDefault(); navigate(l.href); } : undefined}
+              className="text-sm text-zinc-400 transition-colors duration-200 hover:text-white cursor-pointer"
+            >
               {l.label}
             </a>
           ))}
@@ -97,7 +104,7 @@ export default function Navbar() {
               <a
                 key={l.href}
                 href={l.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => { if (l.route) { e.preventDefault(); navigate(l.href); } setMenuOpen(false); }}
                 className="block rounded-xl px-4 py-3 text-zinc-300 transition-colors hover:bg-white/5 hover:text-white cursor-pointer"
               >
                 {l.label}

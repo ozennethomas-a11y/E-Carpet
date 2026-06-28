@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useLang } from "../i18n/LanguageContext";
 import { Kicker, Reveal } from "./ui";
 
@@ -10,6 +10,11 @@ export default function Problem() {
   const x1 = useTransform(scrollYProgress, [0, 1], [-60, 60]);
   const imgScale = useTransform(scrollYProgress, [0, 1], [1.2, 1]);
   const imgY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
+
+  const videoRef = useRef(null);
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.playbackRate = 0.85;
+  }, []);
 
   return (
     <section ref={ref} className="relative overflow-hidden px-4 pt-28 pb-8 sm:pt-36 sm:pb-10">
@@ -32,7 +37,8 @@ export default function Problem() {
         <Reveal delay={0.3} className="relative mx-auto mt-12 max-w-2xl">
           <div className="relative aspect-[3/2] overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
             <motion.video
-              src="/images/video/probleme.mp4"
+              ref={videoRef}
+              src="/images/video/probleme-loop.mp4"
               style={{ scale: imgScale, y: imgY }}
               className="h-full w-full object-cover object-center"
               autoPlay

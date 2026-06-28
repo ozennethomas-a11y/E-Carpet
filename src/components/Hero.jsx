@@ -16,8 +16,6 @@ export default function Hero() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/3 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-acid/[0.07] blur-[120px]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,transparent_40%,#0a0a0b_85%)]" />
-        {/* Grid lines */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "64px 64px" }} />
       </div>
 
       <motion.div style={{ opacity: textOpacity }} className="relative z-10 mx-auto max-w-4xl text-center">
@@ -73,15 +71,15 @@ export default function Hero() {
         transition={{ duration: 0.9, delay: 0.6, ease: [0.21, 0.6, 0.35, 1] }}
         className="relative z-10 mt-12 w-full max-w-3xl"
       >
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white to-zinc-200 shadow-[0_40px_120px_-20px_rgba(224,106,59,0.18)]">
-          <img
-            src="/images/Photo_trottinette_sur_tapis_.png"
-            alt="Trottinette électrique garée sur le tapis E-Carpet"
-            className="w-full object-cover"
-            fetchPriority="high"
-          />
-        </div>
-        <div aria-hidden="true" className="absolute -bottom-8 left-1/2 h-16 w-3/4 -translate-x-1/2 rounded-[100%] bg-acid/20 blur-3xl" />
+        {/* Soft radial glow behind the floating product */}
+        <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-[80%] w-[90%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-acid/10 blur-[90px]" />
+        <img
+          src="/images/trottinette-detouree.png"
+          alt="Trottinette électrique garée sur le tapis E-Carpet"
+          className="relative w-full object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.55)]"
+          fetchPriority="high"
+        />
+        <div aria-hidden="true" className="absolute -bottom-2 left-1/2 h-12 w-3/5 -translate-x-1/2 rounded-[100%] bg-acid/20 blur-3xl" />
       </motion.div>
 
       {/* Scroll hint */}

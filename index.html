@@ -2,7 +2,8 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/images/Logo.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="E-Carpet — Le tapis de sol premium 100% silicone pour trottinettes électriques. Imperméable, antidérapant, résistant à la chaleur. 130 × 40 cm." />
     <meta property="og:title" content="E-Carpet — Protégez votre sol, sublimez votre trottinette" />
@@ -14,6 +15,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <!-- Hidden form so Netlify detects it at build time (SPA workaround) -->
+    <form name="avis" netlify netlify-honeypot="bot-field" hidden>
+      <input type="text" name="name" />
+      <input type="text" name="city" />
+      <input type="text" name="scooter" />
+      <input type="text" name="rating" />
+      <textarea name="message"></textarea>
+    </form>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

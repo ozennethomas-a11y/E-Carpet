@@ -1,15 +1,16 @@
 import { useLang } from "../i18n/LanguageContext";
 import { INSTAGRAM_URL, TIKTOK_URL, CONTACT_EMAIL } from "../config";
+import { navigate } from "../navigation";
+import { LEGAL_SLUGS } from "../data/legal";
 
 export default function Footer() {
   const { t } = useLang();
-  const legalAnchors = ["#mentions-legales", "#cgv", "#confidentialite", "#cookies"];
 
   return (
     <footer className="border-t border-white/10 px-4 py-14">
       <div className="mx-auto grid max-w-6xl gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <a href="#" className="font-display text-xl font-bold tracking-tight text-white cursor-pointer">
+          <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="font-display text-xl font-bold tracking-tight text-white cursor-pointer">
             e<span className="text-acid">·</span>carpet
           </a>
           <p className="mt-3 text-sm text-zinc-500">{t.footer.tagline}</p>
@@ -43,7 +44,11 @@ export default function Footer() {
           <ul className="flex flex-col gap-2">
             {t.footer.links.map((label, i) => (
               <li key={i}>
-                <a href={legalAnchors[i]} className="text-sm text-zinc-500 transition-colors hover:text-acid cursor-pointer">
+                <a
+                  href={`/legal/${LEGAL_SLUGS[i]}`}
+                  onClick={(e) => { e.preventDefault(); navigate(`/legal/${LEGAL_SLUGS[i]}`); }}
+                  className="text-sm text-zinc-500 transition-colors hover:text-acid cursor-pointer"
+                >
                   {label}
                 </a>
               </li>

@@ -31,7 +31,30 @@
       "Bash(git add *)",
       "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"E-Carpet landing page — ready for GitHub Pages\")",
       "Bash(git branch *)",
-      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Switch deploy config to Netlify\")"
+      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Switch deploy config to Netlify\")",
+      "Bash(python3 -c \"import PIL; print\\('PIL ok', PIL.__version__\\)\")",
+      "Bash(pip3 install *)",
+      "Bash(sips -g pixelWidth -g pixelHeight public/favicon-crop.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight public/favicon.png)",
+      "Bash(curl -s -o /dev/null -w \"favicon HTTP %{http_code} \\(%{size_download} octets\\)\\\\n\" http://localhost:5173/favicon.png)",
+      "Bash(avconvert --source \"/Users/thomasozenne/Desktop/IA/Sans titre.mov\" --preset Preset1280x720 --start 0.5 --duration 2.7 --output probleme.mp4 --replace)",
+      "Bash(mdls -name kMDItemDurationSeconds -name kMDItemCodecs probleme.mp4)",
+      "Read(//private/tmp/**)",
+      "Bash(curl -sL --max-time 120 -o ffmpeg.zip \"https://evermeet.cx/ffmpeg/getrelease/zip\")",
+      "Bash(unzip -o -q ffmpeg.zip)",
+      "Bash(chmod +x ffmpeg)",
+      "Bash(./ffmpeg -version)",
+      "Bash(/tmp/ffmpeg -y -i \"/Users/thomasozenne/Desktop/IA/Sans titre.mov\" -ss 0.4 -t 3.0 -an -vf \"scale=720:-2,setpts=PTS-STARTPTS\" -c:v libx264 -pix_fmt yuv420p /tmp/fwd.mp4)",
+      "Bash(/tmp/ffmpeg -y -i /tmp/fwd.mp4 -vf reverse -an /tmp/rev.mp4)",
+      "Bash(/tmp/ffmpeg -y -f concat -safe 0 -i /tmp/list.txt -c:v libx264 -pix_fmt yuv420p -movflags +faststart probleme-loop.mp4)",
+      "Bash(mdls -name kMDItemDurationSeconds -name kMDItemPixelWidth -name kMDItemPixelHeight probleme-loop.mp4)",
+      "Bash(/tmp/ffmpeg -i probleme-loop.mp4)",
+      "Bash(brew install *)",
+      "Bash(read f *)",
+      "Bash(python3 -c 'from PIL import Image;im=Image.open\\('\\\\''__TRACKED_VAR__'\\\\''\\);print\\(im.mode\\)')",
+      "WebFetch(domain:e-carpet.shop)",
+      "Bash(node -e \"import\\('./src/data/articles.js'\\).then\\(m=>{console.log\\('total:',m.ARTICLES.length,'| publiés au 2026-06-16:',m.getPublishedArticles\\(new Date\\('2026-06-16'\\)\\).map\\(a=>a.date\\), '| dates:', m.ARTICLES.map\\(a=>a.date\\).join\\(', '\\)\\)}\\)\")",
+      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Thème cuivre, blog, avis, pages légales, influenceurs, favicon, vidéo boucle\")"
     ]
   }
 }

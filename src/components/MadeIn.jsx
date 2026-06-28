@@ -7,7 +7,7 @@ export default function MadeIn() {
   const { t } = useLang();
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const lilleY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
+  const lilleY = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
   // Rider rides across to the right as the user scrolls
   const riderX = useTransform(scrollYProgress, [0, 1], ["-25vw", "85vw"]);
   const riderBob = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [0, -10, 0, -10, 0]);
@@ -27,25 +27,43 @@ export default function MadeIn() {
           </Reveal>
         </div>
 
-        {/* Lille panorama */}
-        <Reveal>
-          <div className="relative h-72 overflow-hidden rounded-3xl border border-white/10 shadow-2xl sm:h-[28rem]">
-            <motion.img
-              src="/images/new/lille.jpg"
-              alt="Place du Vieux-Lille au lever du soleil, avec une trottinette au premier plan"
-              style={{ y: lilleY, scale: 1.15 }}
-              className="h-full w-full object-cover object-[50%_82%]"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-ink/60 to-transparent" />
-            <span className="absolute bottom-4 left-5 flex items-center gap-2 font-display text-lg font-bold text-white">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-acid" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" /><circle cx="12" cy="10" r="3" />
-              </svg>
-              Lille, France
-            </span>
+        {/* Lille image (smaller) + reassurance points side by side */}
+        <div className="grid items-stretch gap-5 lg:grid-cols-2">
+          <Reveal>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+              <motion.img
+                src="/images/new/lille.jpg"
+                alt="Place du Vieux-Lille au lever du soleil, avec une trottinette au premier plan"
+                style={{ y: lilleY, scale: 1.1 }}
+                className="h-full w-full object-cover object-[55%_85%]"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/60 to-transparent" />
+              <span className="absolute bottom-4 left-5 flex items-center gap-2 font-display text-lg font-bold text-white">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 text-acid" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" /><circle cx="12" cy="10" r="3" />
+                </svg>
+                Lille, France
+              </span>
+            </div>
+          </Reveal>
+
+          {/* Reassurance points stacked next to the image */}
+          <div className="flex flex-col justify-center gap-4">
+            {t.delivery.points.map((p, i) => (
+              <Reveal key={i} delay={0.1 + i * 0.1}>
+                <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-deep px-5 py-5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-acid/15 text-acid">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
+                  <span className="font-display font-semibold text-white">{p}</span>
+                </div>
+              </Reveal>
+            ))}
           </div>
-        </Reveal>
+        </div>
       </div>
 
       {/* Delivery rider — rides across to the right on scroll */}
@@ -68,24 +86,6 @@ export default function MadeIn() {
             loading="lazy"
           />
         </motion.div>
-      </div>
-
-      <div className="mx-auto max-w-6xl">
-        {/* Reassurance points */}
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
-          {t.delivery.points.map((p, i) => (
-            <Reveal key={i} delay={0.1 + i * 0.1}>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-deep px-5 py-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-acid/15 text-acid">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                </span>
-                <span className="text-sm text-zinc-200">{p}</span>
-              </div>
-            </Reveal>
-          ))}
-        </div>
       </div>
     </section>
   );
