@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import { applyPageMeta } from "./seo";
+import { ARTICLES } from "./data/articles";
+import { LEGAL } from "./data/legal";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Problem from "./components/Problem";
@@ -80,6 +83,39 @@ export default function App() {
     if (query && /utm_|[?&](ref|source|c)=/.test(query)) {
       window.history.replaceState({}, "", window.location.pathname + window.location.hash);
     }
+  }, [clean]);
+
+  // Titre, description et canonique propres à chaque page. La canonique règle
+  // les doublons créés par les liens tagués (37 pages signalées par Search Console).
+  useEffect(() => {
+    const DEFAULT = {
+      title: "E-Carpet · Tapis premium pour trottinette électrique",
+      description:
+        "Le tapis de sol 100% silicone pour trottinettes électriques. Imperméable, antidérapant, bordure anti-débordement. 130 × 40 cm, compatible tous modèles.",
+    };
+
+    let meta = DEFAULT;
+    if (clean === "/dashboard") {
+      meta = { title: "Dashboard · E-Carpet", description: "Espace privé.", noindex: true };
+    } else if (clean === "/avis") {
+      meta = {
+        title: "Laisser un avis · E-Carpet",
+        description: "Vous roulez avec l'E-Carpet ? Partagez votre expérience avec nous.",
+      };
+    } else if (clean === "/blog") {
+      meta = {
+        title: "Conseils & astuces · Blog E-Carpet",
+        description:
+          "Protéger son sol, entretenir sa trottinette, gagner de la place : nos guides pour rouler propre.",
+      };
+    } else if (clean.startsWith("/blog/")) {
+      const a = ARTICLES.find((x) => x.slug === clean.slice("/blog/".length));
+      if (a) meta = { title: `${a.title} · E-Carpet`, description: a.excerpt };
+    } else if (clean.startsWith("/legal/")) {
+      const doc = LEGAL[clean.slice("/legal/".length)];
+      if (doc) meta = { title: `${doc.title} · E-Carpet`, description: `${doc.title} du site e-carpet.shop.` };
+    }
+    applyPageMeta(clean || "/", meta);
   }, [clean]);
 
   let page;
