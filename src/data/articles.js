@@ -13,7 +13,7 @@ export const ARTICLES = [
       "Pneus humides, poussière de frein, gravillons… votre trottinette ramène la rue chez vous. Voici comment garder un intérieur impeccable.",
     date: "2026-06-10",
     readMinutes: 4,
-    cover: "/images/new/dirty-scooter.jpg",
+    cover: "/images/new/dirty-scooter.webp",
     content: [
       { type: "p", text: "On adore sa trottinette électrique pour sa liberté et sa rapidité. Mais une fois rentré chez soi, c'est une autre histoire : les pneus encore humides, la poussière de frein et les petits gravillons coincés dans la gomme finissent invariablement sur le parquet, le carrelage ou la moquette de l'entrée." },
       { type: "h2", text: "Pourquoi votre sol souffre" },
@@ -34,7 +34,7 @@ export const ARTICLES = [
       "Un entretien régulier prolonge la vie de votre trottinette… à condition de ne pas transformer votre salon en garage. Notre méthode propre.",
     date: "2026-06-23",
     readMinutes: 5,
-    cover: "/images/new/wall-3.jpg",
+    cover: "/images/new/wall-3.webp",
     content: [
       { type: "p", text: "Une trottinette bien entretenue dure plus longtemps, freine mieux et se revend plus cher. Mais le nettoyage se fait souvent à l'intérieur, faute de garage ou de jardin, et c'est là que les ennuis commencent pour votre sol." },
       { type: "h2", text: "Le bon rythme d'entretien" },
@@ -54,7 +54,7 @@ export const ARTICLES = [
       "Ranger une trottinette électrique dans 30 m² sans sacrifier le style ni la propreté, c'est possible. Nos idées concrètes.",
     date: "2026-06-30",
     readMinutes: 4,
-    cover: "/images/new/wall-1.jpg",
+    cover: "/images/new/wall-1.webp",
     content: [
       { type: "p", text: "En ville, la trottinette électrique est reine. Mais une fois la porte fermée, l'engin encombrant doit trouver sa place dans un espace souvent réduit. Voici six astuces pour la ranger proprement et avec style." },
       { type: "h2", text: "1. Lui dédier un coin" },
@@ -79,7 +79,7 @@ export const ARTICLES = [
       "Rouler sous la pluie, c'est ramener l'eau partout chez soi. Voici les bons réflexes pour protéger votre matériel et votre sol.",
     date: "2026-07-07",
     readMinutes: 4,
-    cover: "/images/new/wall-2.jpg",
+    cover: "/images/new/wall-2.webp",
     content: [
       { type: "p", text: "La pluie est l'ennemie numéro un du rider urbain. Au-delà du confort, elle fragilise la trottinette et transforme votre entrée en patinoire boueuse dès le retour." },
       { type: "h2", text: "Avant de partir" },
@@ -98,7 +98,7 @@ export const ARTICLES = [
       "Taille, matériau, bordure, antidérapance : tous les critères pour ne pas se tromper et protéger durablement son sol.",
     date: "2026-07-14",
     readMinutes: 5,
-    cover: "/images/2.PNG",
+    cover: "/images/2.webp",
     content: [
       { type: "p", text: "Tous les tapis ne se valent pas. Pour protéger efficacement votre sol sans mauvaise surprise, voici les critères qui comptent vraiment." },
       { type: "h2", text: "La taille" },
@@ -119,7 +119,7 @@ export const ARTICLES = [
       "Froid, sel de déneigement, humidité : l'hiver met le matériel à rude épreuve. Nos conseils pour passer la saison sans dégâts.",
     date: "2026-07-21",
     readMinutes: 4,
-    cover: "/images/new/wall-4.jpg",
+    cover: "/images/new/wall-4.webp",
     content: [
       { type: "p", text: "L'hiver est exigeant pour une trottinette électrique. Entre le froid qui réduit l'autonomie et le sel de déneigement qui attaque les pièces, quelques précautions s'imposent." },
       { type: "h2", text: "La batterie" },

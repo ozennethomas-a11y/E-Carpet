@@ -74,7 +74,7 @@ export default function Hero() {
         {/* Soft radial glow behind the floating product */}
         <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-[80%] w-[90%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-acid/10 blur-[90px]" />
         <img
-          src="/images/trottinette-detouree.png"
+          src="/images/trottinette-detouree.webp"
           alt="Trottinette électrique garée sur le tapis E-Carpet"
           className="relative w-full object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.55)]"
           fetchPriority="high"

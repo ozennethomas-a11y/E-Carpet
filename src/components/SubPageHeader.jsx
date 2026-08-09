@@ -8,7 +8,7 @@ export default function SubPageHeader() {
     <header className="fixed top-4 left-4 right-4 z-50">
       <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-white/10 bg-ink/80 px-5 py-3 backdrop-blur-xl shadow-2xl">
         <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="cursor-pointer" aria-label="E-Carpet · retour à l'accueil">
-          <img src="/images/new/logo-grey.png" alt="E-Carpet" className="h-7 w-auto sm:h-8" />
+          <img src="/images/new/logo-grey.webp" alt="E-Carpet" className="h-7 w-auto sm:h-8" />
         </a>
         <div className="flex items-center gap-3">
           <div className="hidden rounded-full border border-white/10 bg-white/5 p-0.5 sm:flex">

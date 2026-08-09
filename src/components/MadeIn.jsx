@@ -32,7 +32,7 @@ export default function MadeIn() {
           <Reveal>
             <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
               <motion.img
-                src="/images/new/lille.jpg"
+                src="/images/new/lille.webp"
                 alt="Place du Vieux-Lille au lever du soleil, avec une trottinette au premier plan"
                 style={{ y: lilleY, scale: 1.1 }}
                 className="h-full w-full object-cover object-[55%_85%]"
@@ -80,7 +80,7 @@ export default function MadeIn() {
           className="pointer-events-none absolute bottom-3 left-0 w-36 sm:w-52"
         >
           <img
-            src="/images/new/livreur.png"
+            src="/images/new/livreur.webp"
             alt="Livreur E-Carpet livrant des colis à trottinette électrique"
             className="w-full -scale-x-100 drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
             loading="lazy"

@@ -38,7 +38,7 @@ export default function Navbar() {
         }`}
       >
         <a href="#" className="cursor-pointer" aria-label="E-Carpet · retour en haut">
-          <img src="/images/new/logo-grey.png" alt="E-Carpet" className="h-7 w-auto sm:h-8" />
+          <img src="/images/new/logo-grey.webp" alt="E-Carpet" className="h-7 w-auto sm:h-8" />
         </a>
 
         <div className="hidden items-center gap-8 md:flex">

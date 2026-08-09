@@ -15,7 +15,7 @@ export default function FinalCta() {
       {/* Full-bleed background: scooter + boxes on the mat */}
       <div className="absolute inset-0">
         <motion.img
-          src="/images/new/boxes-scooter.jpg"
+          src="/images/new/boxes-scooter.webp"
           alt=""
           aria-hidden="true"
           style={{ scale: bgScale, y: bgY }}

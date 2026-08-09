@@ -33,7 +33,7 @@ export default function Stats() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 opacity-[0.05]">
         <div className="flex w-max animate-marquee items-center gap-16">
           {Array.from({ length: 10 }).map((_, i) => (
-            <img key={i} src="/images/new/logo-grey.png" alt="" className="h-20 w-auto sm:h-28" loading="lazy" />
+            <img key={i} src="/images/new/logo-grey.webp" alt="" className="h-20 w-auto sm:h-28" loading="lazy" />
           ))}
         </div>
       </div>

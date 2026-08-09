@@ -42,7 +42,7 @@ export default function ParkingScene() {
               className="absolute left-1/2 top-1/2 h-[50%] w-[66%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-white/[0.08] blur-3xl"
             />
             <motion.img
-              src="/images/tapis-dessus-detoure.png"
+              src="/images/tapis-dessus-detoure.webp"
               alt="Tapis E-Carpet vu de dessus"
               style={{ scale: imgScale }}
               className="relative w-full object-contain px-4 brightness-110 contrast-125 drop-shadow-[0_24px_40px_rgba(0,0,0,0.85)]"

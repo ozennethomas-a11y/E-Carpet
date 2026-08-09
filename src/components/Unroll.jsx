@@ -44,7 +44,7 @@ export default function Unroll() {
           <motion.div style={{ x: rollX, rotate: rollRotate }} className="relative">
             <motion.div style={{ clipPath: clip }} className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-2xl">
               <img
-                src="/images/Enroule__sans_fond.png"
+                src="/images/Enroule__sans_fond.webp"
                 alt="Tapis E-Carpet enroulé, prêt à dérouler"
                 className="w-full origin-right scale-[1.12] object-cover"
                 loading="lazy"
