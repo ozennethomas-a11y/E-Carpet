@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import { createHash } from "node:crypto";
+import { prettySource, campaignLabelOf } from "./shared/sources.mjs";
 
 // Privacy-first page-view collector.
 // No cookies, no persistent identifier: a visitor is a daily-rotating hash of
@@ -18,32 +19,6 @@ function today() {
 function visitorHash(ip, ua, date) {
   const salt = process.env.ANALYTICS_SALT || "e-carpet-default-salt";
   return createHash("sha256").update(`${salt}|${date}|${ip}|${ua}`).digest("hex").slice(0, 12);
-}
-
-// Pretty names for tagged links (?utm_source=… / ?ref=…)
-const SOURCE_NAMES = {
-  tiktok: "TikTok",
-  instagram: "Instagram",
-  insta: "Instagram",
-  ig: "Instagram",
-  facebook: "Facebook",
-  fb: "Facebook",
-  youtube: "YouTube",
-  snapchat: "Snapchat",
-  pinterest: "Pinterest",
-  amazon: "Amazon",
-  google: "Google",
-  linkedin: "LinkedIn",
-  x: "X",
-  twitter: "X",
-  email: "E-mail",
-  qrcode: "QR code",
-  flyer: "Flyer",
-};
-
-function prettySource(raw) {
-  const k = raw.toLowerCase();
-  return SOURCE_NAMES[k] || raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 function sourceOf(referrer, host) {
@@ -110,7 +85,7 @@ export default async (req, context) => {
   const params = new URLSearchParams(body.query || "");
   const tag = (params.get("utm_source") || params.get("ref") || params.get("source") || "").slice(0, 40);
   const campaign = (params.get("utm_campaign") || params.get("c") || "").slice(0, 40);
-  const campaignLabel = tag ? (campaign ? `${prettySource(tag)} · ${campaign}` : prettySource(tag)) : "";
+  const campaignLabel = campaignLabelOf(tag, campaign);
 
   const source = tag ? prettySource(tag) : sourceOf(body.referrer, url.hostname);
   const device = /Mobi|Android|iPhone|iPod/i.test(ua)
