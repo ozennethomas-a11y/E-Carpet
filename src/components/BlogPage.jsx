@@ -23,9 +23,15 @@ export default function BlogPage() {
 
           <div className="grid gap-6 sm:grid-cols-2">
             {articles.map((a, i) => (
-              <motion.button
+              <motion.a
                 key={a.slug}
-                onClick={() => navigate(`/blog/${a.slug}`)}
+                href={`/blog/${a.slug}`}
+                onClick={(e) => {
+                  // Real href so crawlers can follow it; SPA navigation for humans.
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                  e.preventDefault();
+                  navigate(`/blog/${a.slug}`);
+                }}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -48,7 +54,7 @@ export default function BlogPage() {
                     <svg viewBox="0 0 24 24" className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
                   </span>
                 </div>
-              </motion.button>
+              </motion.a>
             ))}
           </div>
         </div>
