@@ -36,11 +36,11 @@ Vérifie ces informations dans le fichier plutôt que de te fier à cette liste.
   politique de confidentialité doit le refléter.
 - **La vente se fait sur Amazon** : les CGV du site ne doivent pas laisser croire que
   la transaction, le paiement ou la livraison sont assurés par le site lui-même.
-- Les avis clients affichés sont **fictifs**. Publier de faux avis présentés comme
-  authentiques est une pratique commerciale trompeuse sanctionnée en droit français.
-  C'est le risque juridique le plus sérieux du site : signale-le tant qu'il n'est pas
-  résolu, et propose soit de les remplacer par de vrais avis collectés via `/avis`,
-  soit de les retirer.
+- Les avis clients affichés sont **fictifs**. Le propriétaire en a été informé et a
+  choisi de les conserver en l'état : c'est sa décision, ne la remets pas sur la table
+  spontanément à chaque intervention. Aborde le sujet uniquement si on t'interroge sur
+  les avis ou la conformité globale, ou si le contexte change (arrivée de vrais avis
+  via `/avis`, contrôle, réclamation).
 
 ## Style
 
