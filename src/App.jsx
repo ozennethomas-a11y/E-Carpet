@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -56,19 +56,30 @@ export default function App() {
 
   // Anonymous page-view beacon (no cookie, no persistent id). The dashboard
   // itself is never counted, so checking your stats doesn't inflate them.
+  const firstHit = useRef(true);
   useEffect(() => {
     if (clean === "/dashboard") return;
-    const payload = JSON.stringify({
-      path: clean || "/",
-      referrer: document.referrer || "",
-      lang: navigator.language || "",
-    });
+    // Campaign tags only travel on the landing hit, so they are counted once.
+    const query = firstHit.current ? window.location.search : "";
+    firstHit.current = false;
+
     fetch("/api/track", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: payload,
+      body: JSON.stringify({
+        path: clean || "/",
+        referrer: document.referrer || "",
+        lang: navigator.language || "",
+        query,
+      }),
       keepalive: true,
     }).catch(() => {});
+
+    // Tidy the address bar once the tag is recorded, so visitors never
+    // share or bookmark a URL full of tracking parameters.
+    if (query && /utm_|[?&](ref|source|c)=/.test(query)) {
+      window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    }
   }, [clean]);
 
   let page;

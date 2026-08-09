@@ -20,6 +20,32 @@ function visitorHash(ip, ua, date) {
   return createHash("sha256").update(`${salt}|${date}|${ip}|${ua}`).digest("hex").slice(0, 12);
 }
 
+// Pretty names for tagged links (?utm_source=… / ?ref=…)
+const SOURCE_NAMES = {
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  insta: "Instagram",
+  ig: "Instagram",
+  facebook: "Facebook",
+  fb: "Facebook",
+  youtube: "YouTube",
+  snapchat: "Snapchat",
+  pinterest: "Pinterest",
+  amazon: "Amazon",
+  google: "Google",
+  linkedin: "LinkedIn",
+  x: "X",
+  twitter: "X",
+  email: "E-mail",
+  qrcode: "QR code",
+  flyer: "Flyer",
+};
+
+function prettySource(raw) {
+  const k = raw.toLowerCase();
+  return SOURCE_NAMES[k] || raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
 function sourceOf(referrer, host) {
   if (!referrer) return "Direct";
   try {
@@ -51,6 +77,7 @@ const emptyDay = () => ({
   sources: {},
   devices: {},
   languages: {},
+  campaigns: {},
 });
 
 export default async (req, context) => {
@@ -77,7 +104,15 @@ export default async (req, context) => {
 
   const url = new URL(req.url);
   const path = (body.path || "/").split("?")[0].slice(0, 120) || "/";
-  const source = sourceOf(body.referrer, url.hostname);
+
+  // Tagged links: ?utm_source=tiktok&utm_campaign=bio (or the short ?ref=tiktok).
+  // A tag beats the referrer, because social in-app browsers usually send none.
+  const params = new URLSearchParams(body.query || "");
+  const tag = (params.get("utm_source") || params.get("ref") || params.get("source") || "").slice(0, 40);
+  const campaign = (params.get("utm_campaign") || params.get("c") || "").slice(0, 40);
+  const campaignLabel = tag ? (campaign ? `${prettySource(tag)} · ${campaign}` : prettySource(tag)) : "";
+
+  const source = tag ? prettySource(tag) : sourceOf(body.referrer, url.hostname);
   const device = /Mobi|Android|iPhone|iPod/i.test(ua)
     ? "Mobile"
     : /iPad|Tablet/i.test(ua)
@@ -91,10 +126,11 @@ export default async (req, context) => {
   // Read-modify-write with a conditional write so concurrent hits don't drop counts.
   for (let attempt = 0; attempt < 6; attempt++) {
     const res = await store.getWithMetadata(key, { type: "json" }).catch(() => null);
-    const day = res?.data ?? emptyDay();
+    const day = { ...emptyDay(), ...(res?.data ?? {}) };
 
     day.views += 1;
     if (!day.visitors.includes(hash)) day.visitors.push(hash);
+    bump(day.campaigns, campaignLabel);
     bump(day.pages, path);
     bump(day.countries, country);
     bump(day.cities, city);

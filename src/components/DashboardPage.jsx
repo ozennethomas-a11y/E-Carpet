@@ -145,6 +145,11 @@ export default function DashboardPage() {
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <BarList title="Pays" items={data.countries} />
             <BarList title="Villes" items={data.cities} />
+            <BarList
+              title="Liens tagués (réseaux, influenceurs)"
+              items={data.campaigns || []}
+              empty="Aucune visite via un lien tagué pour l'instant."
+            />
             <BarList title="Sources de trafic" items={data.sources} />
             <BarList title="Pages les plus vues" items={data.pages} />
             <BarList title="Appareils" items={data.devices} />

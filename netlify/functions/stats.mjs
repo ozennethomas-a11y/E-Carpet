@@ -43,7 +43,7 @@ export default async (req) => {
     }))
   );
 
-  const totals = { pages: {}, countries: {}, cities: {}, sources: {}, devices: {}, languages: {} };
+  const totals = { pages: {}, countries: {}, cities: {}, sources: {}, devices: {}, languages: {}, campaigns: {} };
   const series = [];
   const allVisitors = new Set();
   let views = 0;
@@ -60,6 +60,7 @@ export default async (req) => {
     mergeCounts(totals.sources, d.sources);
     mergeCounts(totals.devices, d.devices);
     mergeCounts(totals.languages, d.languages);
+    mergeCounts(totals.campaigns, d.campaigns);
   }
 
   // Visitors are hashed per day, so the same person on two days counts twice.
@@ -78,6 +79,7 @@ export default async (req) => {
       countries: topN(totals.countries),
       cities: topN(totals.cities),
       sources: topN(totals.sources),
+      campaigns: topN(totals.campaigns),
       devices: topN(totals.devices, 4),
       languages: topN(totals.languages, 5),
     },
