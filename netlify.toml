@@ -1,9 +1,17 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Fallback route for the analytics functions (they also declare their own path).
+# Must come before the SPA catch-all so /api/* is never swallowed by index.html.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 # Single-page site: serve index.html for any unknown path
 [[redirects]]

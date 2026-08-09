@@ -59,7 +59,23 @@
       "Bash(git ls-remote *)",
       "Bash(git fetch *)",
       "Bash(git rebase *)",
-      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Update local settings\")"
+      "Bash(git -c user.email=\"noreply@anthropic.com\" -c user.name=\"E-Carpet\" commit -q -m \"Update local settings\")",
+      "Bash(git push *)",
+      "Bash(git credential *)",
+      "Bash(echo \"distant: $\\(git ls-remote origin -h refs/heads/main)",
+      "Bash(git ls-tree *)",
+      "Bash(dig +short e-carpet.shop A)",
+      "Bash(dig +short www.e-carpet.shop)",
+      "Bash(dig +short @8.8.8.8 e-carpet.shop A)",
+      "Bash(dig +short @8.8.8.8 www.e-carpet.shop)",
+      "Bash(curl -sS -m 25 -o /dev/null -w \"HTTP %{http_code} | redirige vers: %{redirect_url}\\\\n\" https://e-carpet.shop)",
+      "Bash(curl -sS -m 25 -o /dev/null -w \"HTTP %{http_code} | redirige vers: %{redirect_url}\\\\n\" http://e-carpet.shop)",
+      "Bash(curl -sS -m 25 https://e-carpet.shop)",
+      "Bash(curl -sS -m 25 http://e-carpet.shop)",
+      "Bash(openssl s_client -servername e-carpet.shop -connect e-carpet.shop:443)",
+      "Bash(openssl x509 *)",
+      "Bash(curl -sS -m 25 -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://e-carpet.shop)",
+      "Bash(curl -sS -m 25 -o /dev/null -w \"HTTP %{http_code} | redirect: %{redirect_url}\\\\n\" https://www.e-carpet.shop)"
     ]
   }
 }

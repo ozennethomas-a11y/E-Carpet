@@ -13,6 +13,7 @@ import ReviewPage from "./components/ReviewPage";
 import BlogPage from "./components/BlogPage";
 import ArticlePage from "./components/ArticlePage";
 import LegalPage from "./components/LegalPage";
+import DashboardPage from "./components/DashboardPage";
 import MadeIn from "./components/MadeIn";
 import Faq from "./components/Faq";
 import FinalCta from "./components/FinalCta";
@@ -53,8 +54,26 @@ export default function App() {
 
   const clean = path.replace(/\/$/, "");
 
+  // Anonymous page-view beacon (no cookie, no persistent id). The dashboard
+  // itself is never counted, so checking your stats doesn't inflate them.
+  useEffect(() => {
+    if (clean === "/dashboard") return;
+    const payload = JSON.stringify({
+      path: clean || "/",
+      referrer: document.referrer || "",
+      lang: navigator.language || "",
+    });
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: payload,
+      keepalive: true,
+    }).catch(() => {});
+  }, [clean]);
+
   let page;
-  if (clean === "/avis") page = <ReviewPage />;
+  if (clean === "/dashboard") page = <DashboardPage />;
+  else if (clean === "/avis") page = <ReviewPage />;
   else if (clean === "/blog") page = <BlogPage />;
   else if (clean.startsWith("/blog/")) page = <ArticlePage slug={clean.slice("/blog/".length)} />;
   else if (clean.startsWith("/legal/")) page = <LegalPage slug={clean.slice("/legal/".length)} />;
