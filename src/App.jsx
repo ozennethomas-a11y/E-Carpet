@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import { translations } from "./i18n/translations";
 import { applyPageMeta } from "./seo";
+import { applyStructuredData } from "./structuredData";
 import { ARTICLES } from "./data/articles";
 import { LEGAL } from "./data/legal";
 import Navbar from "./components/Navbar";
@@ -116,6 +118,10 @@ export default function App() {
       if (doc) meta = { title: `${doc.title} · E-Carpet`, description: `${doc.title} du site e-carpet.shop.` };
     }
     applyPageMeta(clean || "/", meta);
+
+    // Le JSON-LD reste en français : c'est la version canonique du site,
+    // celle que Google indexe (le HTML statique est servi en `lang="fr"`).
+    applyStructuredData(clean || "/", translations.fr.faq);
   }, [clean]);
 
   let page;

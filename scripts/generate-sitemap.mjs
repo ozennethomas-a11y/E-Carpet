@@ -5,7 +5,7 @@
 // invisibles sur le site tant que la date n'est pas atteinte, il ne faut donc
 // pas les déclarer à Google. Relancer un build après leur sortie les ajoutera.
 
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -55,3 +55,29 @@ writeFileSync(resolve(root, "public/sitemap.xml"), xml);
 console.log(
   `sitemap.xml : ${urls.length} URL (${published.length} article(s) publié(s), ${ARTICLES.length - published.length} programmé(s) et exclu(s))`
 );
+
+// ---------------------------------------------------------------------------
+// JSON-LD statique de la page d'accueil, écrit directement dans index.html.
+// Servi dans le HTML brut, il est donc lu par tous les robots, y compris ceux
+// qui n'exécutent pas le JavaScript. Les sous-pages le remplacent ensuite via
+// src/structuredData.js une fois l'application montée.
+// ---------------------------------------------------------------------------
+const { buildGraph } = await import(resolve(root, "src/structuredData.js"));
+const { translations } = await import(resolve(root, "src/i18n/translations.js"));
+
+const graph = buildGraph("/", translations.fr.faq);
+const block = `    <script type="application/ld+json" id="ld-page">${JSON.stringify(graph)}</script>`;
+
+const indexPath = resolve(root, "index.html");
+const html = readFileSync(indexPath, "utf8");
+const updated = html.replace(
+  /(<!-- ld-page:start[^>]*-->)[\s\S]*?(<!-- ld-page:end -->)/,
+  `$1\n${block}\n    $2`
+);
+if (updated === html && !html.includes("ld-page:start")) {
+  console.warn("⚠️  Marqueurs ld-page absents de index.html : JSON-LD non injecté.");
+} else {
+  writeFileSync(indexPath, updated);
+  const types = graph["@graph"].map((n) => n["@type"]).join(", ");
+  console.log(`JSON-LD accueil : ${types}`);
+}
