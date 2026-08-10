@@ -95,7 +95,10 @@ async function adsPost(c, token, method, body) {
   };
   if (c.loginCustomerId) headers["login-customer-id"] = c.loginCustomerId;
 
-  const res = await fetch(`${API}/${version}/customers/${c.customerId}:${method}`, {
+  // La plupart des méthodes s'écrivent « customers/123:methode », mais googleAds:search
+  // est une sous-ressource et prend une barre oblique. On distingue les deux.
+  const suffix = method.startsWith("/") ? method : `:${method}`;
+  const res = await fetch(`${API}/${version}/customers/${c.customerId}${suffix}`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
@@ -252,7 +255,7 @@ export default async (req) => {
 
     // Inventaire en lecture seule : quelles campagnes existent, et ont-elles dépensé ?
     if (url.searchParams.get("campagnes")) {
-      const json = await adsPost(c, token, "googleAds:search", {
+      const json = await adsPost(c, token, "/googleAds:search", {
         query: `
           SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type,
                  campaign_budget.amount_micros, metrics.cost_micros, metrics.clicks, metrics.impressions
