@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { navigate } from "../navigation";
 import { StatTile, ColumnChart, BarList } from "./charts";
 import LinksManager from "./LinksManager";
+import SeoPanel from "./SeoPanel";
 
 const RANGES = [
   { days: 7, label: "7 jours" },
@@ -12,6 +13,7 @@ const RANGES = [
 const TABS = [
   { id: "analyse", label: "Analyse" },
   { id: "liens", label: "Liens" },
+  { id: "seo", label: "SEO" },
 ];
 
 export default function DashboardPage() {
@@ -153,6 +155,8 @@ export default function DashboardPage() {
       {state === "loading" && !data && <p className="text-sm text-zinc-500">Chargement…</p>}
 
       {tab === "liens" && <LinksManager password={pw} campaigns={data?.campaigns || []} />}
+
+      {tab === "seo" && <SeoPanel password={pw} />}
 
       {tab === "analyse" && data && (
         <>
