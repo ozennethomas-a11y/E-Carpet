@@ -121,6 +121,24 @@ export default async (req) => {
   }
 
   const url = new URL(req.url);
+
+  // Diagnostic : /api/seo?check=1 dit quelles variables la fonction voit réellement.
+  // On n'expose jamais une valeur, seulement sa présence et sa forme, pour pouvoir
+  // distinguer « variable absente » de « variable mal remplie ».
+  if (url.searchParams.get("check")) {
+    const raw = process.env.GSC_SERVICE_ACCOUNT;
+    const report = {
+      GSC_SERVICE_ACCOUNT: !raw ? "absente" : describeServiceAccount(raw),
+      PAGESPEED_API_KEY: process.env.PAGESPEED_API_KEY ? "présente" : "absente",
+      GOOGLE_ADS_DEVELOPER_TOKEN: process.env.GOOGLE_ADS_DEVELOPER_TOKEN ? "présente" : "absente",
+      GOOGLE_ADS_REFRESH_TOKEN: process.env.GOOGLE_ADS_REFRESH_TOKEN ? "présente" : "absente",
+      autresVariablesGoogle: Object.keys(process.env)
+        .filter((k) => /^(GSC|GOOGLE|PAGESPEED)/.test(k))
+        .sort(),
+    };
+    return Response.json(report, { headers: { "cache-control": "no-store" } });
+  }
+
   const days = Math.min(Math.max(parseInt(url.searchParams.get("days") || "28", 10), 7), 480);
   const range = { startDate: isoDaysAgo(days + 2), endDate: isoDaysAgo(2) }; // GSC a ~2 jours de retard
 
@@ -167,5 +185,21 @@ export default async (req) => {
   out.pagespeed = await psPromise;
   return Response.json(out, { headers: { "cache-control": "no-store" } });
 };
+
+// Décrit le contenu du compte de service sans jamais révéler la clé privée.
+function describeServiceAccount(raw) {
+  let creds;
+  try {
+    creds = JSON.parse(raw);
+  } catch {
+    return `présente mais illisible : ce n'est pas du JSON (${raw.length} caractères, commence par « ${raw.slice(0, 12)} »)`;
+  }
+  const manque = ["client_email", "private_key"].filter((k) => !creds[k]);
+  if (manque.length) return `JSON valide mais il manque ${manque.join(" et ")}`;
+  if (!creds.private_key.includes("BEGIN PRIVATE KEY")) {
+    return "clé privée mal formée : les retours à la ligne ont probablement été perdus";
+  }
+  return `correcte, compte de service ${creds.client_email}`;
+}
 
 export const config = { path: "/api/seo" };
