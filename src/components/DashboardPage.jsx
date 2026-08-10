@@ -5,6 +5,7 @@ import LinksManager from "./LinksManager";
 import SeoPanel from "./SeoPanel";
 import AdsPanel from "./AdsPanel";
 import AvisPanel from "./AvisPanel";
+import BlogPanel from "./BlogPanel";
 
 const RANGES = [
   { days: 7, label: "7 jours" },
@@ -18,6 +19,7 @@ const TABS = [
   { id: "seo", label: "SEO" },
   { id: "campagnes", label: "Campagnes" },
   { id: "avis", label: "Avis" },
+  { id: "blog", label: "Blog" },
 ];
 
 export default function DashboardPage() {
@@ -165,6 +167,8 @@ export default function DashboardPage() {
       {tab === "campagnes" && <AdsPanel password={pw} />}
 
       {tab === "avis" && <AvisPanel password={pw} />}
+
+      {tab === "blog" && <BlogPanel />}
 
       {tab === "analyse" && data && (
         <>
