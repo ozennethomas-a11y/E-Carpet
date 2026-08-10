@@ -90,14 +90,20 @@ function opportunities(queries) {
 }
 
 async function pageSpeed() {
-  const url = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(
-    SITE_URL
-  )}&strategy=mobile&category=performance&category=seo`;
+  // Sans clé, l'API partage un quota mondial souvent saturé (HTTP 429).
+  // PAGESPEED_API_KEY (gratuite, 25 000 appels/jour) rend la mesure fiable.
+  const key = process.env.PAGESPEED_API_KEY;
+  const url =
+    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(SITE_URL)}` +
+    `&strategy=mobile&category=performance&category=seo${key ? `&key=${key}` : ""}`;
   const res = await fetch(url);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const reason = res.status === 429 ? (key ? "quota_depasse" : "cle_manquante") : `erreur_${res.status}`;
+    return { error: reason };
+  }
   const j = await res.json();
   const lh = j.lighthouseResult;
-  if (!lh) return null;
+  if (!lh) return { error: "reponse_inattendue" };
   const audit = (k) => lh.audits?.[k]?.displayValue || null;
   return {
     performance: Math.round((lh.categories?.performance?.score ?? 0) * 100),

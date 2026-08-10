@@ -39,6 +39,23 @@ function Table({ title, rows, note }) {
 
 function Vitals({ ps }) {
   if (!ps) return null;
+
+  if (ps.error) {
+    const messages = {
+      cle_manquante:
+        "Sans clé API, Google partage un quota mondial qui est actuellement saturé. Ajoutez PAGESPEED_API_KEY dans Netlify (clé gratuite, 25 000 mesures par jour) pour activer cette section.",
+      quota_depasse: "Quota de mesures dépassé pour aujourd'hui. La section reviendra demain.",
+    };
+    return (
+      <div className="rounded-2xl border border-white/10 bg-slate-deep p-6">
+        <h2 className="font-display text-base font-bold text-white">Performances (mobile)</h2>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          {messages[ps.error] || `Mesure indisponible (${ps.error}).`}
+        </p>
+      </div>
+    );
+  }
+
   const couleur = (n) => (n >= 90 ? "text-emerald-400" : n >= 50 ? "text-amber-400" : "text-red-400");
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-deep p-5">
