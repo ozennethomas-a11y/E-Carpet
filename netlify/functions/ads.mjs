@@ -194,6 +194,21 @@ export default async (req) => {
   try {
     const token = await getAccessToken(c);
 
+    // Diagnostic : quels comptes Ads ce refresh token voit-il vraiment ?
+    // C'est la seule façon de distinguer un mauvais CUSTOMER_ID d'un compte Google
+    // qui n'a tout simplement pas été invité sur le compte publicitaire.
+    if (url.searchParams.get("check")) {
+      const res = await fetch(`${API}/${VERSION}/customers:listAccessibleCustomers`, {
+        headers: { authorization: `Bearer ${token}`, "developer-token": c.devToken },
+      });
+      const json = await res.json().catch(() => ({}));
+      return Response.json({
+        comptesAccessibles: (json.resourceNames || []).map((n) => n.split("/")[1]),
+        erreurGoogle: res.ok ? null : readableError(json, res.status),
+        configure: { customerId: c.customerId, loginCustomerId: c.loginCustomerId || "(non défini)" },
+      });
+    }
+
     // Prévision de coût : POST avec les mots-clés retenus et le budget souhaité.
     if (req.method === "POST") {
       const body = await req.json();
