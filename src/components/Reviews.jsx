@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLang } from "../i18n/LanguageContext";
 import { Kicker, Reveal, Stars } from "./ui";
@@ -35,6 +35,22 @@ export default function Reviews() {
   const trackRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Modération : les avis maison mis en veille disparaissent, les avis de
+  // visiteurs approuvés s'ajoutent. Si l'appel échoue, on affiche la liste
+  // d'origine plutôt qu'une section vide.
+  const [moderation, setModeration] = useState({ masques: [], avis: [] });
+  useEffect(() => {
+    fetch("/api/avis?public=1")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setModeration(d))
+      .catch(() => {});
+  }, []);
+
+  const items = [
+    ...t.reviews.items.filter((_, i) => !moderation.masques.includes(`base-${i}`)),
+    ...moderation.avis,
+  ];
+
   return (
     <section id="reviews" className="relative overflow-hidden pt-28 pb-12 sm:pt-36 sm:pb-16">
       <div className="mb-14 px-4 text-center">
@@ -55,7 +71,7 @@ export default function Reviews() {
           dragElastic={0.08}
           className="flex w-max cursor-grab items-stretch gap-6 py-6 active:cursor-grabbing"
         >
-          {t.reviews.items.map((r, i) => (
+          {items.map((r, i) => (
             <ReviewCard key={i} review={r} index={i} />
           ))}
         </motion.div>

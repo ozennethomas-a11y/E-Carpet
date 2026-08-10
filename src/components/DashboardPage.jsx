@@ -4,6 +4,7 @@ import { StatTile, ColumnChart, BarList } from "./charts";
 import LinksManager from "./LinksManager";
 import SeoPanel from "./SeoPanel";
 import AdsPanel from "./AdsPanel";
+import AvisPanel from "./AvisPanel";
 
 const RANGES = [
   { days: 7, label: "7 jours" },
@@ -16,6 +17,7 @@ const TABS = [
   { id: "liens", label: "Liens" },
   { id: "seo", label: "SEO" },
   { id: "campagnes", label: "Campagnes" },
+  { id: "avis", label: "Avis" },
 ];
 
 export default function DashboardPage() {
@@ -161,6 +163,8 @@ export default function DashboardPage() {
       {tab === "seo" && <SeoPanel password={pw} />}
 
       {tab === "campagnes" && <AdsPanel password={pw} />}
+
+      {tab === "avis" && <AvisPanel password={pw} />}
 
       {tab === "analyse" && data && (
         <>

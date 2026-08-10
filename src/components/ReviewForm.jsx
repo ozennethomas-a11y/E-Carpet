@@ -23,11 +23,21 @@ export default function ReviewForm() {
     if (form["bot-field"]) return; // honeypot
     setStatus("sending");
     try {
-      await fetch("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: encode({ "form-name": FORM_NAME, ...form }),
-      });
+      // Deux destinations : Netlify Forms conserve la notification par e-mail,
+      // et /api/avis alimente la file de pré-autorisation du back-office.
+      // L'avis n'est jamais publié tant qu'il n'a pas été approuvé.
+      await Promise.all([
+        fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: encode({ "form-name": FORM_NAME, ...form }),
+        }),
+        fetch("/api/avis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...form, botField: form["bot-field"] }),
+        }),
+      ]);
       setStatus("sent");
       setForm({ name: "", city: "", scooter: "", rating: "5", message: "", "bot-field": "" });
     } catch {
