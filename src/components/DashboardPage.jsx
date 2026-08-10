@@ -3,6 +3,7 @@ import { navigate } from "../navigation";
 import { StatTile, ColumnChart, BarList } from "./charts";
 import LinksManager from "./LinksManager";
 import SeoPanel from "./SeoPanel";
+import AdsPanel from "./AdsPanel";
 
 const RANGES = [
   { days: 7, label: "7 jours" },
@@ -14,6 +15,7 @@ const TABS = [
   { id: "analyse", label: "Analyse" },
   { id: "liens", label: "Liens" },
   { id: "seo", label: "SEO" },
+  { id: "campagnes", label: "Campagnes" },
 ];
 
 export default function DashboardPage() {
@@ -157,6 +159,8 @@ export default function DashboardPage() {
       {tab === "liens" && <LinksManager password={pw} campaigns={data?.campaigns || []} />}
 
       {tab === "seo" && <SeoPanel password={pw} />}
+
+      {tab === "campagnes" && <AdsPanel password={pw} />}
 
       {tab === "analyse" && data && (
         <>
