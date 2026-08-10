@@ -8,7 +8,28 @@
 // La création de campagne se fera dans une fonction séparée, toujours en statut « en pause ».
 
 const API = "https://googleads.googleapis.com";
-const VERSION = process.env.GOOGLE_ADS_API_VERSION || "v21";
+
+// Google publie une version par trimestre et bloque les anciennes. Plutôt que de
+// figer un numéro qui périmera, on essaie de la plus récente à la plus ancienne et
+// on retient la première acceptée. GOOGLE_ADS_API_VERSION force la valeur si besoin.
+const CANDIDATES = ["v27", "v26", "v25", "v24", "v23", "v22"];
+let versionCache = process.env.GOOGLE_ADS_API_VERSION || null;
+
+async function resolveVersion(c, token) {
+  if (versionCache) return versionCache;
+  const headers = { authorization: `Bearer ${token}`, "developer-token": c.devToken };
+  const refus = /deprecated|not supported|was not found|invalid.*version/i;
+
+  for (const v of CANDIDATES) {
+    const res = await fetch(`${API}/${v}/customers:listAccessibleCustomers`, { headers });
+    if (res.status === 404) continue;
+    const json = await res.json().catch(() => ({}));
+    if (res.ok) return (versionCache = v);
+    // Une erreur de droits ou de jeton prouve que la version, elle, est bonne.
+    if (!refus.test(json?.error?.message || "")) return (versionCache = v);
+  }
+  throw new Error("aucune version de l'API Google Ads n'a été acceptée");
+}
 
 // France, français. Références Google : geoTargetConstants/2250 = France.
 const GEO = "geoTargetConstants/2250";
@@ -66,6 +87,7 @@ async function getAccessToken(c) {
 }
 
 async function adsPost(c, token, method, body) {
+  const version = await resolveVersion(c, token);
   const headers = {
     authorization: `Bearer ${token}`,
     "developer-token": c.devToken,
@@ -73,7 +95,7 @@ async function adsPost(c, token, method, body) {
   };
   if (c.loginCustomerId) headers["login-customer-id"] = c.loginCustomerId;
 
-  const res = await fetch(`${API}/${VERSION}/customers/${c.customerId}:${method}`, {
+  const res = await fetch(`${API}/${version}/customers/${c.customerId}:${method}`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
@@ -198,11 +220,13 @@ export default async (req) => {
     // C'est la seule façon de distinguer un mauvais CUSTOMER_ID d'un compte Google
     // qui n'a tout simplement pas été invité sur le compte publicitaire.
     if (url.searchParams.get("check")) {
-      const res = await fetch(`${API}/${VERSION}/customers:listAccessibleCustomers`, {
+      const version = await resolveVersion(c, token);
+      const res = await fetch(`${API}/${version}/customers:listAccessibleCustomers`, {
         headers: { authorization: `Bearer ${token}`, "developer-token": c.devToken },
       });
       const json = await res.json().catch(() => ({}));
       return Response.json({
+        versionApi: version,
         comptesAccessibles: (json.resourceNames || []).map((n) => n.split("/")[1]),
         erreurGoogle: res.ok ? null : readableError(json, res.status),
         configure: { customerId: c.customerId, loginCustomerId: c.loginCustomerId || "(non défini)" },
