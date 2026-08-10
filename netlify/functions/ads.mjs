@@ -250,6 +250,32 @@ export default async (req) => {
       return Response.json(data, { headers: { "cache-control": "no-store" } });
     }
 
+    // Inventaire en lecture seule : quelles campagnes existent, et ont-elles dépensé ?
+    if (url.searchParams.get("campagnes")) {
+      const json = await adsPost(c, token, "googleAds:search", {
+        query: `
+          SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type,
+                 campaign_budget.amount_micros, metrics.cost_micros, metrics.clicks, metrics.impressions
+          FROM campaign
+          WHERE segments.date DURING LAST_30_DAYS`,
+      });
+      const rows = (json.results || []).map((r) => ({
+        id: r.campaign?.id,
+        nom: r.campaign?.name,
+        statut: r.campaign?.status,
+        type: r.campaign?.advertisingChannelType,
+        budgetQuotidien: euros(r.campaignBudget?.amountMicros),
+        coutSur30Jours: euros(r.metrics?.costMicros),
+        clics: Number(r.metrics?.clicks || 0),
+        impressions: Number(r.metrics?.impressions || 0),
+      }));
+      return Response.json({
+        nombre: rows.length,
+        depenseTotale: Math.round(rows.reduce((s, r) => s + r.coutSur30Jours, 0) * 100) / 100,
+        campagnes: rows,
+      });
+    }
+
     const seeds = (url.searchParams.get("seeds") || "")
       .split(",")
       .map((s) => s.trim())
