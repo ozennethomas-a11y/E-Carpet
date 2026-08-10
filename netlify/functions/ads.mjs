@@ -88,21 +88,30 @@ async function getAccessToken(c) {
 
 async function adsPost(c, token, method, body) {
   const version = await resolveVersion(c, token);
-  const headers = {
-    authorization: `Bearer ${token}`,
-    "developer-token": c.devToken,
-    "content-type": "application/json",
-  };
-  if (c.loginCustomerId) headers["login-customer-id"] = c.loginCustomerId;
 
   // La plupart des méthodes s'écrivent « customers/123:methode », mais googleAds:search
   // est une sous-ressource et prend une barre oblique. On distingue les deux.
   const suffix = method.startsWith("/") ? method : `:${method}`;
-  const res = await fetch(`${API}/${version}/customers/${c.customerId}${suffix}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  const url = `${API}/${version}/customers/${c.customerId}${suffix}`;
+
+  const appel = (loginId) =>
+    fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "developer-token": c.devToken,
+        "content-type": "application/json",
+        ...(loginId ? { "login-customer-id": loginId } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+  let res = await appel(c.loginCustomerId);
+
+  // Si les deux comptes sont accessibles séparément plutôt que liés en hiérarchie,
+  // l'en-tête administrateur fait échouer la requête. On retente sans.
+  if (res.status === 403 && c.loginCustomerId) res = await appel(null);
+
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(readableError(json, res.status));
   return json;
