@@ -1,12 +1,12 @@
 # Liens tagués E-Carpet
 
 > 💡 Le plus simple est de gérer ces liens directement depuis le site :
-> **`e-carpet.shop/dashboard` → onglet « Liens »**. On peut y créer un lien
+> **`e-carpet.shop/admin` → onglet « Liens »**. On peut y créer un lien
 > (avec aperçu en direct), le copier, voir son nombre de visites et le supprimer.
 > Ce document sert de référence et de rappel de la convention.
 
 Ces liens permettent de savoir **d'où viennent les visiteurs** dans le dashboard
-(`e-carpet.shop/dashboard` → onglet « Analyse » → carte « Liens tagués »).
+(`e-carpet.shop/admin` → onglet « Analyse » → carte « Liens tagués »).
 
 Ils sont indispensables pour les réseaux sociaux : TikTok et Instagram ouvrent les
 liens dans un navigateur intégré qui **ne transmet aucun référent**. Sans tag, ces

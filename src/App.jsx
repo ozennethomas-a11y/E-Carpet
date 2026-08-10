@@ -63,7 +63,7 @@ export default function App() {
   // itself is never counted, so checking your stats doesn't inflate them.
   const firstHit = useRef(true);
   useEffect(() => {
-    if (clean === "/dashboard") return;
+    if (clean === "/admin") return;
     // Campaign tags only travel on the landing hit, so they are counted once.
     const query = firstHit.current ? window.location.search : "";
     firstHit.current = false;
@@ -97,8 +97,8 @@ export default function App() {
     };
 
     let meta = DEFAULT;
-    if (clean === "/dashboard") {
-      meta = { title: "Dashboard · E-Carpet", description: "Espace privé.", noindex: true };
+    if (clean === "/admin") {
+      meta = { title: "Admin · E-Carpet", description: "Espace privé.", noindex: true };
     } else if (clean === "/avis") {
       meta = {
         title: "Laisser un avis · E-Carpet",
@@ -125,7 +125,7 @@ export default function App() {
   }, [clean]);
 
   let page;
-  if (clean === "/dashboard") page = <DashboardPage />;
+  if (clean === "/admin") page = <DashboardPage />;
   else if (clean === "/avis") page = <ReviewPage />;
   else if (clean === "/blog") page = <BlogPage />;
   else if (clean.startsWith("/blog/")) page = <ArticlePage slug={clean.slice("/blog/".length)} />;

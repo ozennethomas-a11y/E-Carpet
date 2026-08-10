@@ -51,7 +51,7 @@ export default function DashboardPage() {
   }, [pw, days, load]);
 
   useEffect(() => {
-    document.title = "Dashboard · E-Carpet";
+    document.title = "Admin · E-Carpet";
   }, []);
 
   const submit = (e) => {
@@ -64,7 +64,7 @@ export default function DashboardPage() {
     return (
       <main className="flex min-h-svh items-center justify-center px-4">
         <form onSubmit={submit} className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-deep p-8">
-          <h1 className="font-display text-2xl font-bold text-white">Dashboard</h1>
+          <h1 className="font-display text-2xl font-bold text-white">Admin</h1>
           <p className="mt-2 text-sm text-zinc-400">Espace privé. Entrez le mot de passe.</p>
           <input
             type="password"
@@ -96,7 +96,7 @@ export default function DashboardPage() {
     <main className="mx-auto max-w-6xl px-4 py-12">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-white">Dashboard</h1>
+          <h1 className="font-display text-3xl font-bold text-white">Admin</h1>
           <p className="mt-1 text-sm text-zinc-500">
             {data ? `${data.range.from} → ${data.range.to}` : "Chargement…"}
           </p>

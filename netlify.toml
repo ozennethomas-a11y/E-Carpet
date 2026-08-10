@@ -13,6 +13,12 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Ancienne adresse du back-office : on redirige pour ne casser aucun favori
+[[redirects]]
+  from = "/dashboard"
+  to = "/admin"
+  status = 301
+
 # Single-page site: serve index.html for any unknown path
 [[redirects]]
   from = "/*"

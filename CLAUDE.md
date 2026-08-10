@@ -37,7 +37,7 @@ La redirection SPA de `netlify.toml` permet l'accès direct aux URL.
 | `/blog`, `/blog/<slug>` | `BlogPage`, `ArticlePage` |
 | `/avis` | `ReviewPage` (formulaire Netlify Forms, non affiché sur le site) |
 | `/legal/<slug>` | `LegalPage` (`mentions-legales`, `cgv`, `confidentialite`, `cookies`) |
-| `/dashboard` | `DashboardPage` — privé, deux onglets : Analyse et Liens |
+| `/admin` | `DashboardPage` — privé, deux onglets : Analyse et Liens |
 
 ## Conventions de contenu — IMPORTANT
 
