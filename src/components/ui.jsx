@@ -2,22 +2,30 @@ import { motion } from "framer-motion";
 import { useCart } from "../cart";
 import { navigate } from "../navigation";
 
+// Ajoute le produit au panier s'il est encore vide, puis va au panier — utilisé
+// par tous les boutons "Commander" du site (Hero, FinalCta, Navbar, StickyCta)
+// pour qu'un clic sur n'importe lequel d'entre eux mette bien un produit dans
+// le panier au lieu d'ouvrir un panier vide.
+export async function goToCartWithProduct(cart) {
+  if (cart.items.length === 0) {
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+      const product = data.products?.[0];
+      if (product) cart.add(product, 1);
+    } catch {
+      // navigue quand même : la page panier propose l'ajout si besoin
+    }
+  }
+  navigate("/panier");
+}
+
 export function BuyButton({ children, className = "", sub }) {
   const cart = useCart();
 
   async function handleClick(e) {
     e.preventDefault();
-    if (cart.items.length === 0) {
-      try {
-        const res = await fetch("/api/products");
-        const data = await res.json();
-        const product = data.products?.[0];
-        if (product) cart.add(product, 1);
-      } catch {
-        // navigate quand même : la page panier propose l'ajout si besoin
-      }
-    }
-    navigate("/panier");
+    await goToCartWithProduct(cart);
   }
 
   return (

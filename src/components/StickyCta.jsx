@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "../i18n/LanguageContext";
-import { navigate } from "../navigation";
-import { CartIcon } from "./ui";
+import { useCart } from "../cart";
+import { CartIcon, goToCartWithProduct } from "./ui";
 
 export default function StickyCta() {
   const { t } = useLang();
+  const cart = useCart();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function StickyCta() {
         >
           <a
             href="/panier"
-            onClick={(e) => { e.preventDefault(); navigate("/panier"); }}
+            onClick={(e) => { e.preventDefault(); goToCartWithProduct(cart); }}
             className="flex items-center justify-between gap-4 rounded-2xl border border-acid/30 bg-ink/90 px-5 py-3.5 shadow-2xl backdrop-blur-xl transition-colors duration-200 hover:border-acid/60 sm:justify-start cursor-pointer"
           >
             <div className="flex items-center gap-3">

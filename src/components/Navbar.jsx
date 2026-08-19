@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "../i18n/LanguageContext";
 import { LANGUAGES } from "../i18n/translations";
+import { useCart } from "../cart";
 import { navigate } from "../navigation";
-import { UserIcon } from "./ui";
+import { UserIcon, goToCartWithProduct } from "./ui";
 
 export default function Navbar() {
   const { t, lang, setLang } = useLang();
+  const cart = useCart();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -88,7 +90,7 @@ export default function Navbar() {
 
           <a
             href="/panier"
-            onClick={(e) => { e.preventDefault(); navigate("/panier"); }}
+            onClick={(e) => { e.preventDefault(); goToCartWithProduct(cart); }}
             className="hidden rounded-full bg-acid px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:shadow-[0_0_30px_-6px_rgba(224,106,59,0.7)] sm:inline-block cursor-pointer"
           >
             {t.nav.buy}
@@ -127,7 +129,7 @@ export default function Navbar() {
             ))}
             <a
               href="/panier"
-              onClick={(e) => { e.preventDefault(); navigate("/panier"); setMenuOpen(false); }}
+              onClick={(e) => { e.preventDefault(); goToCartWithProduct(cart); setMenuOpen(false); }}
               className="mt-2 block rounded-xl bg-acid px-4 py-3 text-center font-bold text-white cursor-pointer"
             >
               {t.nav.buy}
