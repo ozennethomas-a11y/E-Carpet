@@ -1,5 +1,5 @@
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { credentials, getAccessToken, mailsImportants } from "./_outlookMail.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { credentials, getAccessToken, mailsImportants } from "./lib/_outlookMail.mjs";
 
 export default async (req) => {
   const auth = await getAdminFromRequest(req);

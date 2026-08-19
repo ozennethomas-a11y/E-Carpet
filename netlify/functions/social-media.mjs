@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 // Hébergement temporaire des images/vidéos à publier sur les réseaux sociaux.
 // Instagram et TikTok exigent une URL HTTPS publique (pas un envoi direct de

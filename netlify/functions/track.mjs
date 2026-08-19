@@ -1,7 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import { createHash } from "node:crypto";
 import { prettySource, campaignLabelOf } from "./shared/sources.mjs";
-import { checkAndRecord } from "./_rateLimit.mjs";
+import { checkAndRecord } from "./lib/_rateLimit.mjs";
 
 // Privacy-first page-view collector.
 // No cookies, no persistent identifier: a visitor is a daily-rotating hash of

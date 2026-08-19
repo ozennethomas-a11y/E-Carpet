@@ -8,9 +8,9 @@
 // comparaison partielle n'est donc pas possible pour cette métrique).
 
 import { getStore } from "@netlify/blobs";
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { credentials as amazonCredentials, getAccessToken as amazonToken, amz } from "./_amazon.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { credentials as amazonCredentials, getAccessToken as amazonToken, amz } from "./lib/_amazon.mjs";
 
 const DAY_MS = 86400000;
 const PAID_STATUSES = ["payee", "expediee", "livree"];

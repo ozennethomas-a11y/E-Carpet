@@ -1,5 +1,5 @@
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 export default async (req) => {
   const auth = await getAdminFromRequest(req);

@@ -7,8 +7,8 @@
 // Rien n'est créé ni dépensé ici : cette fonction est en lecture seule.
 // La création de campagne se fera dans une fonction séparée, toujours en statut « en pause ».
 
-import { credentials, getAccessToken, readableError, adsPost, euros, resolveVersion } from "./_googleAds.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { credentials, getAccessToken, readableError, adsPost, euros, resolveVersion } from "./lib/_googleAds.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 // France, français. Références Google : geoTargetConstants/2250 = France.
 const GEO = "geoTargetConstants/2250";

@@ -1,6 +1,6 @@
-import { sql } from "./_db.mjs";
-import { sendEmail, orderShippedEmail, emailConfigured } from "./_email.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { sendEmail, orderShippedEmail, emailConfigured } from "./lib/_email.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 async function listOrders() {
   const orders = await sql()`

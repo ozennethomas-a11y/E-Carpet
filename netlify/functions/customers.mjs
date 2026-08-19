@@ -1,5 +1,5 @@
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 // Pas encore de comptes clients (création de compte / connexion) : cette vue
 // agrège simplement les commandes par email, ce qui suffit pour voir qui

@@ -1,13 +1,13 @@
-import { sql } from "./_db.mjs";
-import { siteOrigin } from "./_siteOrigin.mjs";
-import { sendEmail, affiliateApplicationReceivedEmail, affiliateMagicLinkEmail, emailConfigured } from "./_email.mjs";
-import { randomToken } from "./_auth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { siteOrigin } from "./lib/_siteOrigin.mjs";
+import { sendEmail, affiliateApplicationReceivedEmail, affiliateMagicLinkEmail, emailConfigured } from "./lib/_email.mjs";
+import { randomToken } from "./lib/_auth.mjs";
 import {
   createAffiliateSession,
   affiliateSessionCookieHeader,
   getAffiliateFromRequest,
-} from "./_affiliateAuth.mjs";
-import { checkAndRecord } from "./_rateLimit.mjs";
+} from "./lib/_affiliateAuth.mjs";
+import { checkAndRecord } from "./lib/_rateLimit.mjs";
 
 const TOKEN_MINUTES = 15;
 const clean = (v, max) => String(v ?? "").trim().slice(0, max);

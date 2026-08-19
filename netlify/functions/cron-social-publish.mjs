@@ -1,5 +1,5 @@
-import { sql } from "./_db.mjs";
-import { publierSurReseaux } from "./_socialPublish.mjs";
+import { sql } from "./lib/_db.mjs";
+import { publierSurReseaux } from "./lib/_socialPublish.mjs";
 
 // Publie les posts programmés dont l'heure est passée. Vérifié toutes les
 // 15 minutes : suffisant pour une programmation de réseaux sociaux (pas besoin

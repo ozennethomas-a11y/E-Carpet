@@ -1,7 +1,7 @@
-import { sql } from "./_db.mjs";
-import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./_amazon.mjs";
-import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./_googleAds.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./lib/_amazon.mjs";
+import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./lib/_googleAds.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 const DAY_MS = 86400000;
 const PAID_STATUSES = ["payee", "expediee"];

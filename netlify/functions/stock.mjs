@@ -13,9 +13,9 @@
 // Toutes les actions sont protégées par la session admin (cookie), comme le
 // reste du back-office.
 
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { credentials as amazonCredentials, getAccessToken as amazonToken, amz } from "./_amazon.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { credentials as amazonCredentials, getAccessToken as amazonToken, amz } from "./lib/_amazon.mjs";
 
 const MAX_COMMANDES_PAR_SYNC = 50;
 

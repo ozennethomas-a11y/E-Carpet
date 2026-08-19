@@ -1,5 +1,5 @@
-import { sql } from "./_db.mjs";
-import { checkAndRecord } from "./_rateLimit.mjs";
+import { sql } from "./lib/_db.mjs";
+import { checkAndRecord } from "./lib/_rateLimit.mjs";
 
 export default async (req, context) => {
   const limite = await checkAndRecord("cart-sync", req, context, { max: 30, windowMs: 60 * 1000 });

@@ -1,8 +1,8 @@
 import { getStore } from "@netlify/blobs";
-import { sql } from "./_db.mjs";
-import { sendEmail, reviewPhotoRewardEmail, emailConfigured } from "./_email.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { checkAndRecord } from "./_rateLimit.mjs";
+import { sql } from "./lib/_db.mjs";
+import { sendEmail, reviewPhotoRewardEmail, emailConfigured } from "./lib/_email.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { checkAndRecord } from "./lib/_rateLimit.mjs";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans caractères ambigus
 

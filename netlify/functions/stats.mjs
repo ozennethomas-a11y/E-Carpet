@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 // Session-protected read API for the private dashboard (cookie posé par
 // admin-auth.mjs après connexion mot de passe + TOTP).

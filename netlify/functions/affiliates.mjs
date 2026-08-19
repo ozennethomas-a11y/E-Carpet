@@ -1,8 +1,8 @@
 import { getStore } from "@netlify/blobs";
-import { sql } from "./_db.mjs";
-import { sendEmail, affiliateApprovedEmail, emailConfigured } from "./_email.mjs";
+import { sql } from "./lib/_db.mjs";
+import { sendEmail, affiliateApprovedEmail, emailConfigured } from "./lib/_email.mjs";
 import { slug, campaignLabelOf } from "./shared/sources.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function randomSuffix(len = 4) {

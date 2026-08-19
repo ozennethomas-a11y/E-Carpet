@@ -9,8 +9,8 @@
 // jour de la commande) : le reste du site (finance.mjs, export Excel) n'a
 // rien à changer, il continue de lire product_costs comme avant.
 
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 export default async (req) => {
   const auth = await getAdminFromRequest(req);

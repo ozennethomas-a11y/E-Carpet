@@ -8,11 +8,11 @@
 
 import ExcelJS from "exceljs";
 import { getStore } from "@netlify/blobs";
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./_amazon.mjs";
-import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./_googleAds.mjs";
-import { LOGO_WHITE_PNG_BASE64 } from "./_logoAsset.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./lib/_amazon.mjs";
+import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./lib/_googleAds.mjs";
+import { LOGO_WHITE_PNG_BASE64 } from "./lib/_logoAsset.mjs";
 
 const DAY_MS = 86400000;
 const PAID_STATUSES = ["payee", "expediee"];

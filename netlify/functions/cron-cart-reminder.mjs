@@ -1,5 +1,5 @@
-import { sql } from "./_db.mjs";
-import { sendEmail, cartReminderEmail, emailConfigured } from "./_email.mjs";
+import { sql } from "./lib/_db.mjs";
+import { sendEmail, cartReminderEmail, emailConfigured } from "./lib/_email.mjs";
 
 // Relance envoyée si le panier n'a pas bougé depuis 2h et n'a pas abouti à
 // une commande, une seule fois par panier. On ignore les paniers trop vieux

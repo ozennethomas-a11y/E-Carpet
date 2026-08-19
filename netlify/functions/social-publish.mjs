@@ -1,5 +1,5 @@
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { publierSurReseaux } from "./_socialPublish.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { publierSurReseaux } from "./lib/_socialPublish.mjs";
 
 export default async (req) => {
   const auth = await getAdminFromRequest(req);

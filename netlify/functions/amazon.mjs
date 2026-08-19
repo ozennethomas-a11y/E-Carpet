@@ -9,8 +9,8 @@
 // (nom, adresse), pour rester dans le périmètre des rôles non restreints.
 
 import { getStore } from "@netlify/blobs";
-import { credentials, getAccessToken, readableError, amz, financesAmazon } from "./_amazon.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { credentials, getAccessToken, readableError, amz, financesAmazon } from "./lib/_amazon.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 const PROPOSITIONS_KEY = "amazon-propositions";
 

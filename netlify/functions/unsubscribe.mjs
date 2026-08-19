@@ -1,5 +1,5 @@
-import { sql } from "./_db.mjs";
-import { verifyUnsubscribeToken } from "./_unsubscribe.mjs";
+import { sql } from "./lib/_db.mjs";
+import { verifyUnsubscribeToken } from "./lib/_unsubscribe.mjs";
 
 function page({ title, message }) {
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title>

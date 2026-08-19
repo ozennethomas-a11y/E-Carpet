@@ -1,8 +1,8 @@
-import { sql } from "./_db.mjs";
-import { siteOrigin } from "./_siteOrigin.mjs";
-import { findOrCreateCustomer } from "./_customers.mjs";
-import { findValidPromo, computeDiscountCents } from "./_promo.mjs";
-import { stripeSecretKey, stripeRequest } from "./_stripe.mjs";
+import { sql } from "./lib/_db.mjs";
+import { siteOrigin } from "./lib/_siteOrigin.mjs";
+import { findOrCreateCustomer } from "./lib/_customers.mjs";
+import { findValidPromo, computeDiscountCents } from "./lib/_promo.mjs";
+import { stripeSecretKey, stripeRequest } from "./lib/_stripe.mjs";
 
 const SHIPPING_CENTS = { relais: 499, domicile: 699 };
 

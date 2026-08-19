@@ -1,6 +1,6 @@
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { decryptToken } from "./_socialCrypto.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { decryptToken } from "./lib/_socialCrypto.mjs";
 
 const META_API = "https://graph.facebook.com/v19.0";
 

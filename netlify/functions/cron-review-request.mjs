@@ -1,5 +1,5 @@
-import { sql } from "./_db.mjs";
-import { sendEmail, reviewRequestEmail, emailConfigured } from "./_email.mjs";
+import { sql } from "./lib/_db.mjs";
+import { sendEmail, reviewRequestEmail, emailConfigured } from "./lib/_email.mjs";
 
 // Demande d'avis envoyée 7 jours après expédition, une seule fois par commande.
 export default async () => {

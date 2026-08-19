@@ -1,6 +1,6 @@
-import { sql } from "./_db.mjs";
-import { stripeSecretKey, stripeRequest } from "./_stripe.mjs";
-import { getAffiliateFromRequest } from "./_affiliateAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { stripeSecretKey, stripeRequest } from "./lib/_stripe.mjs";
+import { getAffiliateFromRequest } from "./lib/_affiliateAuth.mjs";
 
 const MIN_PAYOUT_CENTS = 2000;
 

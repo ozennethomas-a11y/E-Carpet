@@ -1,4 +1,4 @@
-import { sql } from "./_db.mjs";
+import { sql } from "./lib/_db.mjs";
 
 // GIF transparent 1x1, le format le plus universellement supporté par les
 // clients mail comme image de suivi.

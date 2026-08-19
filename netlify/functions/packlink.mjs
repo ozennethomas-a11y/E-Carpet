@@ -4,9 +4,9 @@
 // partage avec stripe-webhook.mjs, qui crée le brouillon automatiquement dès
 // qu'une commande point relais est payée).
 
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { checkAndRecord } from "./_rateLimit.mjs";
-import { packlinkCredentials, packlinkGet, creerBrouillonPourCommande, MONDIAL_RELAY_SERVICE_ID } from "./_packlink.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { checkAndRecord } from "./lib/_rateLimit.mjs";
+import { packlinkCredentials, packlinkGet, creerBrouillonPourCommande, MONDIAL_RELAY_SERVICE_ID } from "./lib/_packlink.mjs";
 
 export default async (req, context) => {
   const key = packlinkCredentials();

@@ -1,8 +1,8 @@
-import { sql } from "./_db.mjs";
-import { sendEmail, orderConfirmationEmail, affiliateSaleNotificationEmail, emailConfigured } from "./_email.mjs";
-import { stripeSecretKey, stripeRequest } from "./_stripe.mjs";
-import { constantTimeEqual } from "./_crypto.mjs";
-import { creerBrouillonPourCommande } from "./_packlink.mjs";
+import { sql } from "./lib/_db.mjs";
+import { sendEmail, orderConfirmationEmail, affiliateSaleNotificationEmail, emailConfigured } from "./lib/_email.mjs";
+import { stripeSecretKey, stripeRequest } from "./lib/_stripe.mjs";
+import { constantTimeEqual } from "./lib/_crypto.mjs";
+import { creerBrouillonPourCommande } from "./lib/_packlink.mjs";
 
 // Vérifie la signature Stripe sans dépendance externe : HMAC-SHA256 sur
 // "{timestamp}.{payload}" comparé au(x) header(s) v1 de Stripe-Signature.

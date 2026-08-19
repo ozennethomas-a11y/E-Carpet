@@ -6,8 +6,8 @@
 // Amazon/Google Ads ici, pour rester léger au chargement de l'onglet, comme
 // pour le bloc Overview de l'accueil.
 
-import { sql } from "./_db.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { sql } from "./lib/_db.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 const DAY_MS = 86400000;
 const PAID_STATUSES = ["payee", "expediee", "livree"];

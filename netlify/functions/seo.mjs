@@ -1,5 +1,5 @@
 import { createSign } from "node:crypto";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 // Données SEO pour l'onglet « SEO » du dashboard.
 //

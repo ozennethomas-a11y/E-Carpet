@@ -1,5 +1,5 @@
-import { findValidPromo, computeDiscountCents } from "./_promo.mjs";
-import { checkAndRecord } from "./_rateLimit.mjs";
+import { findValidPromo, computeDiscountCents } from "./lib/_promo.mjs";
+import { checkAndRecord } from "./lib/_rateLimit.mjs";
 
 export default async (req, context) => {
   const url = new URL(req.url);

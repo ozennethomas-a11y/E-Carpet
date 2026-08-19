@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import { campaignLabelOf, slug } from "./shared/sources.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 // Saved tagged links, managed from the dashboard (Liens tab).
 // Stored in Netlify Blobs so the list follows you across devices and browsers.

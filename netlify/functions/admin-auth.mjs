@@ -6,9 +6,9 @@ import {
   checkLoginLock,
   recordLoginFailure,
   resetLoginAttempts,
-} from "./_adminAuth.mjs";
-import { verifyTotp } from "./_totp.mjs";
-import { constantTimeEqual } from "./_crypto.mjs";
+} from "./lib/_adminAuth.mjs";
+import { verifyTotp } from "./lib/_totp.mjs";
+import { constantTimeEqual } from "./lib/_crypto.mjs";
 
 export default async (req) => {
   const url = new URL(req.url);

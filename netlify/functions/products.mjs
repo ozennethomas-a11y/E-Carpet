@@ -1,4 +1,4 @@
-import { sql } from "./_db.mjs";
+import { sql } from "./lib/_db.mjs";
 
 export default async () => {
   try {

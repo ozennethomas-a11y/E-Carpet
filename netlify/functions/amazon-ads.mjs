@@ -10,7 +10,7 @@
 // Aucune création, modification ou pause de campagne n'est câblée ici tant
 // qu'on n'a pas testé le circuit ensemble, comme convenu pour Google Ads.
 
-import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 
 const AUTH_URL = "https://api.amazon.com/auth/o2/token";
 const API = "https://advertising-api-eu.amazon.com"; // région Europe (FR)

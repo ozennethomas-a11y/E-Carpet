@@ -1,8 +1,8 @@
-import { sql } from "./_db.mjs";
-import { siteOrigin } from "./_siteOrigin.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { sendEmail, emailConfigured } from "./_email.mjs";
-import { unsubscribeToken } from "./_unsubscribe.mjs";
+import { sql } from "./lib/_db.mjs";
+import { siteOrigin } from "./lib/_siteOrigin.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { sendEmail, emailConfigured } from "./lib/_email.mjs";
+import { unsubscribeToken } from "./lib/_unsubscribe.mjs";
 
 function withFooter(html, unsubscribeUrl, pixelUrl) {
   return `${html}

@@ -1,8 +1,8 @@
 import { getStore } from "@netlify/blobs";
-import { sql } from "./_db.mjs";
-import { randomToken } from "./_auth.mjs";
-import { getAdminFromRequest } from "./_adminAuth.mjs";
-import { encryptToken } from "./_socialCrypto.mjs";
+import { sql } from "./lib/_db.mjs";
+import { randomToken } from "./lib/_auth.mjs";
+import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { encryptToken } from "./lib/_socialCrypto.mjs";
 
 const META_API = "https://graph.facebook.com/v19.0";
 // video.publish n'est pas disponible sans passer par la revue TikTok ; video.upload

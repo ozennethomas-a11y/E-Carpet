@@ -1,9 +1,9 @@
-import { sql } from "./_db.mjs";
-import { sendEmail, magicLinkEmail, emailConfigured } from "./_email.mjs";
-import { findOrCreateCustomer } from "./_customers.mjs";
-import { randomToken, createSession, sessionCookieHeader, getCustomerFromRequest, SESSION_COOKIE } from "./_auth.mjs";
-import { checkAndRecord } from "./_rateLimit.mjs";
-import { siteOrigin } from "./_siteOrigin.mjs";
+import { sql } from "./lib/_db.mjs";
+import { sendEmail, magicLinkEmail, emailConfigured } from "./lib/_email.mjs";
+import { findOrCreateCustomer } from "./lib/_customers.mjs";
+import { randomToken, createSession, sessionCookieHeader, getCustomerFromRequest, SESSION_COOKIE } from "./lib/_auth.mjs";
+import { checkAndRecord } from "./lib/_rateLimit.mjs";
+import { siteOrigin } from "./lib/_siteOrigin.mjs";
 
 const TOKEN_MINUTES = 15;
 
