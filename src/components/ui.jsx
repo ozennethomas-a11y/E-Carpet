@@ -1,13 +1,30 @@
 import { motion } from "framer-motion";
-import { AMAZON_URL } from "../config";
+import { useCart } from "../cart";
+import { navigate } from "../navigation";
 
-export function AmazonButton({ children, className = "", sub }) {
+export function BuyButton({ children, className = "", sub }) {
+  const cart = useCart();
+
+  async function handleClick(e) {
+    e.preventDefault();
+    if (cart.items.length === 0) {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        const product = data.products?.[0];
+        if (product) cart.add(product, 1);
+      } catch {
+        // navigate quand même : la page panier propose l'ajout si besoin
+      }
+    }
+    navigate("/panier");
+  }
+
   return (
     <div className={`flex flex-col items-center gap-2 ${className}`}>
       <motion.a
-        href={AMAZON_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/panier"
+        onClick={handleClick}
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
         className="group inline-flex items-center gap-3 rounded-full bg-acid px-8 py-4 font-display text-base font-700 font-bold text-white shadow-[0_0_40px_-8px_rgba(224,106,59,0.6)] transition-shadow duration-300 hover:shadow-[0_0_60px_-8px_rgba(224,106,59,0.85)] cursor-pointer"
@@ -60,6 +77,14 @@ export function CartIcon({ className }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
       <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  );
+}
+
+export function UserIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
     </svg>
   );
 }

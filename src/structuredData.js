@@ -5,7 +5,7 @@
 // soumettre de faux avis, ce qu'il sanctionne explicitement. À réintroduire le
 // jour où de vrais avis seront collectés via /avis.
 
-import { AMAZON_URL, INSTAGRAM_URL, TIKTOK_URL, CONTACT_EMAIL } from "./config.js";
+import { INSTAGRAM_URL, TIKTOK_URL, CONTACT_EMAIL } from "./config.js";
 import { ARTICLES } from "./data/articles.js";
 import { COMPANY } from "./data/legal.js";
 
@@ -50,7 +50,7 @@ const product = {
   size: "130 x 40 cm",
   offers: {
     "@type": "Offer",
-    url: AMAZON_URL,
+    url: `${SITE}/panier`,
     price: "34.99",
     priceCurrency: "EUR",
     availability: "https://schema.org/InStock",

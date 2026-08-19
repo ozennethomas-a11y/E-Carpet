@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "../i18n/LanguageContext";
 import { LANGUAGES } from "../i18n/translations";
-import { AMAZON_URL } from "../config";
 import { navigate } from "../navigation";
+import { UserIcon } from "./ui";
 
 export default function Navbar() {
   const { t, lang, setLang } = useLang();
@@ -52,9 +52,25 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+          <a
+            href="/compte"
+            onClick={(e) => { e.preventDefault(); navigate("/compte"); }}
+            className="text-sm text-zinc-400 transition-colors duration-200 hover:text-white cursor-pointer"
+          >
+            Mon compte
+          </a>
         </div>
 
         <div className="flex items-center gap-3">
+          <a
+            href="/compte"
+            onClick={(e) => { e.preventDefault(); navigate("/compte"); }}
+            aria-label="Mon compte"
+            className="hidden h-9 w-9 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors duration-200 hover:text-white sm:flex cursor-pointer"
+          >
+            <UserIcon className="h-4 w-4" />
+          </a>
+
           <div className="flex rounded-full border border-white/10 bg-white/5 p-0.5">
             {LANGUAGES.map((l) => (
               <button
@@ -71,9 +87,8 @@ export default function Navbar() {
           </div>
 
           <a
-            href={AMAZON_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/panier"
+            onClick={(e) => { e.preventDefault(); navigate("/panier"); }}
             className="hidden rounded-full bg-acid px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:shadow-[0_0_30px_-6px_rgba(224,106,59,0.7)] sm:inline-block cursor-pointer"
           >
             {t.nav.buy}
@@ -111,9 +126,8 @@ export default function Navbar() {
               </a>
             ))}
             <a
-              href={AMAZON_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/panier"
+              onClick={(e) => { e.preventDefault(); navigate("/panier"); setMenuOpen(false); }}
               className="mt-2 block rounded-xl bg-acid px-4 py-3 text-center font-bold text-white cursor-pointer"
             >
               {t.nav.buy}

@@ -46,6 +46,13 @@ h1, h2, h3, h4 {
   animation-play-state: paused;
 }
 
+/* Mode démo admin : floute uniquement les chiffres/valeurs marqués .chiffre,
+   pas les libellés ni la structure, pour montrer l'interface sans les données. */
+.mode-demo .chiffre {
+  filter: blur(6px);
+  user-select: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .animate-marquee { animation: none; }

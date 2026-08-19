@@ -4,7 +4,7 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
 
 # Fallback route for the analytics functions (they also declare their own path).
 # Must come before the SPA catch-all so /api/* is never swallowed by index.html.
@@ -24,3 +24,26 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# En-têtes de sécurité. CSP construite d'après les domaines externes réellement
+# utilisés par le front : polices Google Fonts, tuiles OpenStreetMap pour la
+# carte point-relais du tunnel de commande. Stripe Checkout est une redirection
+# de page complète (pas d'iframe ni d'appel API depuis le navigateur), donc
+# aucun domaine Stripe n'est nécessaire ici.
+#
+# Note vérification : cette CSP casse le rechargement à chaud de Vite en dev
+# local (scripts inline / workers blob: injectés par le HMR), mais le build de
+# production livré par `npm run build` n'a aucun script inline (vérifié dans
+# dist/index.html : un seul <script type="module" src="..."> externe + un bloc
+# JSON-LD non exécutable) — donc aucun conflit réel une fois déployé.
+# Restées désactivées un temps pour un test en local (le HMR de Vite en dev
+# casse sous cette CSP) — actives en permanence désormais : pour retester en
+# local, commenter ce bloc temporairement et le restaurer avant tout push/déploiement.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"

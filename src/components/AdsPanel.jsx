@@ -46,7 +46,7 @@ function Erreur({ message }) {
   );
 }
 
-export default function AdsPanel({ password }) {
+export default function AdsPanel() {
   const [data, setData] = useState(null);
   const [state, setState] = useState("loading");
   const [choisis, setChoisis] = useState(() => new Set());
@@ -58,7 +58,7 @@ export default function AdsPanel({ password }) {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const res = await fetch("/api/ads", { headers: { "x-dashboard-password": password } });
+      const res = await fetch("/api/ads");
       const json = await res.json();
       setData(json);
       setState(json.error ? "erreur" : "ok");
@@ -68,7 +68,7 @@ export default function AdsPanel({ password }) {
       setState("erreur");
       setData({ error: "Le serveur n'a pas répondu." });
     }
-  }, [password]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -91,7 +91,7 @@ export default function AdsPanel({ password }) {
     try {
       const res = await fetch("/api/ads", {
         method: "POST",
-        headers: { "content-type": "application/json", "x-dashboard-password": password },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           keywords: selection.map((k) => k.motCle),
           dailyBudget: Number(budget),
@@ -141,13 +141,13 @@ export default function AdsPanel({ password }) {
                     />
                   </td>
                   <td className="max-w-[240px] truncate py-2" title={k.motCle}>{k.motCle}</td>
-                  <td className="py-2 text-right tabular-nums text-white">
+                  <td className="chiffre py-2 text-right tabular-nums text-white">
                     {k.volume.toLocaleString("fr-FR")}
                   </td>
                   <td className={`py-2 text-right ${COULEUR_CONCURRENCE[k.concurrence] || "text-zinc-500"}`}>
                     {k.concurrence}
                   </td>
-                  <td className="py-2 text-right tabular-nums">
+                  <td className="chiffre py-2 text-right tabular-nums">
                     {k.cpcBas ? `${eur(k.cpcBas)} à ${eur(k.cpcHaut)}` : "—"}
                   </td>
                 </tr>
@@ -160,7 +160,7 @@ export default function AdsPanel({ password }) {
       <div className="rounded-2xl border border-white/10 bg-slate-deep p-5">
         <h2 className="font-display text-base font-bold text-white">Combien ça va coûter</h2>
         <p className="mt-1 text-xs text-zinc-500">
-          {selection.length} mot{selection.length > 1 ? "s" : ""}-clé{selection.length > 1 ? "s" : ""} sélectionné
+          <span className="chiffre">{selection.length}</span> mot{selection.length > 1 ? "s" : ""}-clé{selection.length > 1 ? "s" : ""} sélectionné
           {selection.length > 1 ? "s" : ""}. Prévisions fournies par Google, sur 30 jours.
         </p>
 
@@ -202,13 +202,13 @@ export default function AdsPanel({ password }) {
                 ["Coût par clic", eur(prevision.cpcMoyen)],
               ].map(([label, valeur]) => (
                 <div key={label} className="rounded-xl border border-white/10 bg-ink p-4">
-                  <div className="font-display text-2xl font-bold text-white">{valeur}</div>
+                  <div className="chiffre font-display text-2xl font-bold text-white">{valeur}</div>
                   <div className="mt-1 text-xs text-zinc-500">{label}</div>
                 </div>
               ))}
             </div>
             <p className="mt-4 text-xs leading-relaxed text-zinc-500">
-              Période retenue : du {prevision.periode.du} au {prevision.periode.au}, à {eur(prevision.budgetQuotidien)} par jour.
+              Période retenue : du {prevision.periode.du} au {prevision.periode.au}, à <span className="chiffre">{eur(prevision.budgetQuotidien)}</span> par jour.
               {saison.length > 0 && ` Demande la plus forte en ${saison.join(", ")}.`}
             </p>
           </>

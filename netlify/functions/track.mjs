@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import { createHash } from "node:crypto";
 import { prettySource, campaignLabelOf } from "./shared/sources.mjs";
+import { checkAndRecord } from "./_rateLimit.mjs";
 
 // Privacy-first page-view collector.
 // No cookies, no persistent identifier: a visitor is a daily-rotating hash of
@@ -61,6 +62,11 @@ export default async (req, context) => {
   const ua = req.headers.get("user-agent") || "";
   // Silently accept bots so they get no error, but never count them.
   if (BOT.test(ua) || !ua) return new Response(null, { status: 204 });
+
+  // Seuil large : un visiteur légitime qui navigue génère bien moins de 200
+  // vues en 5 minutes. Ça n'empêche que le spam automatisé de l'endpoint.
+  const limite = await checkAndRecord("track-view", req, context, { max: 200, windowMs: 5 * 60 * 1000 });
+  if (limite.limited) return new Response(null, { status: 204 });
 
   let body = {};
   try {

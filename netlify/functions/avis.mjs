@@ -1,4 +1,33 @@
 import { getStore } from "@netlify/blobs";
+import { sql } from "./_db.mjs";
+import { sendEmail, reviewPhotoRewardEmail, emailConfigured } from "./_email.mjs";
+import { getAdminFromRequest } from "./_adminAuth.mjs";
+import { checkAndRecord } from "./_rateLimit.mjs";
+
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans caractères ambigus
+
+function randomCode(len = 8) {
+  let s = "";
+  for (let i = 0; i < len; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  return s;
+}
+
+// Récompense pour un avis déposé avec photo : 10% à usage unique, sans
+// expiration. Généré même si l'email de notification échoue ensuite (le
+// code reste valide et visible dans l'admin), pour ne jamais faire perdre
+// une récompense méritée à cause d'un souci d'envoi.
+async function creerCodeRecompensePhoto() {
+  for (let essai = 0; essai < 5; essai++) {
+    const code = randomCode();
+    try {
+      await sql()`insert into promo_codes (code, type, value, max_uses, source) values (${code}, 'percent', 10, 1, 'avis_photo')`;
+      return code;
+    } catch (e) {
+      if (!String(e.message || e).toLowerCase().includes("unique")) throw e;
+    }
+  }
+  throw new Error("impossible de générer un code unique");
+}
 
 // Modération des avis.
 //
@@ -13,12 +42,6 @@ import { getStore } from "@netlify/blobs";
 
 const KEY = "moderation";
 const STATUTS = ["en_attente", "en_ligne", "en_veille", "refuse"];
-
-function authorised(req) {
-  const expected = process.env.DASHBOARD_PASSWORD;
-  if (!expected) return "not_configured";
-  return (req.headers.get("x-dashboard-password") || "") === expected ? "ok" : "unauthorized";
-}
 
 async function read(store) {
   const data = await store.get(KEY, { type: "json" }).catch(() => null);
@@ -41,16 +64,30 @@ async function write(store, muter) {
     };
     const suivant = muter(etat);
     try {
-      await store.setJSON(KEY, suivant, existant?.etag ? { onlyIfMatch: existant.etag } : { onlyIfNew: true });
-      return suivant;
+      // Attention : une écriture conditionnelle refusée ne lève pas d'erreur,
+      // elle renvoie { modified: false }. Sans ce test, la modification est
+      // perdue en silence et l'appelant croit avoir réussi.
+      const res = await store.setJSON(
+        KEY,
+        suivant,
+        existant?.etag ? { onlyIfMatch: existant.etag } : { onlyIfNew: true },
+      );
+      if (res?.modified !== false) return suivant;
     } catch {
       // Un autre envoi est passé entre-temps : on relit et on recommence.
     }
   }
-  throw new Error("écriture impossible, réessayez");
+
+  // Dernier recours : en environnement local, les etags peuvent être absents et
+  // toutes les tentatives conditionnelles échouer. Mieux vaut une écriture sans
+  // condition que perdre l'avis d'un visiteur.
+  const etat = await read(store);
+  const suivant = muter(etat);
+  await store.setJSON(KEY, suivant);
+  return suivant;
 }
 
-export default async (req) => {
+export default async (req, context) => {
   const store = getStore("analytics");
   const url = new URL(req.url);
 
@@ -69,7 +106,15 @@ export default async (req) => {
   }
 
   // --- Public : dépôt d'un avis. Il arrive en attente, jamais en ligne.
-  if (req.method === "POST" && !req.headers.get("x-dashboard-password")) {
+  // On distingue un dépôt public d'une action de modération admin via la
+  // présence d'une session admin valide (cookie), plus via un header de
+  // mot de passe qui n'existe plus depuis le passage à l'authentification
+  // par cookie + TOTP.
+  const isAdmin = (await getAdminFromRequest(req)) === "ok";
+  if (req.method === "POST" && !isAdmin) {
+    const limite = await checkAndRecord("avis-submit", req, context, { max: 5, windowMs: 60 * 60 * 1000 });
+    if (limite.limited) return Response.json({ error: "trop d'avis envoyés, réessayez plus tard" }, { status: 429 });
+
     let body;
     try {
       body = await req.json();
@@ -84,6 +129,26 @@ export default async (req) => {
       return Response.json({ error: "nom ou message manquant" }, { status: 400 });
     }
 
+    const email = clean(body.email, 200);
+    const emailValide = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    // Data URL uniquement, taille bornée (le base64 gonfle ~33% : 4 Mo de photo
+    // source -> ~5,5 Mo de texte), pour ne pas laisser n'importe quel binaire
+    // atterrir dans le blob de modération.
+    const photoValide =
+      typeof body.photo === "string" &&
+      /^data:image\/(png|jpe?g|webp|gif);base64,/.test(body.photo) &&
+      body.photo.length < 6_000_000;
+    const photo = photoValide ? body.photo : null;
+
+    let codePromo = null;
+    if (photo && emailValide) {
+      try {
+        codePromo = await creerCodeRecompensePhoto();
+      } catch (e) {
+        console.error("[avis] échec génération code récompense:", e.message);
+      }
+    }
+
     const avis = {
       id: `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
       name,
@@ -91,17 +156,28 @@ export default async (req) => {
       scooter: clean(body.scooter, 60),
       rating: Math.min(5, Math.max(1, parseInt(body.rating, 10) || 5)),
       text,
+      email: emailValide ? email : "",
+      photo,
+      codePromo,
       date: new Date().toISOString().slice(0, 10),
       statut: "en_attente",
     };
 
     await write(store, (etat) => ({ ...etat, avis: [avis, ...etat.avis].slice(0, 500) }));
+
+    if (codePromo && emailConfigured()) {
+      const { subject, html } = reviewPhotoRewardEmail({ code: codePromo });
+      await sendEmail({ to: email, subject, html }).catch((e) =>
+        console.error("[avis] échec envoi email récompense:", e.message),
+      );
+    }
+
     return Response.json({ ok: true });
   }
 
-  // --- Tout le reste demande le mot de passe.
-  const auth = authorised(req);
-  if (auth !== "ok") {
+  // --- Tout le reste demande une session admin valide.
+  if (!isAdmin) {
+    const auth = await getAdminFromRequest(req);
     return Response.json({ error: auth }, { status: auth === "not_configured" ? 503 : 401 });
   }
 

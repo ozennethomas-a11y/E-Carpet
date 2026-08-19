@@ -1,0 +1,2 @@
+ALTER TABLE "cost_batches" ADD COLUMN "stock_movement_id" integer;--> statement-breakpoint
+ALTER TABLE "cost_batches" ADD CONSTRAINT "cost_batches_stock_movement_id_stock_movements_id_fkey" FOREIGN KEY ("stock_movement_id") REFERENCES "stock_movements"("id");

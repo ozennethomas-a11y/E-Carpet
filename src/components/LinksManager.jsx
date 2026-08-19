@@ -22,7 +22,7 @@ const slug = (s) =>
 
 const pretty = (s) => (s ? PRETTY[s] || s.charAt(0).toUpperCase() + s.slice(1) : "");
 
-export default function LinksManager({ password, campaigns = [] }) {
+export default function LinksManager({ campaigns = [] }) {
   const [links, setLinks] = useState([]);
   const [source, setSource] = useState("");
   const [campaign, setCampaign] = useState("");
@@ -35,12 +35,12 @@ export default function LinksManager({ password, campaigns = [] }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/links", { headers: { "x-dashboard-password": password } });
+      const res = await fetch("/api/links");
       if (res.ok) setLinks((await res.json()).links || []);
     } catch {
       /* ignore */
     }
-  }, [password]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -58,7 +58,7 @@ export default function LinksManager({ password, campaigns = [] }) {
     try {
       const res = await fetch("/api/links", {
         method: "POST",
-        headers: { "content-type": "application/json", "x-dashboard-password": password },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ source: s, campaign: c, note }),
       });
       if (res.status === 409) setError("Ce lien existe déjà.");
@@ -77,10 +77,7 @@ export default function LinksManager({ password, campaigns = [] }) {
 
   const remove = async (id) => {
     setLinks((l) => l.filter((x) => x.id !== id)); // optimistic
-    await fetch(`/api/links?id=${encodeURIComponent(id)}`, {
-      method: "DELETE",
-      headers: { "x-dashboard-password": password },
-    }).catch(() => {});
+    await fetch(`/api/links?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
     load();
   };
 

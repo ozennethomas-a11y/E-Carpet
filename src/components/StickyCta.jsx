@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "../i18n/LanguageContext";
-import { AMAZON_URL } from "../config";
+import { navigate } from "../navigation";
 import { CartIcon } from "./ui";
 
 export default function StickyCta() {
@@ -29,9 +29,8 @@ export default function StickyCta() {
           className="fixed bottom-4 left-4 right-4 z-40 sm:left-auto sm:right-6 sm:bottom-6"
         >
           <a
-            href={AMAZON_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/panier"
+            onClick={(e) => { e.preventDefault(); navigate("/panier"); }}
             className="flex items-center justify-between gap-4 rounded-2xl border border-acid/30 bg-ink/90 px-5 py-3.5 shadow-2xl backdrop-blur-xl transition-colors duration-200 hover:border-acid/60 sm:justify-start cursor-pointer"
           >
             <div className="flex items-center gap-3">
@@ -40,7 +39,7 @@ export default function StickyCta() {
               </span>
               <div>
                 <div className="font-display text-sm font-bold text-white">{t.sticky.cta}</div>
-                <div className="text-xs text-zinc-400">Amazon · {t.sticky.price}</div>
+                <div className="text-xs text-zinc-400">{t.sticky.price}</div>
               </div>
             </div>
             <svg viewBox="0 0 24 24" className="h-4 w-4 text-acid" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

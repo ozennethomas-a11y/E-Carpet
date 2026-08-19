@@ -7,134 +7,14 @@
 // Rien n'est créé ni dépensé ici : cette fonction est en lecture seule.
 // La création de campagne se fera dans une fonction séparée, toujours en statut « en pause ».
 
-const API = "https://googleads.googleapis.com";
-
-// Google publie une version par trimestre et bloque les anciennes. Plutôt que de
-// figer un numéro qui périmera, on essaie de la plus récente à la plus ancienne et
-// on retient la première acceptée. GOOGLE_ADS_API_VERSION force la valeur si besoin.
-const CANDIDATES = ["v27", "v26", "v25", "v24", "v23", "v22"];
-let versionCache = process.env.GOOGLE_ADS_API_VERSION || null;
-
-async function resolveVersion(c, token) {
-  if (versionCache) return versionCache;
-  const headers = { authorization: `Bearer ${token}`, "developer-token": c.devToken };
-  const refus = /deprecated|not supported|was not found|invalid.*version/i;
-
-  for (const v of CANDIDATES) {
-    const res = await fetch(`${API}/${v}/customers:listAccessibleCustomers`, { headers });
-    if (res.status === 404) continue;
-    const json = await res.json().catch(() => ({}));
-    if (res.ok) return (versionCache = v);
-    // Une erreur de droits ou de jeton prouve que la version, elle, est bonne.
-    if (!refus.test(json?.error?.message || "")) return (versionCache = v);
-  }
-  throw new Error("aucune version de l'API Google Ads n'a été acceptée");
-}
+import { credentials, getAccessToken, readableError, adsPost, euros, resolveVersion } from "./_googleAds.mjs";
+import { getAdminFromRequest } from "./_adminAuth.mjs";
 
 // France, français. Références Google : geoTargetConstants/2250 = France.
 const GEO = "geoTargetConstants/2250";
 const LANG = "languageConstants/1002";
 const MICROS = 1_000_000; // Google exprime tous les montants en millionièmes d'euro.
-
-function authorised(req) {
-  const expected = process.env.DASHBOARD_PASSWORD;
-  if (!expected) return "not_configured";
-  return (req.headers.get("x-dashboard-password") || "") === expected ? "ok" : "unauthorized";
-}
-
-function credentials() {
-  const need = [
-    "GOOGLE_ADS_DEVELOPER_TOKEN",
-    "GOOGLE_ADS_CLIENT_ID",
-    "GOOGLE_ADS_CLIENT_SECRET",
-    "GOOGLE_ADS_REFRESH_TOKEN",
-    "GOOGLE_ADS_CUSTOMER_ID",
-  ];
-  const missing = need.filter((k) => !process.env[k]);
-  if (missing.length) return { missing };
-  return {
-    devToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
-    clientId: process.env.GOOGLE_ADS_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET,
-    refreshToken: process.env.GOOGLE_ADS_REFRESH_TOKEN,
-    // Les identifiants de compte se saisissent souvent avec des tirets : on nettoie.
-    customerId: process.env.GOOGLE_ADS_CUSTOMER_ID.replace(/\D/g, ""),
-    loginCustomerId: (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || "").replace(/\D/g, ""),
-  };
-}
-
-/** Le refresh token ne périme pas : on rachète un jeton d'accès à chaque appel. */
-async function getAccessToken(c) {
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: c.clientId,
-      client_secret: c.clientSecret,
-      refresh_token: c.refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error(
-      json.error === "invalid_grant"
-        ? "refresh token invalide ou expiré : relancez scripts/google-ads-token.mjs"
-        : json.error_description || json.error || "échec de l'authentification",
-    );
-  }
-  return json.access_token;
-}
-
-async function adsPost(c, token, method, body) {
-  const version = await resolveVersion(c, token);
-
-  // La plupart des méthodes s'écrivent « customers/123:methode », mais googleAds:search
-  // est une sous-ressource et prend une barre oblique. On distingue les deux.
-  const suffix = method.startsWith("/") ? method : `:${method}`;
-  const url = `${API}/${version}/customers/${c.customerId}${suffix}`;
-
-  const appel = (loginId) =>
-    fetch(url, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token}`,
-        "developer-token": c.devToken,
-        "content-type": "application/json",
-        ...(loginId ? { "login-customer-id": loginId } : {}),
-      },
-      body: JSON.stringify(body),
-    });
-
-  let res = await appel(c.loginCustomerId);
-
-  // Si les deux comptes sont accessibles séparément plutôt que liés en hiérarchie,
-  // l'en-tête administrateur fait échouer la requête. On retente sans.
-  if (res.status === 403 && c.loginCustomerId) res = await appel(null);
-
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(readableError(json, res.status));
-  return json;
-}
-
-/** Traduit les erreurs Google, souvent cryptiques, en une phrase actionnable. */
-function readableError(json, status) {
-  const detail = json?.error?.details?.[0]?.errors?.[0];
-  const code = detail?.errorCode && Object.values(detail.errorCode)[0];
-  const map = {
-    DEVELOPER_TOKEN_NOT_APPROVED:
-      "le jeton de développeur est encore en accès Test : demandez l'accès de base dans le Centre API",
-    DEVELOPER_TOKEN_PROHIBITED: "ce jeton de développeur n'a pas le droit d'appeler cette API",
-    CUSTOMER_NOT_FOUND: "GOOGLE_ADS_CUSTOMER_ID ne correspond à aucun compte accessible",
-    NOT_ADS_USER: "ce compte Google n'a accès à aucun compte Google Ads",
-    USER_PERMISSION_DENIED:
-      "ce compte Google n'a pas les droits sur ce compte Ads, ou GOOGLE_ADS_LOGIN_CUSTOMER_ID manque",
-  };
-  if (code && map[code]) return map[code];
-  return detail?.message || json?.error?.message || `erreur HTTP ${status}`;
-}
-
-const euros = (micros) => Math.round((Number(micros || 0) / MICROS) * 100) / 100;
+const API = "https://googleads.googleapis.com";
 
 const COMPETITION = { LOW: "faible", MEDIUM: "moyenne", HIGH: "forte" };
 
@@ -213,7 +93,7 @@ async function forecast(c, token, keywords, dailyBudget, cpcBid) {
 }
 
 export default async (req) => {
-  const auth = authorised(req);
+  const auth = await getAdminFromRequest(req);
   if (auth !== "ok") {
     return Response.json({ error: auth }, { status: auth === "not_configured" ? 503 : 401 });
   }

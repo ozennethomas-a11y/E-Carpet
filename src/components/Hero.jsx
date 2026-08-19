@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { useLang } from "../i18n/LanguageContext";
-import { AmazonButton, Stars } from "./ui";
+import { BuyButton, Stars } from "./ui";
 
 export default function Hero() {
   const { t } = useLang();
@@ -59,7 +59,7 @@ export default function Hero() {
             <span className="text-4xl font-bold text-white">{t.hero.price}</span>
             <span className="rounded-full bg-acid/15 px-2.5 py-1 text-xs font-bold text-acid">-22%</span>
           </div>
-          <AmazonButton sub={t.hero.ctaSub}>{t.hero.cta}</AmazonButton>
+          <BuyButton sub={t.hero.ctaSub}>{t.hero.cta}</BuyButton>
         </motion.div>
       </motion.div>
 

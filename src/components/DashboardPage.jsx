@@ -1,46 +1,117 @@
 import { useEffect, useState, useCallback } from "react";
 import { navigate } from "../navigation";
-import { StatTile, ColumnChart, BarList } from "./charts";
+import { StatTile, LineChart } from "./charts";
+import { formatPrice } from "../cart";
 import LinksManager from "./LinksManager";
 import SeoPanel from "./SeoPanel";
 import AdsPanel from "./AdsPanel";
 import AvisPanel from "./AvisPanel";
 import BlogPanel from "./BlogPanel";
+import PeriodPicker from "./PeriodPicker";
+import AmazonPanel from "./AmazonPanel";
+import OrdersPanel from "./OrdersPanel";
+import CustomersPanel from "./CustomersPanel";
+import PromoPanel from "./PromoPanel";
+import PartnersPanel from "./PartnersPanel";
+import FinancePanel from "./FinancePanel";
+import StockPanel from "./StockPanel";
+import SocialPanel from "./SocialPanel";
+import MailingPanel from "./MailingPanel";
+import MailAlertsPanel from "./MailAlertsPanel";
+import OverviewDashboard from "./OverviewDashboard";
 
-const RANGES = [
-  { days: 7, label: "7 jours" },
-  { days: 30, label: "30 jours" },
-  { days: 90, label: "90 jours" },
-];
-
-const TABS = [
-  { id: "analyse", label: "Analyse" },
-  { id: "liens", label: "Liens" },
-  { id: "seo", label: "SEO" },
-  { id: "campagnes", label: "Campagnes" },
-  { id: "avis", label: "Avis" },
-  { id: "blog", label: "Blog" },
+const SECTIONS = [
+  { id: "accueil", label: "Accueil" },
+  {
+    id: "site",
+    label: "Site",
+    tabs: [
+      { id: "analyse", label: "Analyse" },
+      { id: "commandes", label: "Commandes" },
+      { id: "clients", label: "Clients" },
+      { id: "promos", label: "Codes promo" },
+      { id: "influenceurs", label: "Influenceurs" },
+      { id: "avis", label: "Avis" },
+      { id: "liens", label: "Liens" },
+      { id: "blog", label: "Blog" },
+      { id: "mailing", label: "Mailing" },
+    ],
+  },
+  { id: "amazon", label: "Amazon" },
+  { id: "finance", label: "Finance" },
+  { id: "stock", label: "Stock" },
+  { id: "social", label: "Réseaux sociaux" },
+  {
+    id: "google",
+    label: "Google",
+    tabs: [
+      { id: "seo", label: "SEO" },
+      { id: "campagnes", label: "Campagnes" },
+    ],
+  },
 ];
 
 export default function DashboardPage() {
-  const [pw, setPw] = useState(() => sessionStorage.getItem("ec-dash-pw") || "");
-  const [input, setInput] = useState("");
-  const [tab, setTab] = useState("analyse");
-  const [days, setDays] = useState(30);
+  const [connecte, setConnecte] = useState(null); // null = vérification en cours
+  const [motDePasse, setMotDePasse] = useState("");
+  const [totp, setTotp] = useState("");
+  const [erreurConnexion, setErreurConnexion] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  // Onglet/section lus depuis l'URL au premier rendu, pour qu'un rafraîchissement
+  // de page (F5) reste sur le même écran au lieu de revenir sur Accueil.
+  const paramsInitiaux = new URLSearchParams(window.location.search);
+  const sectionInitiale = SECTIONS.some((s) => s.id === paramsInitiaux.get("section")) ? paramsInitiaux.get("section") : "accueil";
+  const sectionAvecTabs = SECTIONS.find((s) => s.id === sectionInitiale);
+  const tabInitial =
+    sectionAvecTabs?.tabs?.some((t) => t.id === paramsInitiaux.get("tab")) ? paramsInitiaux.get("tab") : sectionAvecTabs?.tabs?.[0]?.id || "analyse";
+
+  const [section, setSection] = useState(sectionInitiale);
+  const [tab, setTab] = useState(tabInitial);
+  const [periodeFinance, setPeriodeFinance] = useState({ mode: "jours", days: 30 });
+  const [flouter, setFlouter] = useState(false);
+  const activeSection = SECTIONS.find((s) => s.id === section);
+  // Google et Amazon interrogent des API externes à quota limité : une fois
+  // la section ouverte, on la garde montée (juste masquée) pour ne plus
+  // jamais refaire de requête en changeant d'onglet ou de section.
+  const [visited, setVisited] = useState(new Set(["accueil", "site", sectionInitiale]));
+
+  // Remplace l'URL (sans empiler d'entrée d'historique) pour que F5 recharge
+  // sur la même section/onglet.
+  function majUrl(sectionId, tabId) {
+    const params = new URLSearchParams();
+    params.set("section", sectionId);
+    if (tabId) params.set("tab", tabId);
+    window.history.replaceState({}, "", `/admin?${params.toString()}`);
+  }
+
+  function selectSection(s) {
+    setSection(s.id);
+    setVisited((v) => (v.has(s.id) ? v : new Set(v).add(s.id)));
+    const premierTab = s.tabs?.[0]?.id;
+    if (premierTab) setTab(premierTab);
+    majUrl(s.id, premierTab);
+  }
+
+  function selectTab(tabId) {
+    setTab(tabId);
+    majUrl(section, tabId);
+  }
+  // La période ne concerne que l'onglet Analyse : soit un nombre de jours
+  // glissants, soit deux dates choisies au calendrier.
+  const [periode, setPeriode] = useState({ mode: "jours", days: 30 });
   const [data, setData] = useState(null);
   const [state, setState] = useState("idle"); // idle | loading | ok | denied | error | unconfigured
 
-  const load = useCallback(async (password, range) => {
-    if (!password) return;
+  const load = useCallback(async (range) => {
     setState("loading");
+    const query =
+      range.mode === "dates"
+        ? `from=${range.from}&to=${range.to}`
+        : `days=${range.days}`;
     try {
-      const res = await fetch(`/api/stats?days=${range}`, {
-        headers: { "x-dashboard-password": password },
-      });
+      const res = await fetch(`/api/stats?${query}`);
       if (res.status === 401) {
-        setState("denied");
-        sessionStorage.removeItem("ec-dash-pw");
-        setPw("");
+        setConnecte(false);
         return;
       }
       if (res.status === 503) return setState("unconfigured");
@@ -53,38 +124,78 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (pw) load(pw, days);
-  }, [pw, days, load]);
+    fetch("/api/admin-auth?action=me")
+      .then((r) => r.json())
+      .then((d) => setConnecte(!!d.connecte))
+      .catch(() => setConnecte(false));
+  }, []);
+
+  useEffect(() => {
+    if (connecte) load(periode);
+  }, [connecte, periode, load]);
 
   useEffect(() => {
     document.title = "Admin · E-Carpet";
   }, []);
 
-  const submit = (e) => {
+  async function submit(e) {
     e.preventDefault();
-    sessionStorage.setItem("ec-dash-pw", input);
-    setPw(input);
-  };
+    setErreurConnexion("");
+    setEnvoi(true);
+    try {
+      const res = await fetch("/api/admin-auth?action=login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password: motDePasse, totp }),
+      });
+      const d = await res.json();
+      if (d.error) {
+        setErreurConnexion(d.error);
+        return;
+      }
+      setMotDePasse("");
+      setTotp("");
+      setConnecte(true);
+    } catch {
+      setErreurConnexion("Le serveur n'a pas répondu.");
+    } finally {
+      setEnvoi(false);
+    }
+  }
 
-  if (!pw) {
+  if (connecte === null) return null;
+
+  if (!connecte) {
     return (
       <main className="flex min-h-svh items-center justify-center px-4">
         <form onSubmit={submit} className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-deep p-8">
           <h1 className="font-display text-2xl font-bold text-white">Admin</h1>
-          <p className="mt-2 text-sm text-zinc-400">Espace privé. Entrez le mot de passe.</p>
+          <p className="mt-2 text-sm text-zinc-400">Espace privé. Mot de passe et code de vérification.</p>
           <input
             type="password"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            value={motDePasse}
+            onChange={(e) => setMotDePasse(e.target.value)}
+            placeholder="Mot de passe"
             autoFocus
             className="mt-5 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-sm text-white outline-none transition-colors focus:border-acid/60"
           />
-          {state === "denied" && <p className="mt-3 text-sm text-red-400">Mot de passe incorrect.</p>}
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            value={totp}
+            onChange={(e) => setTotp(e.target.value.replace(/\D/g, ""))}
+            placeholder="Code à 6 chiffres"
+            className="mt-3 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-sm text-white outline-none transition-colors focus:border-acid/60"
+          />
+          {erreurConnexion && <p className="mt-3 text-sm text-red-400">{erreurConnexion}</p>}
           <button
             type="submit"
-            className="mt-4 w-full rounded-full bg-acid px-6 py-3 font-display font-bold text-white cursor-pointer"
+            disabled={envoi}
+            className="mt-4 w-full rounded-full bg-acid px-6 py-3 font-display font-bold text-white cursor-pointer disabled:opacity-60"
           >
-            Entrer
+            {envoi ? "Connexion…" : "Entrer"}
           </button>
           <button
             type="button"
@@ -98,110 +209,266 @@ export default function DashboardPage() {
     );
   }
 
+  function queryFinance(periode) {
+    return periode.mode === "dates" ? `from=${periode.from}&to=${periode.to}` : `days=${periode.days}`;
+  }
+
+  async function exporterExcel() {
+    const res = await fetch(`/api/export-excel?${queryFinance(periodeFinance)}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `e-carpet-rapport-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exporterCsv() {
+    const res = await fetch(`/api/finance?export=csv&${queryFinance(periodeFinance)}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `finance-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-white">Admin</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {data ? `${data.range.from} → ${data.range.to}` : "Chargement…"}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex rounded-full border border-white/10 bg-white/5 p-0.5">
-            {RANGES.map((r) => (
+        <h1 className="font-display text-3xl font-bold text-white">Admin</h1>
+        <div className="flex items-center gap-2">
+          {section === "finance" && (
+            <>
               <button
-                key={r.days}
-                onClick={() => setDays(r.days)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-                  days === r.days ? "bg-acid text-white" : "text-zinc-400 hover:text-white"
-                }`}
+                onClick={exporterExcel}
+                className="rounded-full bg-acid px-3 py-1.5 font-display text-xs font-bold text-white transition-colors hover:opacity-90 cursor-pointer"
               >
-                {r.label}
+                Rapport complet (Excel)
               </button>
-            ))}
-          </div>
+              <button
+                onClick={exporterCsv}
+                className="rounded-full border border-white/15 px-3 py-1.5 font-display text-xs font-bold text-zinc-300 transition-colors hover:text-white cursor-pointer"
+              >
+                Exporter (CSV)
+              </button>
+            </>
+          )}
           <button
-            onClick={() => navigate("/")}
-            className="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300 transition-colors hover:text-white cursor-pointer"
+            onClick={() => setFlouter((f) => !f)}
+            title={flouter ? "Afficher les données" : "Flouter les données (mode démo)"}
+            aria-pressed={flouter}
+            className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors cursor-pointer ${
+              flouter ? "border-acid bg-acid/10 text-acid" : "border-white/10 text-zinc-300 hover:text-white"
+            }`}
           >
-            Retour au site
+            {flouter ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-3.22 4.44M14.12 14.12a3 3 0 1 1-4.24-4.24" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M1 1l22 22" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            )}
           </button>
         </div>
       </header>
 
       {/* Sections */}
-      <nav className="mb-6 flex gap-6 border-b border-white/10">
-        {TABS.map((t) => (
+      <nav className="mb-3 flex gap-6 border-b border-white/10">
+        {SECTIONS.map((s) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            aria-current={tab === t.id ? "page" : undefined}
+            key={s.id}
+            onClick={() => selectSection(s)}
+            aria-current={section === s.id ? "page" : undefined}
             className={`-mb-px border-b-2 px-1 pb-3 font-display text-sm font-bold transition-colors cursor-pointer ${
-              tab === t.id
+              section === s.id
                 ? "border-acid text-white"
                 : "border-transparent text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            {t.label}
+            {s.label}
           </button>
         ))}
       </nav>
 
-      {state === "unconfigured" && (
+      {activeSection?.tabs && (
+        <nav className="mb-6 flex flex-wrap gap-2">
+          {activeSection.tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => selectTab(t.id)}
+              aria-current={tab === t.id ? "page" : undefined}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
+                tab === t.id
+                  ? "bg-acid text-white"
+                  : "bg-white/5 text-zinc-400 hover:text-white"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      <div className={flouter ? "mode-demo" : ""}>
+
+      {section === "accueil" && (
+        <>
+          <OverviewDashboard />
+          <MailAlertsPanel limit={5} />
+        </>
+      )}
+
+      {section === "finance" && <FinancePanel periode={periodeFinance} onPeriodeChange={setPeriodeFinance} />}
+      {section === "stock" && <StockPanel />}
+      {section === "social" && <SocialPanel />}
+
+      {section === "site" && tab === "analyse" && state === "unconfigured" && (
         <p className="rounded-2xl border border-white/10 bg-slate-deep p-6 text-sm text-zinc-300">
           La variable <code className="text-acid">DASHBOARD_PASSWORD</code> n'est pas encore définie dans Netlify.
         </p>
       )}
-      {state === "error" && (
+      {section === "site" && tab === "analyse" && state === "error" && (
         <p className="rounded-2xl border border-white/10 bg-slate-deep p-6 text-sm text-red-400">
           Impossible de charger les statistiques.
         </p>
       )}
-      {state === "loading" && !data && <p className="text-sm text-zinc-500">Chargement…</p>}
+      {section === "site" && tab === "analyse" && state === "loading" && !data && (
+        <p className="text-sm text-zinc-500">Chargement…</p>
+      )}
 
-      {tab === "liens" && <LinksManager password={pw} campaigns={data?.campaigns || []} />}
+      {section === "site" && tab === "commandes" && <OrdersPanel />}
 
-      {tab === "seo" && <SeoPanel password={pw} />}
+      {section === "site" && tab === "clients" && <CustomersPanel />}
 
-      {tab === "campagnes" && <AdsPanel password={pw} />}
+      {section === "site" && tab === "promos" && <PromoPanel />}
 
-      {tab === "avis" && <AvisPanel password={pw} />}
+      {section === "site" && tab === "influenceurs" && <PartnersPanel />}
 
-      {tab === "blog" && <BlogPanel />}
+      {section === "site" && tab === "liens" && <LinksManager campaigns={data?.campaigns || []} />}
 
-      {tab === "analyse" && data && (
+      {visited.has("google") && (
+        <div className={section === "google" ? "contents" : "hidden"}>
+          <div className={tab === "seo" ? "contents" : "hidden"}>
+            <SeoPanel />
+          </div>
+          <div className={tab === "campagnes" ? "contents" : "hidden"}>
+            <AdsPanel />
+          </div>
+        </div>
+      )}
+
+      {section === "site" && tab === "avis" && <AvisPanel />}
+
+      {section === "site" && tab === "blog" && <BlogPanel />}
+
+      {section === "site" && tab === "mailing" && <MailingPanel />}
+
+      {visited.has("amazon") && (
+        <div className={section === "amazon" ? "contents" : "hidden"}>
+          <AmazonPanel />
+        </div>
+      )}
+
+      {section === "site" && tab === "analyse" && (
+        <div className="mb-4">
+          <PeriodPicker
+            periode={periode}
+            onChange={setPeriode}
+            resume={
+              data
+                ? `${data.range.days} jour${data.range.days > 1 ? "s" : ""} · ${data.range.from} → ${data.range.to}`
+                : "Chargement…"
+            }
+          />
+        </div>
+      )}
+
+      {section === "site" && tab === "analyse" && data && (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <LineChart data={data.series} title="Visiteurs par jour" />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <StatTile label="Visiteurs" value={data.kpi.visitors.toLocaleString("fr-FR")} hint="uniques par jour, cumulés" />
-            <StatTile label="Pages vues" value={data.kpi.views.toLocaleString("fr-FR")} />
-            <StatTile label="Pages / visiteur" value={data.kpi.perVisit.toString().replace(".", ",")} />
-          </div>
-
-          <div className="mt-4">
-            <ColumnChart data={data.series} title="Visiteurs par jour" />
-          </div>
-
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <BarList
-              title="Liens tagués (réseaux, influenceurs)"
-              items={data.campaigns || []}
-              empty="Aucune visite via un lien tagué pour l'instant."
-            />
-            <BarList title="Sources de trafic" items={data.sources} />
-            <BarList title="Pays" items={data.countries} />
-            <BarList title="Villes" items={data.cities} />
-            <BarList title="Pages les plus vues" items={data.pages} />
-            <BarList title="Appareils" items={data.devices} />
-            <BarList title="Langue du navigateur" items={data.languages} />
+            {[
+              { title: "Liens tagués", items: data.campaigns || [], empty: "Aucune visite via un lien tagué" },
+              { title: "Pays", items: data.countries },
+              { title: "Villes", items: data.cities },
+              { title: "Appareils", items: data.devices },
+              { title: "Langue", items: data.languages },
+            ].map(({ title, items, empty }) => {
+              const top = [...items].sort((a, b) => b.value - a.value)[0];
+              return (
+                <StatTile
+                  key={title}
+                  label={title}
+                  value={top ? top.value.toLocaleString("fr-FR") : "—"}
+                  hint={top ? top.label : empty || "Aucune donnée"}
+                />
+              );
+            })}
           </div>
 
           <p className="mt-8 text-xs leading-relaxed text-zinc-600">
             Mesure sans cookies ni identifiant persistant : un visiteur est un hachage anonyme qui change chaque jour.
             Un même visiteur revenant sur plusieurs jours est donc compté une fois par jour. Les robots identifiés sont exclus.
           </p>
+
+          {data.commerce && (
+            <>
+              <h2 className="mb-4 mt-10 font-display text-xl font-bold text-white">Commande</h2>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <StatTile
+                  label="Chiffre d'affaires"
+                  value={formatPrice(data.commerce.revenueCents)}
+                  hint={`${data.commerce.ordersCount} commande${data.commerce.ordersCount > 1 ? "s" : ""} payée${data.commerce.ordersCount > 1 ? "s" : ""}`}
+                />
+                <StatTile label="Panier moyen" value={formatPrice(data.commerce.aovCents)} />
+                <StatTile
+                  label="Taux de conversion"
+                  value={`${data.commerce.conversionRate.toString().replace(".", ",")} %`}
+                  hint="commandes payées / visiteurs"
+                />
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <StatTile
+                  label="Paniers abandonnés"
+                  value={data.commerce.abandonedCarts.toLocaleString("fr-FR")}
+                  hint={`${data.commerce.abandonRate.toString().replace(".", ",")} % des paniers créés`}
+                />
+                <StatTile
+                  label="Codes promo utilisés"
+                  value={data.commerce.promoOrders.toLocaleString("fr-FR")}
+                  hint={`${data.commerce.promoRate.toString().replace(".", ",")} % des commandes`}
+                />
+              </div>
+
+              <div className="mt-4">
+                <LineChart
+                  data={data.commerce.series}
+                  title="Chiffre d'affaires par jour"
+                  value={(d) => d.revenueCents}
+                  sub={(d) => d.orders}
+                  tableHeaders={["CA", "Commandes"]}
+                  formatValue={(n) => formatPrice(n)}
+                  tooltip={(d) => `${formatPrice(d.revenueCents)} · ${d.orders} commande${d.orders > 1 ? "s" : ""}`}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
+      </div>
     </main>
   );
 }

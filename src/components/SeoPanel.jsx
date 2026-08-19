@@ -84,7 +84,7 @@ function Vitals({ ps }) {
   );
 }
 
-export default function SeoPanel({ password }) {
+export default function SeoPanel() {
   const [days, setDays] = useState(28);
   const [data, setData] = useState(null);
   const [state, setState] = useState("loading");
@@ -92,14 +92,14 @@ export default function SeoPanel({ password }) {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const res = await fetch(`/api/seo?days=${days}`, { headers: { "x-dashboard-password": password } });
+      const res = await fetch(`/api/seo?days=${days}`);
       if (!res.ok) return setState("error");
       setData(await res.json());
       setState("ok");
     } catch {
       setState("error");
     }
-  }, [days, password]);
+  }, [days]);
 
   useEffect(() => { load(); }, [load]);
 

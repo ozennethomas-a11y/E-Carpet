@@ -1,7 +1,7 @@
 import { useLang } from "../i18n/LanguageContext";
 import { navigate } from "../navigation";
 import { getArticle, formatDate } from "../data/articles";
-import { AmazonButton } from "./ui";
+import { BuyButton } from "./ui";
 import SubPageHeader from "./SubPageHeader";
 import Footer from "./Footer";
 
@@ -61,7 +61,7 @@ export default function ArticlePage({ slug }) {
 
           <div className="mt-12 rounded-3xl border border-white/10 bg-slate-deep p-8 text-center">
             <p className="mb-5 font-display text-xl font-bold text-white">{t.blog.ctaTitle}</p>
-            <AmazonButton sub={t.finalCta.guarantee}>{t.hero.cta}</AmazonButton>
+            <BuyButton sub={t.finalCta.guarantee}>{t.hero.cta}</BuyButton>
           </div>
         </article>
       </main>

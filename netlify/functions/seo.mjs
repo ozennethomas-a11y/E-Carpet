@@ -1,4 +1,5 @@
 import { createSign } from "node:crypto";
+import { getAdminFromRequest } from "./_adminAuth.mjs";
 
 // Données SEO pour l'onglet « SEO » du dashboard.
 //
@@ -11,13 +12,6 @@ import { createSign } from "node:crypto";
 
 const SITE_URL = "https://e-carpet.shop/";
 const SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
-
-function authorised(req) {
-  const expected = process.env.DASHBOARD_PASSWORD;
-  if (!expected) return "not_configured";
-  const given = req.headers.get("x-dashboard-password") || "";
-  return given === expected ? "ok" : "unauthorized";
-}
 
 const b64url = (buf) =>
   Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -115,7 +109,7 @@ async function pageSpeed() {
 }
 
 export default async (req) => {
-  const auth = authorised(req);
+  const auth = await getAdminFromRequest(req);
   if (auth !== "ok") {
     return Response.json({ error: auth }, { status: auth === "not_configured" ? 503 : 401 });
   }

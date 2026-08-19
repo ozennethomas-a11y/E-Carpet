@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { useLang } from "../i18n/LanguageContext";
-import { AmazonButton, Reveal } from "./ui";
+import { BuyButton, Reveal } from "./ui";
 
 export default function FinalCta() {
   const { t } = useLang();
@@ -38,7 +38,7 @@ export default function FinalCta() {
         </Reveal>
         <Reveal delay={0.3}>
           <div className="mt-10">
-            <AmazonButton sub={t.finalCta.guarantee}>{t.finalCta.cta}</AmazonButton>
+            <BuyButton sub={t.finalCta.guarantee}>{t.finalCta.cta}</BuyButton>
           </div>
         </Reveal>
       </div>

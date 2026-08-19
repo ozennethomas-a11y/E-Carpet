@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import { CartProvider } from "./cart";
 import { translations } from "./i18n/translations";
 import { applyPageMeta } from "./seo";
 import { applyStructuredData } from "./structuredData";
@@ -13,12 +14,19 @@ import Unroll from "./components/Unroll";
 import Lifestyle from "./components/Lifestyle";
 import Stats from "./components/Stats";
 import Reviews from "./components/Reviews";
-import ReviewCta from "./components/ReviewCta";
 import ReviewPage from "./components/ReviewPage";
 import BlogPage from "./components/BlogPage";
 import ArticlePage from "./components/ArticlePage";
 import LegalPage from "./components/LegalPage";
 import DashboardPage from "./components/DashboardPage";
+import MailsPage from "./components/MailsPage";
+import CartPage from "./components/CartPage";
+import CheckoutPage from "./components/CheckoutPage";
+import OrderConfirmedPage from "./components/OrderConfirmedPage";
+import AccountPage from "./components/AccountPage";
+import AffiliateLandingPage from "./components/AffiliateLandingPage";
+import AffiliateApplyPage from "./components/AffiliateApplyPage";
+import AffiliateSpacePage from "./components/AffiliateSpacePage";
 import MadeIn from "./components/MadeIn";
 import Faq from "./components/Faq";
 import FinalCta from "./components/FinalCta";
@@ -37,7 +45,6 @@ function Landing() {
         <Lifestyle />
         <Stats />
         <Reviews />
-        <ReviewCta />
         <MadeIn />
         <Faq />
         <FinalCta />
@@ -63,7 +70,7 @@ export default function App() {
   // itself is never counted, so checking your stats doesn't inflate them.
   const firstHit = useRef(true);
   useEffect(() => {
-    if (clean === "/admin") return;
+    if (clean.startsWith("/admin")) return;
     // Campaign tags only travel on the landing hit, so they are counted once.
     const query = firstHit.current ? window.location.search : "";
     firstHit.current = false;
@@ -126,11 +133,23 @@ export default function App() {
 
   let page;
   if (clean === "/admin") page = <DashboardPage />;
+  else if (clean === "/admin/mails") page = <MailsPage />;
+  else if (clean === "/panier") page = <CartPage />;
+  else if (clean === "/commande") page = <CheckoutPage />;
+  else if (clean === "/commande-confirmee") page = <OrderConfirmedPage />;
+  else if (clean === "/compte") page = <AccountPage />;
+  else if (clean === "/influenceurs") page = <AffiliateLandingPage />;
+  else if (clean === "/influenceurs/inscription") page = <AffiliateApplyPage />;
+  else if (clean === "/influenceurs/espace") page = <AffiliateSpacePage />;
   else if (clean === "/avis") page = <ReviewPage />;
   else if (clean === "/blog") page = <BlogPage />;
   else if (clean.startsWith("/blog/")) page = <ArticlePage slug={clean.slice("/blog/".length)} />;
   else if (clean.startsWith("/legal/")) page = <LegalPage slug={clean.slice("/legal/".length)} />;
   else page = <Landing />;
 
-  return <LanguageProvider>{page}</LanguageProvider>;
+  return (
+    <LanguageProvider>
+      <CartProvider>{page}</CartProvider>
+    </LanguageProvider>
+  );
 }

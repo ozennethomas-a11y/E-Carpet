@@ -1,17 +1,11 @@
 import { getStore } from "@netlify/blobs";
 import { campaignLabelOf, slug } from "./shared/sources.mjs";
+import { getAdminFromRequest } from "./_adminAuth.mjs";
 
 // Saved tagged links, managed from the dashboard (Liens tab).
 // Stored in Netlify Blobs so the list follows you across devices and browsers.
 
 const KEY = "links";
-
-function authorised(req) {
-  const expected = process.env.DASHBOARD_PASSWORD;
-  if (!expected) return "not_configured";
-  const given = req.headers.get("x-dashboard-password") || "";
-  return given === expected ? "ok" : "unauthorized";
-}
 
 function siteOrigin(req) {
   // Netlify exposes the site's primary URL; fall back to the request origin.
@@ -32,7 +26,7 @@ async function readLinks(store) {
 }
 
 export default async (req) => {
-  const auth = authorised(req);
+  const auth = await getAdminFromRequest(req);
   if (auth === "not_configured") return Response.json({ error: "not_configured" }, { status: 503 });
   if (auth === "unauthorized") return Response.json({ error: "unauthorized" }, { status: 401 });
 

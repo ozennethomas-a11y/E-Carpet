@@ -39,6 +39,19 @@ function Carte({ avis, actions }) {
         <Etoiles note={avis.rating} />
       </div>
       <p className="mt-3 text-sm leading-relaxed text-zinc-300">{avis.text}</p>
+      {(avis.photo || avis.email || avis.codePromo) && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          {avis.photo && (
+            <img src={avis.photo} alt="Photo jointe à l'avis" className="h-16 w-16 rounded-lg object-cover" />
+          )}
+          {avis.email && <span className="text-xs text-zinc-500">{avis.email}</span>}
+          {avis.codePromo && (
+            <span className="rounded-full border border-acid/40 px-3 py-1 text-xs font-bold text-acid">
+              Code envoyé : {avis.codePromo}
+            </span>
+          )}
+        </div>
+      )}
       <div className="mt-4 flex flex-wrap gap-2">{actions}</div>
     </article>
   );
@@ -61,7 +74,7 @@ function Bouton({ onClick, children, ton = "neutre", disabled }) {
   );
 }
 
-export default function AvisPanel({ password }) {
+export default function AvisPanel() {
   const [etat, setEtat] = useState(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(null);
@@ -70,7 +83,7 @@ export default function AvisPanel({ password }) {
   const charger = useCallback(async () => {
     setChargement(true);
     try {
-      const res = await fetch("/api/avis", { headers: { "x-dashboard-password": password } });
+      const res = await fetch("/api/avis");
       if (!res.ok) throw new Error();
       setEtat(await res.json());
       setErreur(null);
@@ -78,7 +91,7 @@ export default function AvisPanel({ password }) {
       setErreur("Impossible de charger les avis.");
     }
     setChargement(false);
-  }, [password]);
+  }, []);
 
   useEffect(() => { charger(); }, [charger]);
 
@@ -87,7 +100,7 @@ export default function AvisPanel({ password }) {
     try {
       const res = await fetch("/api/avis", {
         method: "POST",
-        headers: { "content-type": "application/json", "x-dashboard-password": password },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ id, statut }),
       });
       if (!res.ok) throw new Error();
@@ -122,7 +135,7 @@ export default function AvisPanel({ password }) {
           <h2 className="font-display text-base font-bold text-white">
             Pré-autorisation
             {enAttente.length > 0 && (
-              <span className="ml-2 rounded-full bg-acid px-2 py-0.5 text-xs text-white">{enAttente.length}</span>
+              <span className="chiffre ml-2 rounded-full bg-acid px-2 py-0.5 text-xs text-white">{enAttente.length}</span>
             )}
           </h2>
         </div>
@@ -159,7 +172,7 @@ export default function AvisPanel({ password }) {
       <section className="rounded-2xl border border-white/10 bg-slate-deep p-5">
         <h2 className="font-display text-base font-bold text-white">Avis en ligne</h2>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          {visibles} avis visible{visibles > 1 ? "s" : ""} sur le site. La mise en veille les retire
+          <span className="chiffre">{visibles}</span> avis visible{visibles > 1 ? "s" : ""} sur le site. La mise en veille les retire
           de la page d'accueil sans rien effacer : vous pouvez les remettre à tout moment.
         </p>
 
