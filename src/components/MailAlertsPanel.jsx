@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cachedFetch } from "../lib/adminCache";
 
 const COULEURS = {
   Urgent: "border-red-400/30 bg-red-400/10 text-red-300",
@@ -17,8 +18,7 @@ export default function MailAlertsPanel({ limit }) {
   const load = useCallback(async () => {
     setErreur("");
     try {
-      const res = await fetch("/api/mail-alerts");
-      const data = await res.json();
+      const data = await cachedFetch("/api/mail-alerts");
       if (data.error === "missing_credentials") return setConfigured(false);
       if (data.error) return setErreur(data.error);
       setMails(data.mails);

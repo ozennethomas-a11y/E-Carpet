@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cachedFetchWithStatus } from "../lib/adminCache";
 import { StatTile, ColumnChart, BarList } from "./charts";
 
 // Onglet « SEO » du dashboard : données Search Console + Core Web Vitals.
@@ -92,9 +93,9 @@ export default function SeoPanel() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const res = await fetch(`/api/seo?days=${days}`);
-      if (!res.ok) return setState("error");
-      setData(await res.json());
+      const { status, data } = await cachedFetchWithStatus(`/api/seo?days=${days}`);
+      if (status < 200 || status >= 300) return setState("error");
+      setData(data);
       setState("ok");
     } catch {
       setState("error");

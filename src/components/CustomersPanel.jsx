@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { cachedFetch } from "../lib/adminCache";
 
 function formatPrice(cents, currency = "eur") {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(cents / 100);
@@ -9,8 +10,7 @@ export default function CustomersPanel() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/customers")
-      .then((r) => r.json())
+    cachedFetch("/api/customers")
       .then((d) => (d.error ? setError(d.error) : setClients(d.clients)))
       .catch(() => setError("Impossible de charger les clients."));
   }, []);

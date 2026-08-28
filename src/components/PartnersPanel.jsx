@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { formatPrice } from "../cart";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 function formatDate(d) {
   return d ? new Date(d).toLocaleDateString("fr-FR") : "—";
@@ -51,8 +52,7 @@ export default function PartnersPanel() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const res = await fetch("/api/affiliates");
-      const data = await res.json();
+      const data = await cachedFetch("/api/affiliates");
       if (data.error) return setError(data.error);
       setAffiliates(data.affiliates);
     } catch {
@@ -72,6 +72,7 @@ export default function PartnersPanel() {
       });
       const data = await res.json();
       if (data.error) return setError(data.error);
+      invalidateCache("/api/affiliates");
       await load();
     } catch {
       setError("La modification n'a pas été enregistrée.");

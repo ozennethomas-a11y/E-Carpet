@@ -46,7 +46,7 @@ export default function Unroll() {
               <img
                 src="/images/Enroule__sans_fond.webp"
                 alt="Tapis E-Carpet enroulé, prêt à dérouler"
-                className="w-full origin-right scale-[1.12] object-cover"
+                className="w-full origin-right scale-[1.3] object-cover"
                 loading="lazy"
               />
             </motion.div>

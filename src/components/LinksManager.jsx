@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 const SUGGESTIONS = ["tiktok", "instagram", "youtube", "facebook", "snapchat", "email", "qrcode", "colis", "flyer", "amazon"];
 
@@ -35,8 +36,8 @@ export default function LinksManager({ campaigns = [] }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/links");
-      if (res.ok) setLinks((await res.json()).links || []);
+      const data = await cachedFetch("/api/links");
+      setLinks(data.links || []);
     } catch {
       /* ignore */
     }
@@ -67,6 +68,7 @@ export default function LinksManager({ campaigns = [] }) {
         setSource("");
         setCampaign("");
         setNote("");
+        invalidateCache("/api/links");
         await load();
       }
     } catch {

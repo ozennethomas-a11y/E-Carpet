@@ -6,11 +6,17 @@ import { Kicker, Reveal } from "./ui";
 export default function MadeIn() {
   const { t } = useLang();
   const ref = useRef(null);
+  const riderRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const lilleY = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
+  // Progression propre à la rangée du livreur : sinon, comme cette rangée
+  // est en bas d'une section plus haute (texte + image Lille), le scroll de
+  // la section entière est déjà bien avancé quand elle apparaît à l'écran,
+  // et le livreur surgit au milieu au lieu de partir de la gauche.
+  const { scrollYProgress: riderProgress } = useScroll({ target: riderRef, offset: ["start end", "end start"] });
   // Rider rides across to the right as the user scrolls
-  const riderX = useTransform(scrollYProgress, [0, 1], ["-25vw", "85vw"]);
-  const riderBob = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [0, -10, 0, -10, 0]);
+  const riderX = useTransform(riderProgress, [0, 1], ["-25vw", "85vw"]);
+  const riderBob = useTransform(riderProgress, [0, 0.25, 0.5, 0.75, 1], [0, -10, 0, -10, 0]);
 
   return (
     <section ref={ref} className="relative overflow-hidden px-4 pt-12 pb-12 sm:pt-16 sm:pb-16">
@@ -67,7 +73,7 @@ export default function MadeIn() {
       </div>
 
       {/* Delivery rider — rides across to the right on scroll */}
-      <div className="relative mt-10 h-40 w-full sm:h-56">
+      <div ref={riderRef} className="relative mt-10 h-40 w-full sm:h-56">
         {/* Road line */}
         <div aria-hidden="true" className="absolute bottom-7 left-0 right-0 h-px bg-white/10" />
         <div

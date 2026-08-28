@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 const MODELES = [
   {
@@ -31,8 +32,7 @@ export default function MailingPanel() {
   const load = useCallback(async () => {
     setErreur("");
     try {
-      const res = await fetch("/api/mailing");
-      const data = await res.json();
+      const data = await cachedFetch("/api/mailing");
       if (data.error) return setErreur(data.error);
       setRecipientCount(data.recipientCount);
       setConfigured(data.emailConfigured);
@@ -71,6 +71,7 @@ export default function MailingPanel() {
       if (res.error) throw new Error(res.error);
       setResultat(res);
       setConfirmation(false);
+      invalidateCache("/api/mailing");
       load();
     } catch (e) {
       setErreur(e.message || "Échec de l'envoi.");

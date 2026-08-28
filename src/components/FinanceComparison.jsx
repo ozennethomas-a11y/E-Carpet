@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CarteComparaison } from "./charts";
 import { formatPrice } from "../cart";
+import { cachedFetchWithStatus } from "../lib/adminCache";
 
 export default function FinanceComparison() {
   const [data, setData] = useState(null);
@@ -8,14 +9,12 @@ export default function FinanceComparison() {
 
   useEffect(() => {
     setState("loading");
-    fetch("/api/finance-comparison")
-      .then((res) => {
-        if (res.status === 503) return setState("unconfigured");
-        if (!res.ok) return setState("error");
-        return res.json().then((json) => {
-          setData(json);
-          setState("ok");
-        });
+    cachedFetchWithStatus("/api/finance-comparison")
+      .then(({ status, data }) => {
+        if (status === 503) return setState("unconfigured");
+        if (status < 200 || status >= 300) return setState("error");
+        setData(data);
+        setState("ok");
       })
       .catch(() => setState("error"));
   }, []);

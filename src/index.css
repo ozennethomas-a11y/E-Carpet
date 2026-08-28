@@ -34,6 +34,16 @@ h1, h2, h3, h4 {
 
 .text-balance { text-wrap: balance; }
 
+/* Barres d'onglets admin scrollables horizontalement sur mobile, sans
+   scrollbar visible (la scrollabilité tactile suffit comme indice). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Marquee for reviews */
 @keyframes marquee {
   from { transform: translateX(0); }

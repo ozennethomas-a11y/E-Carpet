@@ -19,6 +19,38 @@ import SocialPanel from "./SocialPanel";
 import MailingPanel from "./MailingPanel";
 import MailAlertsPanel from "./MailAlertsPanel";
 import OverviewDashboard from "./OverviewDashboard";
+import AdminAccessPanel from "./AdminAccessPanel";
+import { cachedFetchWithStatus, prefetch, clearCache } from "../lib/adminCache";
+
+// Vue par défaut de chaque onglet, téléchargée en une fois à la connexion
+// pour qu'ensuite changer d'onglet n'attende plus aucune requête réseau.
+function urlsAPrecharger(isOwner) {
+  const urls = [
+    "/api/overview",
+    "/api/mail-alerts",
+    "/api/stats?days=30",
+    "/api/orders",
+    "/api/customers",
+    "/api/promo",
+    "/api/affiliates",
+    "/api/avis",
+    "/api/links",
+    "/api/mailing",
+    "/api/stock",
+    "/api/cost-batches",
+    "/api/seo?days=28",
+    "/api/finance?days=30",
+    "/api/finance-comparison",
+    "/api/social-auth?action=status",
+    "/api/social-schedule",
+    "/api/social-ads",
+    "/api/ads",
+    "/api/amazon?section=ventes&days=30",
+    "/api/amazon-ads",
+  ];
+  if (isOwner) urls.push("/api/admin-auth?action=history", "/api/admin-auth?action=admins");
+  return urls;
+}
 
 const SECTIONS = [
   { id: "accueil", label: "Accueil" },
@@ -49,14 +81,26 @@ const SECTIONS = [
       { id: "campagnes", label: "Campagnes" },
     ],
   },
+  {
+    id: "acces",
+    label: "Accès",
+    ownerOnly: true,
+    tabs: [
+      { id: "connexions", label: "Connexions" },
+      { id: "comptes", label: "Comptes" },
+    ],
+  },
 ];
 
 export default function DashboardPage() {
   const [connecte, setConnecte] = useState(null); // null = vérification en cours
+  const [nom, setNom] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [totp, setTotp] = useState("");
   const [erreurConnexion, setErreurConnexion] = useState("");
   const [envoi, setEnvoi] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [monNom, setMonNom] = useState("");
   // Onglet/section lus depuis l'URL au premier rendu, pour qu'un rafraîchissement
   // de page (F5) reste sur le même écran au lieu de revenir sur Accueil.
   const paramsInitiaux = new URLSearchParams(window.location.search);
@@ -69,7 +113,10 @@ export default function DashboardPage() {
   const [tab, setTab] = useState(tabInitial);
   const [periodeFinance, setPeriodeFinance] = useState({ mode: "jours", days: 30 });
   const [flouter, setFlouter] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [rafraichissement, setRafraichissement] = useState(false);
   const activeSection = SECTIONS.find((s) => s.id === section);
+  const visibleSections = SECTIONS.filter((s) => !s.ownerOnly || isOwner);
   // Google et Amazon interrogent des API externes à quota limité : une fois
   // la section ouverte, on la garde montée (juste masquée) pour ne plus
   // jamais refaire de requête en changeant d'onglet ou de section.
@@ -109,14 +156,14 @@ export default function DashboardPage() {
         ? `from=${range.from}&to=${range.to}`
         : `days=${range.days}`;
     try {
-      const res = await fetch(`/api/stats?${query}`);
-      if (res.status === 401) {
+      const { status, data: json } = await cachedFetchWithStatus(`/api/stats?${query}`);
+      if (status === 401) {
         setConnecte(false);
         return;
       }
-      if (res.status === 503) return setState("unconfigured");
-      if (!res.ok) return setState("error");
-      setData(await res.json());
+      if (status === 503) return setState("unconfigured");
+      if (status < 200 || status >= 300) return setState("error");
+      setData(json);
       setState("ok");
     } catch {
       setState("error");
@@ -126,13 +173,24 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch("/api/admin-auth?action=me")
       .then((r) => r.json())
-      .then((d) => setConnecte(!!d.connecte))
+      .then((d) => {
+        setConnecte(!!d.connecte);
+        setIsOwner(!!d.isOwner);
+        setMonNom(d.name || "");
+      })
       .catch(() => setConnecte(false));
   }, []);
 
   useEffect(() => {
     if (connecte) load(periode);
   }, [connecte, periode, load]);
+
+  // Précharge en arrière-plan la vue par défaut de tous les onglets dès la
+  // connexion confirmée : les fetch() faits ensuite par chaque panneau
+  // trouvent déjà la réponse en cache et s'affichent sans attente.
+  useEffect(() => {
+    if (connecte) prefetch(urlsAPrecharger(isOwner));
+  }, [connecte, isOwner]);
 
   useEffect(() => {
     document.title = "Admin · E-Carpet";
@@ -146,7 +204,7 @@ export default function DashboardPage() {
       const res = await fetch("/api/admin-auth?action=login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ password: motDePasse, totp }),
+        body: JSON.stringify({ name: nom, password: motDePasse, totp }),
       });
       const d = await res.json();
       if (d.error) {
@@ -156,6 +214,12 @@ export default function DashboardPage() {
       setMotDePasse("");
       setTotp("");
       setConnecte(true);
+      fetch("/api/admin-auth?action=me")
+        .then((r) => r.json())
+        .then((d) => {
+          setIsOwner(!!d.isOwner);
+          setMonNom(d.name || "");
+        });
     } catch {
       setErreurConnexion("Le serveur n'a pas répondu.");
     } finally {
@@ -170,14 +234,21 @@ export default function DashboardPage() {
       <main className="flex min-h-svh items-center justify-center px-4">
         <form onSubmit={submit} className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-deep p-8">
           <h1 className="font-display text-2xl font-bold text-white">Admin</h1>
-          <p className="mt-2 text-sm text-zinc-400">Espace privé. Mot de passe et code de vérification.</p>
+          <p className="mt-2 text-sm text-zinc-400">Espace privé. Nom, mot de passe et code de vérification.</p>
+          <input
+            type="text"
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
+            placeholder="Nom"
+            autoFocus
+            className="mt-5 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-sm text-white outline-none transition-colors focus:border-acid/60"
+          />
           <input
             type="password"
             value={motDePasse}
             onChange={(e) => setMotDePasse(e.target.value)}
             placeholder="Mot de passe"
-            autoFocus
-            className="mt-5 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-sm text-white outline-none transition-colors focus:border-acid/60"
+            className="mt-3 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-sm text-white outline-none transition-colors focus:border-acid/60"
           />
           <input
             type="text"
@@ -235,11 +306,27 @@ export default function DashboardPage() {
     URL.revokeObjectURL(url);
   }
 
+  // Vide le cache et refait toutes les requêtes : la clé change pour forcer
+  // le remontage de chaque panneau (qui relit alors des données fraîches),
+  // pendant que la vue Analyse (gérée ici, pas dans un panneau autonome) est
+  // rechargée explicitement.
+  async function toutRafraichir() {
+    setRafraichissement(true);
+    clearCache();
+    prefetch(urlsAPrecharger(isOwner));
+    setRefreshKey((k) => k + 1);
+    await load(periode);
+    setRafraichissement(false);
+  }
+
   return (
-    <main className="mx-auto max-w-6xl px-4 py-12">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-display text-3xl font-bold text-white">Admin</h1>
-        <div className="flex items-center gap-2">
+    <main className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-12">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Admin</h1>
+          {monNom && <p className="mt-0.5 text-xs text-zinc-500">Connecté en tant que {monNom}</p>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           {section === "finance" && (
             <>
               <button
@@ -257,10 +344,29 @@ export default function DashboardPage() {
             </>
           )}
           <button
+            onClick={toutRafraichir}
+            disabled={rafraichissement}
+            title="Rafraîchir toutes les données"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-300 transition-colors hover:text-white disabled:opacity-50 cursor-pointer"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`h-5 w-5 ${rafraichissement ? "animate-spin" : ""}`}
+            >
+              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+              <path d="M21 3v6h-6" />
+            </svg>
+          </button>
+          <button
             onClick={() => setFlouter((f) => !f)}
             title={flouter ? "Afficher les données" : "Flouter les données (mode démo)"}
             aria-pressed={flouter}
-            className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors cursor-pointer ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors cursor-pointer ${
               flouter ? "border-acid bg-acid/10 text-acid" : "border-white/10 text-zinc-300 hover:text-white"
             }`}
           >
@@ -279,14 +385,15 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Sections */}
-      <nav className="mb-3 flex gap-6 border-b border-white/10">
-        {SECTIONS.map((s) => (
+      {/* Sections : défilement horizontal tactile sur mobile plutôt que
+          repli à la ligne, pour garder une seule barre d'onglets compacte. */}
+      <nav className="no-scrollbar mb-3 -mx-3 flex gap-5 overflow-x-auto whitespace-nowrap border-b border-white/10 px-3 sm:mx-0 sm:gap-6 sm:px-0">
+        {visibleSections.map((s) => (
           <button
             key={s.id}
             onClick={() => selectSection(s)}
             aria-current={section === s.id ? "page" : undefined}
-            className={`-mb-px border-b-2 px-1 pb-3 font-display text-sm font-bold transition-colors cursor-pointer ${
+            className={`-mb-px shrink-0 border-b-2 px-1 pb-3 font-display text-sm font-bold transition-colors cursor-pointer ${
               section === s.id
                 ? "border-acid text-white"
                 : "border-transparent text-zinc-500 hover:text-zinc-300"
@@ -298,13 +405,13 @@ export default function DashboardPage() {
       </nav>
 
       {activeSection?.tabs && (
-        <nav className="mb-6 flex flex-wrap gap-2">
+        <nav className="no-scrollbar mb-6 -mx-3 flex flex-nowrap gap-2 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0">
           {activeSection.tabs.map((t) => (
             <button
               key={t.id}
               onClick={() => selectTab(t.id)}
               aria-current={tab === t.id ? "page" : undefined}
-              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
                 tab === t.id
                   ? "bg-acid text-white"
                   : "bg-white/5 text-zinc-400 hover:text-white"
@@ -316,7 +423,7 @@ export default function DashboardPage() {
         </nav>
       )}
 
-      <div className={flouter ? "mode-demo" : ""}>
+      <div key={refreshKey} className={flouter ? "mode-demo" : ""}>
 
       {section === "accueil" && (
         <>
@@ -328,6 +435,7 @@ export default function DashboardPage() {
       {section === "finance" && <FinancePanel periode={periodeFinance} onPeriodeChange={setPeriodeFinance} />}
       {section === "stock" && <StockPanel />}
       {section === "social" && <SocialPanel />}
+      {section === "acces" && isOwner && <AdminAccessPanel tab={tab} />}
 
       {section === "site" && tab === "analyse" && state === "unconfigured" && (
         <p className="rounded-2xl border border-white/10 bg-slate-deep p-6 text-sm text-zinc-300">

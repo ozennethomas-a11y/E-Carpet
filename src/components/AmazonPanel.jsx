@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { StatTile, ColumnChart } from "./charts";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 // Onglet « Amazon » : toutes les données que la Selling Partner API nous
 // transmet, organisées en sous-parties. Lecture seule partout, sauf :
@@ -11,6 +12,30 @@ import { StatTile, ColumnChart } from "./charts";
 
 const eur = (n, devise = "EUR") =>
   Number(n).toLocaleString("fr-FR", { style: "currency", currency: devise, maximumFractionDigits: 2 });
+
+// Traduction des codes bruts renvoyés par l'API Finances d'Amazon
+// (ItemFeeList[].FeeType) — la liste exacte des types n'est pas documentée de
+// façon exhaustive par Amazon et varie selon la catégorie/le programme
+// (FBA ou non), donc un type absent de cette liste s'affiche tel quel plutôt
+// que de risquer une mauvaise traduction.
+const LIBELLE_FRAIS = {
+  Commission: "Commission de vente (% selon la catégorie)",
+  FBAPerUnitFulfillmentFee: "Frais de traitement FBA (par article)",
+  FBAWeightBasedFee: "Frais de traitement FBA (poids/volume)",
+  FBAStorageFee: "Frais de stockage FBA",
+  FixedClosingFee: "Frais de clôture fixe (médias)",
+  VariableClosingFee: "Frais de clôture variable",
+  ShippingChargeback: "Frais de port refacturés",
+  ShippingHB: "Frais de port Amazon",
+  GiftwrapChargeback: "Frais d'emballage cadeau refacturés",
+  DigitalServicesFee: "Taxe services numériques",
+  RefundCommission: "Commission remboursée (retour client)",
+  Chargeback: "Frais refacturés",
+};
+
+function libelleFrais(type) {
+  return LIBELLE_FRAIS[type] || type;
+}
 
 const SOUS_ONGLETS = [
   { id: "ventes", label: "Ventes" },
@@ -31,8 +56,7 @@ function useSection(section, jours) {
     setState("loading");
     try {
       const q = new URLSearchParams({ section, ...(jours ? { days: jours } : {}) });
-      const res = await fetch(`/api/amazon?${q}`);
-      const json = await res.json();
+      const json = await cachedFetch(`/api/amazon?${q}`);
       setData(json);
       setState(json.error || json.erreur ? "erreur" : "ok");
     } catch {
@@ -190,11 +214,22 @@ function Finances() {
 
       <div className="rounded-2xl border border-white/10 bg-slate-deep p-5">
         <h2 className="font-display text-base font-bold text-white">Détail des frais Amazon</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Ce n'est pas un pourcentage fixe : Amazon facture plusieurs types de frais différents, dont le
+          poids relatif change selon les commandes de la période (catégorie, poids du colis, remboursements...).
+        </p>
         <ul className="mt-4 flex flex-col gap-2.5">
           {data.fraisParType.filter((f) => f.montant !== 0).map((f) => (
-            <li key={f.type} className="flex items-center justify-between border-t border-white/5 pt-2.5 text-sm">
-              <span className="text-zinc-400">{f.type}</span>
-              <span className="chiffre font-display font-bold tabular-nums text-white">{eur(f.montant)}</span>
+            <li key={f.type} className="flex items-center justify-between gap-3 border-t border-white/5 pt-2.5 text-sm">
+              <span className="text-zinc-400">{libelleFrais(f.type)}</span>
+              <span className="flex items-baseline gap-2">
+                {data.fraisAmazon ? (
+                  <span className="text-xs text-zinc-600">
+                    {Math.round((Math.abs(f.montant) / Math.abs(data.fraisAmazon)) * 1000) / 10}%
+                  </span>
+                ) : null}
+                <span className="chiffre font-display font-bold tabular-nums text-white">{eur(f.montant)}</span>
+              </span>
             </li>
           ))}
           {data.fraisParType.every((f) => f.montant === 0) && <p className="text-sm text-zinc-500">Aucun frais sur la période.</p>}
@@ -359,7 +394,7 @@ function Commandes() {
           {restantes.length === 0 && <p className="text-sm text-zinc-500">Aucune commande en attente d'expédition.</p>}
           {restantes.map((c) => (
             <LigneCommande key={c.commande} c={c} marketplaceId={data.marketplaceId} transporteurs={data.transporteurs}
-              onExpediee={(id) => { setExpediees((s) => new Set([...s, id])); reload(); }} />
+              onExpediee={(id) => { setExpediees((s) => new Set([...s, id])); invalidateCache("/api/amazon?section=commandes"); reload(); }} />
           ))}
         </div>
       </div>
@@ -374,8 +409,7 @@ function Marketing() {
   const [state, setState] = useState("loading");
 
   useEffect(() => {
-    fetch("/api/amazon-ads")
-      .then((r) => r.json())
+    cachedFetch("/api/amazon-ads")
       .then((json) => { setData(json); setState(json.error ? "erreur" : "ok"); })
       .catch(() => { setState("erreur"); setData({ error: "Le serveur n'a pas répondu." }); });
   }, []);
@@ -472,6 +506,7 @@ function Offre() {
         body: JSON.stringify({ sku: f.sku, champ, valeurActuelle: f[champ === "titre" ? "titre" : "differenciation"], valeurProposee: valeur, note }),
       });
       setValeur(""); setNote("");
+      invalidateCache("/api/amazon?section=offre");
       reload();
     } finally {
       setEnvoi(false);

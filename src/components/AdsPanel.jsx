@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { cachedFetch } from "../lib/adminCache";
 
 // Onglet « Campagnes » : mots-clés réels du Keyword Planner et prévision de coût.
 // Rien n'est dépensé ici. La création de campagne se fera en statut « en pause »,
@@ -58,8 +59,7 @@ export default function AdsPanel() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const res = await fetch("/api/ads");
-      const json = await res.json();
+      const json = await cachedFetch("/api/ads");
       setData(json);
       setState(json.error ? "erreur" : "ok");
       // Présélection : les dix mots-clés les plus recherchés, le point de départ le plus sain.

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Sparkline } from "./charts";
 import CostBatchPanel from "./CostBatchPanel";
 import { formatPrice } from "../cart";
+import { cachedFetchWithStatus, invalidateCache } from "../lib/adminCache";
 
 const SOURCE_LABEL = {
   manuel: "Manuel",
@@ -21,10 +22,9 @@ export default function StockPanel() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const res = await fetch("/api/stock");
-      if (res.status === 503) return setState("unconfigured");
-      if (!res.ok) return setState("error");
-      const json = await res.json();
+      const { status, data: json } = await cachedFetchWithStatus("/api/stock");
+      if (status === 503) return setState("unconfigured");
+      if (status < 200 || status >= 300) return setState("error");
       setData(json);
       setState("ok");
       setMvtForm((f) => ({ ...f, productId: f.productId || json.produits?.[0]?.id || "" }));
@@ -54,6 +54,7 @@ export default function StockPanel() {
         }),
       });
       setMvtForm((f) => ({ ...f, quantity: "", date: "", note: "" }));
+      invalidateCache("/api/stock");
       await load();
     } finally {
       setEnvoi(false);
@@ -66,6 +67,7 @@ export default function StockPanel() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "supprimer-mouvement", id }),
     });
+    invalidateCache("/api/stock");
     load();
   }
 
@@ -87,6 +89,7 @@ export default function StockPanel() {
             (json.skuNonReconnus?.length ? ` SKU non reconnus : ${json.skuNonReconnus.join(", ")}.` : ""),
         );
       }
+      invalidateCache("/api/stock");
       await load();
     } finally {
       setEnvoi(false);

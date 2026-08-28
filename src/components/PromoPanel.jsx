@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 const STATUT_LABEL = {
   actif: "Actif",
@@ -47,8 +48,7 @@ export default function PromoPanel() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const res = await fetch("/api/promo");
-      const data = await res.json();
+      const data = await cachedFetch("/api/promo");
       if (data.error) return setError(data.error);
       setCodes(data.codes);
     } catch {
@@ -84,6 +84,7 @@ export default function PromoPanel() {
       if (data.error) return setFormError(data.error);
       setDernierCode(data.code.code);
       setForm(EMPTY_FORM);
+      invalidateCache("/api/promo");
       load();
     } catch {
       setFormError("Échec de la création.");
@@ -98,6 +99,7 @@ export default function PromoPanel() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "toggle", id, active }),
     });
+    invalidateCache("/api/promo");
     load();
   }
 

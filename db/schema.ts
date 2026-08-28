@@ -98,12 +98,33 @@ export const loginTokens = pgTable('login_tokens', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
-// Session de l'unique compte admin (mot de passe + TOTP), sans colonne
-// "admin_id" puisqu'il n'y a qu'un seul compte.
+// Comptes du back-office : un par personne (mot de passe + TOTP propres à
+// chacun), avec un indicateur "propriétaire" pour réserver certains écrans
+// (ex. l'historique des connexions) au compte principal.
+export const admins = pgTable('admins', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  totpSecret: text('totp_secret').notNull(),
+  isOwner: boolean('is_owner').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
 export const adminSessions = pgTable('admin_sessions', {
   id: serial('id').primaryKey(),
+  adminId: integer('admin_id').notNull().references(() => admins.id),
   token: text('token').notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// Journal des connexions réussies au back-office, consultable uniquement par
+// le propriétaire (admins.is_owner) pour savoir qui s'est connecté et quand.
+export const adminLoginHistory = pgTable('admin_login_history', {
+  id: serial('id').primaryKey(),
+  adminId: integer('admin_id').notNull().references(() => admins.id),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

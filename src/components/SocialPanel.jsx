@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 const RESEAUX = [
   { id: "facebook", label: "Facebook", couleur: "#1877F2" },
@@ -296,8 +297,7 @@ function Programmation() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/social-schedule");
-      const data = await res.json();
+      const data = await cachedFetch("/api/social-schedule");
       if (data.error) return setErreur(data.error);
       setPosts(data.posts);
     } catch {
@@ -313,6 +313,7 @@ function Programmation() {
     setOccupe(true);
     try {
       await fetch(`/api/social-schedule?id=${id}`, { method: "DELETE" });
+      invalidateCache("/api/social-schedule");
       await load();
     } finally {
       setOccupe(false);
@@ -376,8 +377,7 @@ function Publicites({ compteParReseau }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/social-ads");
-      const data = await res.json();
+      const data = await cachedFetch("/api/social-ads");
       if (data.error) return setErreur(data.error);
       setCampagnes(data.campagnes);
     } catch {
@@ -409,6 +409,7 @@ function Publicites({ compteParReseau }) {
       if (res.error && !res.campagne) throw new Error(res.error);
       if (res.error) setErreur(`Créée en base mais échec côté Meta : ${res.error}`);
       setForm({ network: "facebook", name: "", dailyBudget: "", postId: "" });
+      invalidateCache("/api/social-ads");
       await load();
     } catch (e) {
       setErreur(e.message || "Échec de la création.");
@@ -425,6 +426,7 @@ function Publicites({ compteParReseau }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ id: campagne.id, action: campagne.status === "ACTIVE" ? "pause" : "activer" }),
       });
+      invalidateCache("/api/social-ads");
       await load();
     } finally {
       setOccupe(false);
@@ -568,8 +570,7 @@ export default function SocialPanel() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const res = await fetch("/api/social-auth?action=status");
-      const data = await res.json();
+      const data = await cachedFetch("/api/social-auth?action=status");
       if (data.error) return setError(data.error);
       setComptes(data.accounts);
     } catch {
@@ -605,6 +606,7 @@ export default function SocialPanel() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ network }),
       });
+      invalidateCache("/api/social-auth?action=status");
       await load();
     } finally {
       setOccupe(false);

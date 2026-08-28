@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 const STATUT_LABEL = {
   en_attente_paiement: "En attente de paiement",
@@ -30,8 +31,7 @@ export default function OrdersPanel() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const res = await fetch("/api/orders");
-      const data = await res.json();
+      const data = await cachedFetch("/api/orders");
       if (data.error) return setError(data.error);
       setOrders(data.orders);
     } catch {
@@ -100,6 +100,7 @@ function OrderRow({ order, onUpdated }) {
       });
       const data = await res.json();
       if (data.error) return setErreurBrouillon(data.error);
+      invalidateCache("/api/orders");
       onUpdated();
     } catch {
       setErreurBrouillon("Échec de la création du brouillon.");
@@ -121,6 +122,7 @@ function OrderRow({ order, onUpdated }) {
       });
       const data = await res.json();
       if (data.error) return setError(data.error);
+      invalidateCache("/api/orders");
       onUpdated();
     } catch {
       setError("Échec de l'envoi.");
@@ -134,7 +136,8 @@ function OrderRow({ order, onUpdated }) {
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
         <div>
           <div className="font-display text-sm font-bold text-white">
-            Commande n°<span className="chiffre">{order.orderNumber}</span> — {order.email}
+            Commande n°<span className="chiffre">{order.orderNumber}</span>
+            {(addr.firstName || addr.lastName) && <> — {addr.firstName} {addr.lastName}</>} — {order.email}
           </div>
           <div className="mt-0.5 text-xs text-zinc-500">
             {new Date(order.createdAt).toLocaleDateString("fr-FR")} · <span className="chiffre">{formatPrice(order.totalCents, order.currency)}</span> ·{" "}
@@ -160,6 +163,8 @@ function OrderRow({ order, onUpdated }) {
             <div className="font-bold text-zinc-300">Livraison</div>
             {isRelais && addr.pickupPoint ? (
               <div className="text-zinc-400">
+                {addr.firstName} {addr.lastName}
+                <br />
                 Point relais : {addr.pickupPoint.nom}
                 <br />
                 {addr.pickupPoint.adresse}, {addr.pickupPoint.codePostal} {addr.pickupPoint.ville}

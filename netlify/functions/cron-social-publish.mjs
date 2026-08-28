@@ -2,8 +2,11 @@ import { sql } from "./lib/_db.mjs";
 import { publierSurReseaux } from "./lib/_socialPublish.mjs";
 
 // Publie les posts programmés dont l'heure est passée. Vérifié toutes les
-// 15 minutes : suffisant pour une programmation de réseaux sociaux (pas besoin
-// de précision à la minute), et cohérent avec la fréquence des autres cron.
+// heures : largement suffisant pour une programmation de réseaux sociaux (pas
+// besoin de précision à la minute). Passé de 15 min à 1h le 2026-08-28 : le
+// réveil de la base toutes les 15 minutes, 24h/24, empêchait la mise en veille
+// automatique de Netlify DB et consommait à lui seul la quasi-totalité des
+// crédits de calcul du mois (533 crédits sur 537 pour la base de données).
 export default async () => {
   const dus = await sql()`
     select * from scheduled_posts
@@ -39,4 +42,4 @@ export default async () => {
   return new Response(`${dus.length} post(s) traité(s)`);
 };
 
-export const config = { schedule: "*/15 * * * *" };
+export const config = { schedule: "0 * * * *" };

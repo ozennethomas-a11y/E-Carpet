@@ -3,6 +3,7 @@ import { StatTile, BarList } from "./charts";
 import PeriodPicker from "./PeriodPicker";
 import FinanceComparison from "./FinanceComparison";
 import { formatPrice } from "../cart";
+import { cachedFetchWithStatus, invalidateCache } from "../lib/adminCache";
 
 const CATEGORIES = ["Publicité", "Abonnements", "Conformité/REP", "Transport", "Autre"];
 
@@ -19,11 +20,11 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
 
   const load = useCallback(async () => {
     setState("loading");
+    const url = `/api/finance?${query(periode)}`;
     try {
-      const res = await fetch(`/api/finance?${query(periode)}`);
-      if (res.status === 503) return setState("unconfigured");
-      if (!res.ok) return setState("error");
-      const json = await res.json();
+      const { status, data: json } = await cachedFetchWithStatus(url);
+      if (status === 503) return setState("unconfigured");
+      if (status < 200 || status >= 300) return setState("error");
       setData(json);
       setState("ok");
       setCoutForm((f) => ({ ...f, productId: f.productId || json.produits?.[0]?.id || "" }));
@@ -51,6 +52,7 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
         }),
       });
       setDepenseForm({ category: CATEGORIES[0], amount: "", date: "", note: "" });
+      invalidateCache(`/api/finance?${query(periode)}`);
       await load();
     } finally {
       setEnvoi(false);
@@ -63,6 +65,7 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "supprimer-depense", id }),
     });
+    invalidateCache(`/api/finance?${query(periode)}`);
     load();
   }
 
@@ -82,6 +85,7 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
         }),
       });
       setCoutForm((f) => ({ ...f, amount: "", date: "" }));
+      invalidateCache(`/api/finance?${query(periode)}`);
       await load();
     } finally {
       setEnvoi(false);

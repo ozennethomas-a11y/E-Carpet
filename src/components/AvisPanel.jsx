@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { translations } from "../i18n/translations";
+import { cachedFetchWithStatus, invalidateCache } from "../lib/adminCache";
 
 // Onglet « Avis » : modération. Deux blocs bien séparés, parce que les deux
 // populations n'ont pas les mêmes droits.
@@ -83,9 +84,9 @@ export default function AvisPanel() {
   const charger = useCallback(async () => {
     setChargement(true);
     try {
-      const res = await fetch("/api/avis");
-      if (!res.ok) throw new Error();
-      setEtat(await res.json());
+      const { status, data } = await cachedFetchWithStatus("/api/avis");
+      if (status < 200 || status >= 300) throw new Error();
+      setEtat(data);
       setErreur(null);
     } catch {
       setErreur("Impossible de charger les avis.");
@@ -104,6 +105,7 @@ export default function AvisPanel() {
         body: JSON.stringify({ id, statut }),
       });
       if (!res.ok) throw new Error();
+      invalidateCache("/api/avis");
       await charger();
     } catch {
       setErreur("La modification n'a pas été enregistrée.");

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { formatPrice } from "../cart";
+import { cachedFetch, invalidateCache } from "../lib/adminCache";
 
 const LIGNES_DEFAUT = ["Fabrication", "Transport 1", "Transport 2", "Carton", "Audit"];
 
@@ -11,8 +12,8 @@ export default function CostBatchPanel({ produits }) {
   const [erreur, setErreur] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/cost-batches");
-    if (res.ok) setBatches((await res.json()).batches);
+    const data = await cachedFetch("/api/cost-batches");
+    setBatches(data.batches);
   }, []);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function CostBatchPanel({ produits }) {
       }
       setForm({ productId: form.productId, label: "", quantity: "", orderDate: "" });
       setLignes(LIGNES_DEFAUT.map((label) => ({ label, amount: "" })));
+      invalidateCache("/api/cost-batches");
       await load();
     } finally {
       setEnvoi(false);
@@ -79,6 +81,7 @@ export default function CostBatchPanel({ produits }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "supprimer-lot", id }),
     });
+    invalidateCache("/api/cost-batches");
     load();
   }
 

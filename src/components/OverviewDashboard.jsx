@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CarteComparaison } from "./charts";
 import { formatPrice } from "../cart";
+import { cachedFetchWithStatus } from "../lib/adminCache";
 
 export default function OverviewDashboard() {
   const [data, setData] = useState(null);
@@ -8,14 +9,12 @@ export default function OverviewDashboard() {
 
   useEffect(() => {
     setState("loading");
-    fetch("/api/overview")
-      .then((res) => {
-        if (res.status === 503) return setState("unconfigured");
-        if (!res.ok) return setState("error");
-        return res.json().then((json) => {
-          setData(json);
-          setState("ok");
-        });
+    cachedFetchWithStatus("/api/overview")
+      .then(({ status, data }) => {
+        if (status === 503) return setState("unconfigured");
+        if (status < 200 || status >= 300) return setState("error");
+        setData(data);
+        setState("ok");
       })
       .catch(() => setState("error"));
   }, []);
