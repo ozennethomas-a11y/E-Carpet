@@ -280,7 +280,11 @@ export default async (req) => {
       const moisValide = moisParam && /^\d{4}-\d{2}$/.test(moisParam);
       const [an, mois] = moisValide ? moisParam.split("-").map(Number) : [null, null];
       const debutMois = moisValide ? new Date(Date.UTC(an, mois - 1, 1)) : null;
-      const finMois = moisValide ? new Date(Date.UTC(an, mois, 1)) : null;
+      // Jamais dans le futur : Amazon refuse un PostedBefore postérieur à
+      // maintenant, ce qu'était toujours le 1er jour du mois suivant pour le
+      // mois en cours.
+      const finMoisCalendaire = moisValide ? new Date(Date.UTC(an, mois, 1)) : null;
+      const finMois = finMoisCalendaire && finMoisCalendaire > new Date() ? new Date() : finMoisCalendaire;
 
       const depuisFinances = moisValide ? debutMois.toISOString() : depuis;
       const jusquaFinances = moisValide ? finMois.toISOString() : undefined;

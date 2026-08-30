@@ -17,7 +17,11 @@ function bornesMois(moisParam) {
   const maintenant = new Date();
   const [anEffectif, moisEffectif] = valide ? [an, mois] : [maintenant.getUTCFullYear(), maintenant.getUTCMonth() + 1];
   const debut = new Date(Date.UTC(anEffectif, moisEffectif - 1, 1));
-  const fin = new Date(Date.UTC(anEffectif, moisEffectif, 1));
+  // Jamais dans le futur : Amazon refuse un PostedBefore postérieur à
+  // maintenant (~2 min de tolérance), ce qu'était toujours le 1er jour du
+  // mois suivant pour le mois en cours.
+  const finMoisCalendaire = new Date(Date.UTC(anEffectif, moisEffectif, 1));
+  const fin = finMoisCalendaire > maintenant ? maintenant : finMoisCalendaire;
   const label = `${anEffectif}-${String(moisEffectif).padStart(2, "0")}`;
   return { debut, fin, label };
 }
