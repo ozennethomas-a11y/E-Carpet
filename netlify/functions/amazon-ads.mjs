@@ -1,10 +1,8 @@
 // Amazon Ads (Sponsored Products) pour le sous-onglet « Marketing » d'Amazon.
 //
-// Squelette écrit le 2026-08-11, en attendant l'approbation de l'accès API
-// (délai annoncé par Amazon : ~1 jour ouvré). Les appels ci-dessous suivent la
-// forme documentée de l'API Amazon Ads v3, mais n'ont pas pu être testés
-// contre de vraies données : à revérifier dès que les identifiants arrivent,
-// exactement comme on l'a fait pour Google Ads et la SP-API.
+// Testé contre de vraies données le 2026-08-30 : la liste des campagnes
+// utilise l'API v3 (POST /sp/campaigns/list), l'ancien GET /v2/sp/campaigns
+// n'existe plus.
 //
 // Lecture seule : consultation des campagnes et de leurs performances.
 // Aucune création, modification ou pause de campagne n'est câblée ici tant
@@ -64,6 +62,26 @@ async function adsGet(c, token, path, profileId) {
   return json;
 }
 
+// API v3 des campagnes Sponsored Products : contrairement à v2 (GET simple),
+// v3 est un POST avec un corps de filtre (vide = tout) et des en-têtes
+// vendor-specific dédiés (content-type/accept "vnd.spCampaign.v3+json").
+async function campagnesSP(c, token, profileId) {
+  const res = await fetch(`${API}/sp/campaigns/list`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "Amazon-Advertising-API-ClientId": c.clientId,
+      "Amazon-Advertising-API-Scope": String(profileId),
+      "content-type": "application/vnd.spCampaign.v3+json",
+      accept: "application/vnd.spCampaign.v3+json",
+    },
+    body: JSON.stringify({}),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(readableError(json, res.status));
+  return json.campaigns || [];
+}
+
 function readableError(json, status) {
   if (status === 401) return "jeton refusé : vérifiez que le scope advertising::campaign_management a bien été assigné à cette application";
   if (status === 403) return "accès refusé à ce profil publicitaire";
@@ -116,19 +134,16 @@ export default async (req) => {
       });
     }
 
-    // Vue d'ensemble des campagnes Sponsored Products.
-    // Point à vérifier demain : la v3 utilise désormais /sp/campaigns en POST
-    // avec un corps de filtre plutôt qu'un GET simple ; à ajuster au premier
-    // vrai test si Amazon renvoie une erreur de méthode ou de format.
-    const campagnes = await adsGet(c, token, "/v2/sp/campaigns", c.profileId);
+    // Vue d'ensemble des campagnes Sponsored Products (API v3).
+    const campagnes = await campagnesSP(c, token, c.profileId);
     return Response.json(
       {
         profileId: c.profileId,
-        campagnes: (campagnes || []).map((cmp) => ({
+        campagnes: campagnes.map((cmp) => ({
           id: cmp.campaignId,
           nom: cmp.name,
           statut: cmp.state,
-          budgetQuotidien: cmp.dailyBudget,
+          budgetQuotidien: cmp.budget?.budget ?? null,
           cible: cmp.targetingType,
         })),
       },

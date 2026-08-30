@@ -284,7 +284,8 @@ export default async (req) => {
       // maintenant, ce qu'était toujours le 1er jour du mois suivant pour le
       // mois en cours.
       const finMoisCalendaire = moisValide ? new Date(Date.UTC(an, mois, 1)) : null;
-      const finMois = finMoisCalendaire && finMoisCalendaire > new Date() ? new Date() : finMoisCalendaire;
+      const margeAmazon = new Date(Date.now() - 5 * 60 * 1000);
+      const finMois = finMoisCalendaire && finMoisCalendaire > margeAmazon ? margeAmazon : finMoisCalendaire;
 
       const depuisFinances = moisValide ? debutMois.toISOString() : depuis;
       const jusquaFinances = moisValide ? finMois.toISOString() : undefined;

@@ -20,8 +20,13 @@ function bornesMois(moisParam) {
   // Jamais dans le futur : Amazon refuse un PostedBefore postérieur à
   // maintenant (~2 min de tolérance), ce qu'était toujours le 1er jour du
   // mois suivant pour le mois en cours.
+  // Marge de 5 minutes (pas juste "maintenant") : Amazon a rejeté un
+  // PostedBefore égal à l'heure exacte de la requête ("should be no later
+  // than 2 minutes from now"), probablement à cause du temps écoulé entre le
+  // calcul de cette date et l'arrivée réelle de la requête chez Amazon.
   const finMoisCalendaire = new Date(Date.UTC(anEffectif, moisEffectif, 1));
-  const fin = finMoisCalendaire > maintenant ? maintenant : finMoisCalendaire;
+  const marge = new Date(maintenant.getTime() - 5 * 60 * 1000);
+  const fin = finMoisCalendaire > marge ? marge : finMoisCalendaire;
   const label = `${anEffectif}-${String(moisEffectif).padStart(2, "0")}`;
   return { debut, fin, label };
 }
