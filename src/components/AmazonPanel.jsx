@@ -698,19 +698,31 @@ function AvisClients() {
   const { data, state, reload } = useSection("avis");
   const [envoiEnCours, setEnvoiEnCours] = useState(null);
   const [envoyes, setEnvoyes] = useState(new Set());
+  const [erreursEnvoi, setErreursEnvoi] = useState({}); // commande -> message
 
   if (state === "loading" && !data) return <p className="text-sm text-zinc-500">Interrogation d'Amazon…</p>;
   if (state === "erreur") return <Erreur message={data?.error} />;
 
   const envoyer = async (commande, marketplaceId) => {
     setEnvoiEnCours(commande);
+    setErreursEnvoi((e) => ({ ...e, [commande]: null }));
     try {
       const res = await fetch("/api/amazon?section=avis", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orderId: commande, marketplaceId }),
       });
-      if (res.ok) setEnvoyes((s) => new Set([...s, commande]));
+      const json = await res.json().catch(() => ({}));
+      // Ce back-end renvoie toujours un statut 200, même en cas d'échec (le
+      // détail est dans le champ "error") : se fier uniquement à res.ok
+      // affichait "Demande envoyée" même quand Amazon avait refusé.
+      if (!res.ok || json.error) {
+        setErreursEnvoi((e) => ({ ...e, [commande]: json.error || "Échec de l'envoi." }));
+        return;
+      }
+      setEnvoyes((s) => new Set([...s, commande]));
+    } catch {
+      setErreursEnvoi((e) => ({ ...e, [commande]: "Le serveur n'a pas répondu." }));
     } finally {
       setEnvoiEnCours(null);
     }
@@ -751,13 +763,14 @@ function AvisClients() {
                     Achat {c.dateAchat} · <span className="chiffre">{c.montant} €</span>
                   </div>
                   <div className={`mt-0.5 text-xs ${c.eligible ? "text-acid" : "text-zinc-600"}`}>{statutDelai}</div>
+                  {erreursEnvoi[c.commande] && <div className="mt-1 text-xs text-red-400">{erreursEnvoi[c.commande]}</div>}
                 </div>
                 {envoyes.has(c.commande) ? (
                   <span className="text-xs text-emerald-400">Demande envoyée</span>
                 ) : c.eligible ? (
                   <button onClick={() => envoyer(c.commande, data.marketplaceId)} disabled={envoiEnCours === c.commande}
                     className="rounded-full bg-acid px-4 py-1.5 font-display text-xs font-bold text-white cursor-pointer disabled:opacity-40">
-                    {envoiEnCours === c.commande ? "Envoi…" : "Demander un avis"}
+                    {envoiEnCours === c.commande ? "Envoi…" : erreursEnvoi[c.commande] ? "Réessayer" : "Demander un avis"}
                   </button>
                 ) : (
                   <span className="text-xs text-zinc-600">Pas encore éligible</span>
