@@ -156,7 +156,7 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
             items={[
               { label: "Frais Stripe", value: Math.round(data.frais.stripe / 100) },
               { label: "Frais Amazon", value: Math.round(data.frais.amazon / 100) },
-              { label: "Expédition (site)", value: Math.round(data.frais.expedition / 100) },
+              { label: "Expédition (site + Amazon, estimé)", value: Math.round(data.frais.expedition / 100) },
               { label: "Publicité", value: Math.round(data.frais.publicite / 100) },
               { label: "Commissions affiliés", value: Math.round(data.frais.commissionsAffilies / 100) },
               { label: "Coût produit (site)", value: Math.round(data.coutProduit / 100) },

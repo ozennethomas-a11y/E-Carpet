@@ -78,7 +78,7 @@ export default function ShippingPanel() {
         <StatTile
           label="Amazon (domicile)"
           value={data.amazon.indisponible ? "—" : formatPrice(data.amazon.coutCents)}
-          hint={data.amazon.indisponible ? data.amazon.raison : `${data.amazon.count} commande(s) · coût réel Amazon`}
+          hint={data.amazon.indisponible ? data.amazon.raison : `${data.amazon.count} commande(s) · ${formatPrice(data.tarifs.domicileCents)}/envoi (estimé)`}
         />
       </div>
 
@@ -108,9 +108,10 @@ export default function ShippingPanel() {
       </div>
 
       <p className="text-xs leading-relaxed text-zinc-600">
-        Domicile et point relais (site) sont estimés à un tarif moyen fixe par envoi ({formatPrice(data.tarifs.domicileCents)} et{" "}
-        {formatPrice(data.tarifs.relaisCents)}), faute de coût réel enregistré côté Packlink. Le montant Amazon est le vrai coût
-        facturé par Amazon sur cette période.
+        Domicile, point relais (site) et Amazon (toujours domicile) sont tous estimés à un tarif moyen fixe par envoi
+        ({formatPrice(data.tarifs.domicileCents)} et {formatPrice(data.tarifs.relaisCents)}) : Packlink n'expose pas le prix
+        réel des étiquettes via son API, et Amazon ne facture rien pour l'expédition tant que l'étiquette n'est pas achetée
+        via son propre service de port.
       </p>
     </div>
   );

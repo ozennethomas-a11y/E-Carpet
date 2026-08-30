@@ -12,7 +12,7 @@ import { sql } from "./lib/_db.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./lib/_amazon.mjs";
 import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./lib/_googleAds.mjs";
-import { coutsExpeditionSite } from "./lib/_shipping.mjs";
+import { coutsExpeditionSite, TARIF_DOMICILE_CENTS } from "./lib/_shipping.mjs";
 import { coutRevientAmazon } from "./lib/_amazonCogs.mjs";
 import { LOGO_WHITE_PNG_BASE64 } from "./lib/_logoAsset.mjs";
 
@@ -364,8 +364,12 @@ async function chargerDonnees(from, to) {
   const depensesTotalCents = depenses.reduce((s, d) => s + d.amount_cents, 0);
   const amazonCogs = amazon.indisponible ? { coutCents: 0, skuSansCout: [] } : await coutRevientAmazon(amazon.parCommande);
   const expeditionSite = await coutsExpeditionSite(`${from}T00:00:00Z`, `${toExcl}T00:00:00Z`);
-  const fraisExpeditionCents = expeditionSite.domicile.coutCents + expeditionSite.relais.coutCents;
-  const nbCommandes = orders.length + (amazon.indisponible ? 0 : amazon.parCommande?.length || 0);
+  const amazonOrdersCount = amazon.indisponible ? 0 : amazon.parCommande?.length || 0;
+  // Amazon ne facture pas ses propres frais de port (ShippingHB reste à 0
+  // tant que l'étiquette n'est pas achetée via son service — les étiquettes
+  // passent par Packlink, comme le site) : même tarif estimé domicile.
+  const fraisExpeditionCents = expeditionSite.domicile.coutCents + expeditionSite.relais.coutCents + amazonOrdersCount * TARIF_DOMICILE_CENTS;
+  const nbCommandes = orders.length + amazonOrdersCount;
   const caTotalCents = caSite + caAmazon;
   const margeNetteCents =
     caTotalCents -
@@ -587,7 +591,7 @@ function feuilleFinance(wb, d) {
   if (!d.amazon.indisponible) lignes.push(["Charges", "Frais Amazon", -euros(d.kpis.fraisAmazonCents), ""]);
   lignes.push(["Charges", "Coût produit (site)", -euros(d.kpis.coutProduitCents), ""]);
   if (d.kpis.coutProduitAmazonCents) lignes.push(["Charges", "Coût produit (Amazon)", -euros(d.kpis.coutProduitAmazonCents), ""]);
-  if (d.kpis.fraisExpeditionCents) lignes.push(["Charges", "Expédition (site, estimé)", -euros(d.kpis.fraisExpeditionCents), ""]);
+  if (d.kpis.fraisExpeditionCents) lignes.push(["Charges", "Expédition (site + Amazon, estimé)", -euros(d.kpis.fraisExpeditionCents), ""]);
   lignes.push(["Charges", "Commissions affiliés", -euros(d.kpis.commissionsCents), ""]);
   if (!d.ads.indisponible) lignes.push(["Charges", "Publicité Google Ads", -euros(d.kpis.publiciteCents), ""]);
   for (const dep of d.depenses) {

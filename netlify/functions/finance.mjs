@@ -2,7 +2,7 @@ import { sql } from "./lib/_db.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./lib/_amazon.mjs";
 import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./lib/_googleAds.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
-import { coutsExpeditionSite } from "./lib/_shipping.mjs";
+import { coutsExpeditionSite, TARIF_DOMICILE_CENTS } from "./lib/_shipping.mjs";
 import { coutRevientAmazon } from "./lib/_amazonCogs.mjs";
 
 const DAY_MS = 86400000;
@@ -162,9 +162,15 @@ export default async (req) => {
       const caAmazon = amazon.indisponible ? 0 : Math.round((amazon.ventesBrutes || 0) * 100);
       const fraisAmazonCents = amazon.indisponible ? 0 : Math.round((amazon.fraisAmazon || 0) * 100);
       const publiciteCents = ads.indisponible ? 0 : Math.round((ads.depenseTotale || 0) * 100);
-      const fraisExpeditionCents = expeditionSite.domicile.coutCents + expeditionSite.relais.coutCents;
+      const amazonOrdersCount = amazon.indisponible ? 0 : amazon.parCommande?.length || 0;
+      // Amazon ne facture pas ses propres frais de port (ShippingHB reste à 0)
+      // tant que l'étiquette n'est pas achetée via son service — comme pour le
+      // site, le coût réel des étiquettes Packlink n'est pas exposé par leur
+      // API, donc même tarif estimé domicile appliqué aux commandes Amazon.
+      const fraisExpeditionAmazonCents = amazonOrdersCount * TARIF_DOMICILE_CENTS;
+      const fraisExpeditionCents = expeditionSite.domicile.coutCents + expeditionSite.relais.coutCents + fraisExpeditionAmazonCents;
 
-      const ordersCount = site.ordersCount + (amazon.indisponible ? 0 : amazon.parCommande?.length || 0);
+      const ordersCount = site.ordersCount + amazonOrdersCount;
       const caTotalCents = caSite + caAmazon;
       const panierMoyenCents = ordersCount ? Math.round(caTotalCents / ordersCount) : 0;
 
@@ -189,7 +195,7 @@ export default async (req) => {
         }
         if (site.stripeFeeCents) lignes.push({ date: from, source: "Site", categorie: "Frais Stripe", montantCents: -site.stripeFeeCents, note: "" });
         if (site.coutProduitCents) lignes.push({ date: from, source: "Site", categorie: "Coût produit", montantCents: -site.coutProduitCents, note: "" });
-        if (fraisExpeditionCents) lignes.push({ date: from, source: "Expédition", categorie: "Domicile + point relais (estimé)", montantCents: -fraisExpeditionCents, note: "" });
+        if (fraisExpeditionCents) lignes.push({ date: from, source: "Expédition", categorie: "Domicile + point relais + Amazon (estimé)", montantCents: -fraisExpeditionCents, note: "" });
         if (commissionsAffiliesCents) lignes.push({ date: from, source: "Affiliation", categorie: "Commissions", montantCents: -commissionsAffiliesCents, note: "" });
         if (!ads.indisponible && publiciteCents) lignes.push({ date: from, source: "Google Ads", categorie: "Publicité", montantCents: -publiciteCents, note: "" });
         for (const d of depenses.liste) {

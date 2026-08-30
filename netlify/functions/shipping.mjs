@@ -2,11 +2,13 @@
 // entre domicile (site), point relais (site) et Amazon (toujours livré à
 // domicile par le vendeur, jamais en point relais).
 //
-// Site : aucun coût réel n'est enregistré nulle part (le brouillon Packlink
-// ne fait que préparer l'étiquette, rien n'est acheté via l'API — voir
-// lib/_packlink.mjs). On applique donc un tarif moyen fixe par mode de
-// livraison, au nombre réel de commandes expédiées ce mois-là.
-// Amazon : coût réel, tiré du même relevé financier que l'onglet Finances.
+// Site ET Amazon : aucun coût réel n'est disponible via API pour les
+// étiquettes achetées sur Packlink (le brouillon Packlink ne fait que
+// préparer l'étiquette, le prix réel n'y est jamais exposé — voir
+// lib/_packlink.mjs), et le frais "ShippingHB" d'Amazon reste à 0 puisque
+// les étiquettes ne passent jamais par le service de port d'Amazon lui-même.
+// On applique donc le même tarif moyen fixe domicile aux commandes Amazon
+// (toujours livrées à domicile) qu'aux commandes domicile du site.
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./lib/_amazon.mjs";
 import { TARIF_DOMICILE_CENTS, TARIF_RELAIS_CENTS, coutsExpeditionSite } from "./lib/_shipping.mjs";
@@ -38,11 +40,8 @@ async function coutAmazon(debut, fin) {
     const token = await amazonToken(c);
     const data = await financesAmazon(token, debut.toISOString(), fin.toISOString());
     if (data.erreur) return { indisponible: true, raison: data.erreur };
-    const fraisPort = data.fraisParType.find((f) => f.type === "ShippingHB");
-    return {
-      count: data.parCommande?.length || 0,
-      coutCents: Math.round(Math.abs(fraisPort?.montant || 0) * 100),
-    };
+    const count = data.parCommande?.length || 0;
+    return { count, coutCents: count * TARIF_DOMICILE_CENTS };
   } catch (e) {
     return { indisponible: true, raison: String(e.message || e) };
   }
