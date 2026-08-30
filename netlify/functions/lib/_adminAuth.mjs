@@ -3,7 +3,9 @@ import { sql } from "./_db.mjs";
 import { randomToken, parseCookies } from "./_auth.mjs";
 
 export const ADMIN_SESSION_COOKIE = "ecarpet_admin_session";
-const SESSION_DAYS = 7; // plus court qu'un compte client : accès sensible.
+// Filet de sécurité côté serveur seulement : la session ne doit normalement
+// jamais durer aussi longtemps côté client, voir le cookie "de session" ci-dessous.
+const SESSION_DAYS = 7;
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000;
@@ -14,10 +16,16 @@ function secureFlag() {
   return process.env.CONTEXT === "dev" ? "" : " Secure;";
 }
 
+// Cookie "de session" (pas de Max-Age) : demandé explicitement — rester
+// déconnecté à chaque fermeture de l'app plutôt que rester connecté en
+// silence. Le navigateur/l'app efface ce cookie en fermant complètement,
+// donc rouvrir l'app redemande toujours une connexion (rapide via Face ID).
+// L'expiration de 7 jours ci-dessus reste en base comme filet de sécurité,
+// au cas où l'app resterait ouverte en arrière-plan sans jamais se fermer.
 export function adminSessionCookieHeader(token, { clear = false } = {}) {
-  const maxAge = clear ? 0 : SESSION_DAYS * 24 * 60 * 60;
   const value = clear ? "" : token;
-  return `${ADMIN_SESSION_COOKIE}=${value}; Path=/; HttpOnly;${secureFlag()} SameSite=Lax; Max-Age=${maxAge}`;
+  const expiration = clear ? " Max-Age=0;" : "";
+  return `${ADMIN_SESSION_COOKIE}=${value}; Path=/; HttpOnly;${secureFlag()} SameSite=Lax;${expiration}`;
 }
 
 export async function findAdminByName(name) {

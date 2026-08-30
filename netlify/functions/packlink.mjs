@@ -6,7 +6,13 @@
 
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { checkAndRecord } from "./lib/_rateLimit.mjs";
-import { packlinkCredentials, packlinkGet, creerBrouillonPourCommande, MONDIAL_RELAY_SERVICE_ID } from "./lib/_packlink.mjs";
+import {
+  packlinkCredentials,
+  packlinkGet,
+  creerBrouillonPourCommande,
+  etiquettePdfUrl,
+  MONDIAL_RELAY_SERVICE_ID,
+} from "./lib/_packlink.mjs";
 
 export default async (req, context) => {
   const key = packlinkCredentials();
@@ -71,6 +77,17 @@ export default async (req, context) => {
           long: p.long,
         })),
       });
+    }
+
+    // Lien PDF de l'étiquette d'expédition, pour téléchargement/impression
+    // directe depuis l'admin (ex. sur téléphone via Bluetooth vers l'imprimante).
+    if (url.searchParams.get("label")) {
+      const auth = await getAdminFromRequest(req);
+      if (auth !== "ok") return Response.json({ error: auth }, { status: auth === "not_configured" ? 503 : 401 });
+
+      const reference = url.searchParams.get("label");
+      const pdfUrl = await etiquettePdfUrl(reference, key);
+      return Response.json({ url: pdfUrl });
     }
 
     return Response.json({ error: "utilisez ?check=1 ou ?points=1&postal=...&country=FR" });

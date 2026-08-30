@@ -18,9 +18,14 @@
 //         passe aucune commande transporteur tant que le flux n'a pas été
 //         validé avec vous.
 
+import { getStore } from "@netlify/blobs";
 import { sql } from "./_db.mjs";
 
 const API = "https://api.packlink.com";
+// Cache court partagé entre invocations : évite de refaire la même requête
+// (ex. la liste des expéditions) plusieurs fois en quelques secondes quand
+// l'Accueil et "Livraisons en cours" la demandent tous les deux.
+const CACHE_TTL_MS = 3 * 60 * 1000;
 export const MONDIAL_RELAY_SERVICE_ID = 30463;
 
 // Adresse d'expédition E-Carpet (voir src/data/legal.js).
@@ -56,6 +61,10 @@ export function packlinkCredentials() {
 }
 
 export async function packlinkGet(path, key) {
+  const store = getStore("packlink-api-cache");
+  const cached = await store.get(path, { type: "json" }).catch(() => null);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.json;
+
   const res = await fetch(`${API}${path}`, { headers: { authorization: key } });
   const text = await res.text();
   let json;
@@ -65,6 +74,8 @@ export async function packlinkGet(path, key) {
     json = { raw: text };
   }
   if (!res.ok) throw new Error(`HTTP ${res.status} sur ${path}: ${JSON.stringify(json)}`);
+
+  await store.setJSON(path, { at: Date.now(), json }).catch(() => {});
   return json;
 }
 
@@ -150,22 +161,64 @@ const LIBELLE_SOURCE = {
   PRO: "Packlink (manuel)",
 };
 
+async function shipmentsActifs(key) {
+  const json = await packlinkGet("/v1/shipments", key);
+  return (json.shipments || []).filter((s) => !s.canceled && !STATUTS_TERMINES.has(s.status));
+}
+
 // Livraisons en cours, tous canaux confondus (site + Amazon + créées à la
 // main dans Packlink) : Packlink est la seule source qui voit vraiment le
 // statut de transit réel, notre base ne sait dire que "expédié" ou non.
 export async function livraisonsEnCours(key, { limite = 15 } = {}) {
-  const json = await packlinkGet("/v1/shipments", key);
-  return (json.shipments || [])
-    .filter((s) => !s.canceled && !STATUTS_TERMINES.has(s.status))
-    .slice(0, limite)
-    .map((s) => ({
-      reference: s.reference,
-      commandeRef: s.shipment_custom_reference || null,
-      statut: LIBELLE_STATUT[s.status] || s.status,
-      source: LIBELLE_SOURCE[s.source] || s.source,
-      transporteur: s.carrier,
-      destinataireVille: s.delivery?.city || null,
-      destinataireCodePostal: s.delivery?.zip_code || null,
-      date: s.orderDate,
-    }));
+  const shipments = await shipmentsActifs(key);
+  return shipments.slice(0, limite).map((s) => ({
+    reference: s.reference,
+    commandeRef: s.shipment_custom_reference || null,
+    statut: LIBELLE_STATUT[s.status] || s.status,
+    source: LIBELLE_SOURCE[s.source] || s.source,
+    transporteur: s.carrier,
+    destinataireVille: s.delivery?.city || null,
+    destinataireCodePostal: s.delivery?.zip_code || null,
+    date: s.orderDate,
+  }));
+}
+
+// "En attente d'expédition" = il reste une action à faire (imprimer
+// l'étiquette / finaliser), pas juste "pas encore livré". Contrairement au
+// statut brut Amazon (Unshipped/PartiallyShipped) qui ne reflète pas la
+// réalité une fois l'étiquette générée via Packlink : Amazon considère
+// souvent la commande "traitée" dès l'étiquette prête, alors qu'il faut
+// encore l'imprimer et déposer le colis.
+const STATUTS_A_TRAITER = new Set(["READY_TO_PRINT", "AWAITING_COMPLETION"]);
+
+export async function commandesATraiter(key) {
+  const shipments = await shipmentsActifs(key);
+  const aTraiter = shipments.filter((s) => STATUTS_A_TRAITER.has(s.status));
+  return {
+    site: aTraiter.filter((s) => s.source !== "amazon_inbound").length,
+    amazon: aTraiter.filter((s) => s.source === "amazon_inbound").length,
+  };
+}
+
+// URL du PDF d'étiquette d'expédition (format A4) pour une référence Packlink
+// donnée. Endpoint confirmé via le client Crystal open-source packlink.cr :
+// GET /v1/shipments/:reference/labels → liste d'URLs PDF (une seule en
+// pratique pour un colis unique). Pas de cache ici : appelé rarement (un clic
+// admin), et l'URL peut expirer/changer.
+export async function etiquettePdfUrl(reference, key) {
+  const res = await fetch(`${API}/v1/shipments/${encodeURIComponent(reference)}/labels`, {
+    headers: { authorization: key },
+  });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = null;
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status} sur /v1/shipments/${reference}/labels: ${text}`);
+
+  const url = Array.isArray(json) ? json[0] : json?.labels?.[0] || json?.[0];
+  if (!url) throw new Error("aucune étiquette disponible pour cette référence");
+  return url;
 }

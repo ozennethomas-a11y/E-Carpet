@@ -11,7 +11,7 @@ import { getStore } from "@netlify/blobs";
 import { sql } from "./lib/_db.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, amz } from "./lib/_amazon.mjs";
-import { packlinkCredentials, livraisonsEnCours } from "./lib/_packlink.mjs";
+import { packlinkCredentials, livraisonsEnCours, commandesATraiter } from "./lib/_packlink.mjs";
 
 const DAY_MS = 86400000;
 const PAID_STATUSES = ["payee", "expediee", "livree"];
@@ -110,8 +110,28 @@ export default async (req) => {
 
     const panierMoyenAujourdhui = commandesAujourdhui.length ? Math.round(revenueAujourdhui / commandesAujourdhui.length) : 0;
 
-    // --- Commandes en attente d'expédition (file en cours, pas limitée à aujourd'hui). ---
-    const [{ count: enAttenteSite }] = await sql()`select count(*)::int as count from orders where status = 'payee'`;
+    // --- Commandes en attente d'expédition (file en cours, pas limitée à
+    // aujourd'hui). Packlink comme source de vérité plutôt que le statut brut
+    // Amazon (Unshipped/PartiallyShipped) : une fois l'étiquette générée via
+    // Packlink, Amazon considère souvent la commande "traitée" alors qu'il
+    // reste à l'imprimer et déposer le colis — le statut Packlink reflète ça
+    // correctement (READY_TO_PRINT / AWAITING_COMPLETION = pas encore fait).
+    const packlinkKey = packlinkCredentials();
+    let enAttenteSite = 0;
+    let enAttenteAmazonPacklink = null;
+    if (packlinkKey) {
+      try {
+        const aTraiter = await commandesATraiter(packlinkKey);
+        enAttenteSite = aTraiter.site;
+        enAttenteAmazonPacklink = aTraiter.amazon;
+      } catch (e) {
+        console.error("[overview] échec commandesATraiter Packlink:", e.message);
+      }
+    }
+    // Les commandes site "payées mais jamais parties chez Packlink" (brouillon
+    // pas encore créé) restent comptées aussi, sinon elles disparaîtraient.
+    const [{ count: enAttenteSitePayee }] = await sql()`select count(*)::int as count from orders where status = 'payee'`;
+    enAttenteSite = Math.max(enAttenteSite, enAttenteSitePayee);
 
     // --- Amazon : une seule requête sur 30 jours, dont on dérive tout le reste
     // (aujourd'hui, hier, tendance 14j, en attente d'expédition) pour limiter
@@ -138,7 +158,13 @@ export default async (req) => {
       const t = new Date(o.PurchaseDate).getTime();
       return t >= debutHier.getTime() && t <= hierMemeHeure.getTime();
     });
-    const enAttenteAmazon = amazon30j.filter((o) => o.OrderStatus === "Unshipped" || o.OrderStatus === "PartiallyShipped").length;
+    // Packlink prioritaire (voir plus haut) ; à défaut (clé Packlink absente
+    // ou échec), on retombe sur le statut brut Amazon — moins fiable, mais
+    // mieux que rien.
+    const enAttenteAmazon =
+      enAttenteAmazonPacklink != null
+        ? enAttenteAmazonPacklink
+        : amazon30j.filter((o) => o.OrderStatus === "Unshipped" || o.OrderStatus === "PartiallyShipped").length;
     const totalAujourdhui = commandesAujourdhui.length + amazonAujourdhui.length;
     const totalHier = commandesHier.length + amazonHier.length;
     const partAmazonAujourdhui = totalAujourdhui ? (amazonAujourdhui.length / totalAujourdhui) * 100 : 0;
@@ -189,7 +215,6 @@ export default async (req) => {
     // Suivi des livraisons en cours : Packlink est la seule source qui
     // connaît le vrai statut de transit (notre base ne sait dire que
     // "expédié" ou non), tous canaux confondus (site, Amazon, créé à la main).
-    const packlinkKey = packlinkCredentials();
     let livraisons = [];
     let livraisonsIndisponible = !packlinkKey;
     let livraisonsRaison = packlinkKey ? null : "PROPACKING_API_KEY manquante";

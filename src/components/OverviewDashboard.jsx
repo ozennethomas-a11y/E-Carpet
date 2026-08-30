@@ -6,6 +6,23 @@ import { cachedFetchWithStatus } from "../lib/adminCache";
 export default function OverviewDashboard() {
   const [data, setData] = useState(null);
   const [state, setState] = useState("idle"); // idle | loading | ok | error | unconfigured
+  const [etiquetteEnCours, setEtiquetteEnCours] = useState(null); // reference en cours de récupération
+  const [etiquetteErreur, setEtiquetteErreur] = useState(null); // { reference, message }
+
+  async function ouvrirEtiquette(reference) {
+    setEtiquetteErreur(null);
+    setEtiquetteEnCours(reference);
+    try {
+      const res = await fetch(`/api/packlink?label=${encodeURIComponent(reference)}`);
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error || `HTTP ${res.status}`);
+      window.open(json.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setEtiquetteErreur({ reference, message: e.message || "échec du téléchargement" });
+    } finally {
+      setEtiquetteEnCours(null);
+    }
+  }
 
   useEffect(() => {
     setState("loading");
@@ -111,7 +128,8 @@ export default function OverviewDashboard() {
                   <th className="py-2 pr-3">Transporteur</th>
                   <th className="py-2 pr-3">Destination</th>
                   <th className="py-2 pr-3">Référence</th>
-                  <th className="py-2">Date</th>
+                  <th className="py-2 pr-3">Date</th>
+                  <th className="py-2">Étiquette</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,7 +144,20 @@ export default function OverviewDashboard() {
                       {l.destinataireVille ? `${l.destinataireVille} (${l.destinataireCodePostal || ""})` : "—"}
                     </td>
                     <td className="chiffre py-2 pr-3 text-zinc-500">{l.commandeRef || l.reference}</td>
-                    <td className="chiffre py-2 text-zinc-500">{l.date}</td>
+                    <td className="chiffre py-2 pr-3 text-zinc-500">{l.date}</td>
+                    <td className="py-2">
+                      <button
+                        type="button"
+                        onClick={() => ouvrirEtiquette(l.reference)}
+                        disabled={etiquetteEnCours === l.reference}
+                        className="rounded-full border border-acid/30 px-3 py-1 text-xs font-semibold text-acid transition hover:bg-acid/10 disabled:opacity-50"
+                      >
+                        {etiquetteEnCours === l.reference ? "…" : "Télécharger"}
+                      </button>
+                      {etiquetteErreur?.reference === l.reference && (
+                        <p className="mt-1 text-xs text-red-400">{etiquetteErreur.message}</p>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
