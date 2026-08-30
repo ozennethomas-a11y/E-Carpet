@@ -22,6 +22,7 @@ import MailAlertsPanel from "./MailAlertsPanel";
 import OverviewDashboard from "./OverviewDashboard";
 import AdminAccessPanel from "./AdminAccessPanel";
 import FaceIdSettings from "./FaceIdSettings";
+import PushNotifications from "./PushNotifications";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { cachedFetchWithStatus, prefetch, clearCache } from "../lib/adminCache";
 
@@ -378,6 +379,8 @@ export default function DashboardPage() {
               <p className="text-xs text-zinc-500">Connecté en tant que {monNom}</p>
               <span className="text-zinc-700">·</span>
               <FaceIdSettings />
+              <span className="text-zinc-700">·</span>
+              <PushNotifications />
             </div>
           )}
         </div>

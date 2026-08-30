@@ -2,6 +2,11 @@ import { sql } from "./_db.mjs";
 import { sendEmail, orderConfirmationEmail, affiliateSaleNotificationEmail, emailConfigured } from "./_email.mjs";
 import { stripeSecretKey, stripeRequest } from "./_stripe.mjs";
 import { creerBrouillonPourCommande } from "./_packlink.mjs";
+import { notifierTousLesAdmins } from "./_push.mjs";
+
+function formatPrix(cents, currency = "eur") {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(cents / 100);
+}
 
 // Logique déclenchée quand une commande passe payée : déduction du stock,
 // code promo/commission affilié, brouillon Packlink, email de confirmation.
@@ -92,6 +97,12 @@ export async function marquerCommandePayee(orderId, { paymentIntent = null, envo
   }
 
   console.log(`[marquerCommandePayee] commande ${order.id} marquée payée`);
+
+  await notifierTousLesAdmins({
+    title: "Nouvelle commande payée",
+    body: `Commande n°${order.order_number} · ${formatPrix(order.total_cents, order.currency)}`,
+    url: "/admin?section=site&tab=commandes",
+  }).catch((e) => console.error(`[marquerCommandePayee] échec notification push commande ${orderId}:`, e.message));
 
   // Brouillon Packlink (point relais uniquement) : aucun envoi n'est
   // facturé/commandé, seulement préparé. Un échec ici ne doit jamais faire

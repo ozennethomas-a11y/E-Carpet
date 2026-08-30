@@ -355,3 +355,16 @@ export const mailingSends = pgTable('mailing_sends', {
   email: text('email').notNull(),
   openedAt: timestamp('opened_at'),
 })
+
+// Abonnements aux notifications push du back-office (une ligne par appareil
+// où un admin a activé les notifications, via l'app PWA installée sur
+// l'écran d'accueil) : nouvelle commande payée, pour l'instant.
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: serial('id').primaryKey(),
+  adminId: integer('admin_id').notNull().references(() => admins.id),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  deviceName: text('device_name'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
