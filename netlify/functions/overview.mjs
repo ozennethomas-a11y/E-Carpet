@@ -11,6 +11,7 @@ import { getStore } from "@netlify/blobs";
 import { sql } from "./lib/_db.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, amz } from "./lib/_amazon.mjs";
+import { packlinkCredentials, livraisonsEnCours } from "./lib/_packlink.mjs";
 
 const DAY_MS = 86400000;
 const PAID_STATUSES = ["payee", "expediee", "livree"];
@@ -120,13 +121,16 @@ export default async (req) => {
     let amazon30j = [];
     let amazonToken_ = null;
     let amazonIndisponible = !marketplaceIds || amazonCreds.missing;
+    let amazonRaison = amazonCreds.missing ? "identifiants Amazon manquants" : null;
     if (!amazonIndisponible) {
       try {
         amazonToken_ = await amazonToken(amazonCreds);
         const depuis30j = new Date(maintenant.getTime() - 30 * DAY_MS).toISOString();
         amazon30j = await commandesAmazon(amazonToken_, marketplaceIds, depuis30j);
-      } catch {
+      } catch (e) {
         amazonIndisponible = true;
+        amazonRaison = String(e.message || e);
+        console.error("[overview] Amazon indisponible:", amazonRaison);
       }
     }
     const amazonAujourdhui = amazon30j.filter((o) => new Date(o.PurchaseDate).getTime() >= debutAujourdhui.getTime());
@@ -182,14 +186,31 @@ export default async (req) => {
       return b.commandes ? Math.round(b.ventes / b.commandes) : 0;
     });
 
+    // Suivi des livraisons en cours : Packlink est la seule source qui
+    // connaît le vrai statut de transit (notre base ne sait dire que
+    // "expédié" ou non), tous canaux confondus (site, Amazon, créé à la main).
+    const packlinkKey = packlinkCredentials();
+    let livraisons = [];
+    let livraisonsIndisponible = !packlinkKey;
+    let livraisonsRaison = packlinkKey ? null : "PROPACKING_API_KEY manquante";
+    if (packlinkKey) {
+      try {
+        livraisons = await livraisonsEnCours(packlinkKey);
+      } catch (e) {
+        livraisonsIndisponible = true;
+        livraisonsRaison = String(e.message || e);
+      }
+    }
+
     return Response.json(
       {
         comparaison: `hier ${debutHier.toLocaleDateString("fr-FR")}`,
-        enAttente: { site: enAttenteSite, amazon: amazonIndisponible ? null : enAttenteAmazon },
+        enAttente: { site: enAttenteSite, amazon: amazonIndisponible ? null : enAttenteAmazon, amazonRaison },
         ventes: { valeurCents: revenueAujourdhui, variationPct: pctChange(revenueAujourdhui, revenueHier), tendance: tendanceVentes },
         sessions: { valeur: sessionsAujourdhui, variationPct: pctChange(sessionsAujourdhui, sessionsHier), tendance: tendanceSessions },
         canal: {
           indisponible: amazonIndisponible,
+          raison: amazonRaison,
           amazonPct: Math.round(partAmazonAujourdhui * 10) / 10,
           sitePct: Math.round((100 - partAmazonAujourdhui) * 10) / 10,
           variationPct: pctChange(partAmazonAujourdhui, partAmazonHier),
@@ -198,6 +219,7 @@ export default async (req) => {
         conversion: { valeurPct: Math.round(tauxConversionAujourdhui * 100) / 100, variationPct: pctChange(tauxConversionAujourdhui, tauxConversionHier), tendance: tendanceConversion },
         panierMoyen: { valeurCents: panierMoyenAujourdhui, variationPct: pctChange(panierMoyenAujourdhui, panierMoyenHier), tendance: tendanceAov },
         commandes: { valeur: commandesAujourdhui.length, variationPct: pctChange(commandesAujourdhui.length, commandesHier.length), tendance: tendanceCommandes },
+        livraisons: { indisponible: livraisonsIndisponible, raison: livraisonsRaison, liste: livraisons },
       },
       { headers: { "cache-control": "no-store" } },
     );

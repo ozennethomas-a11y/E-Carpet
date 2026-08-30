@@ -128,6 +128,19 @@ export const adminLoginHistory = pgTable('admin_login_history', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+// Clés Face ID / Touch ID (WebAuthn) enregistrées par appareil : une connexion
+// biométrique par admin ne remplace pas mot de passe + TOTP, elle s'ajoute en
+// option une fois activée sur un téléphone donné.
+export const webauthnCredentials = pgTable('webauthn_credentials', {
+  id: serial('id').primaryKey(),
+  adminId: integer('admin_id').notNull().references(() => admins.id),
+  credentialId: text('credential_id').notNull().unique(),
+  publicKey: text('public_key').notNull(),
+  counter: integer('counter').notNull().default(0),
+  deviceName: text('device_name'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
 export const sessions = pgTable('sessions', {
   id: serial('id').primaryKey(),
   customerId: integer('customer_id').notNull().references(() => customers.id),

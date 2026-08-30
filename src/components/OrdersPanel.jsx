@@ -85,6 +85,9 @@ function OrderRow({ order, onUpdated }) {
   const [error, setError] = useState("");
   const [creationBrouillon, setCreationBrouillon] = useState(false);
   const [erreurBrouillon, setErreurBrouillon] = useState("");
+  const [marquagePaiement, setMarquagePaiement] = useState(false);
+  const [erreurPaiement, setErreurPaiement] = useState("");
+  const [envoyerEmailPaiement, setEnvoyerEmailPaiement] = useState(false);
 
   const addr = order.shippingAddress || {};
   const isRelais = addr.deliveryMode === "relais";
@@ -106,6 +109,26 @@ function OrderRow({ order, onUpdated }) {
       setErreurBrouillon("Échec de la création du brouillon.");
     } finally {
       setCreationBrouillon(false);
+    }
+  }
+
+  async function marquerPayee() {
+    setErreurPaiement("");
+    setMarquagePaiement(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "marquer-payee", orderId: order.id, envoyerEmail: envoyerEmailPaiement }),
+      });
+      const data = await res.json();
+      if (data.error) return setErreurPaiement(data.error);
+      invalidateCache("/api/orders");
+      onUpdated();
+    } catch {
+      setErreurPaiement("Échec de l'opération.");
+    } finally {
+      setMarquagePaiement(false);
     }
   }
 
@@ -236,6 +259,30 @@ function OrderRow({ order, onUpdated }) {
               </button>
               {error && <p className="w-full text-xs text-red-400">{error}</p>}
             </form>
+          ) : order.status === "en_attente_paiement" ? (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+              <p className="text-xs leading-relaxed text-amber-200">
+                Toujours "en attente de paiement" ? Si vous avez confirmé ailleurs (Stripe, le client) que le
+                paiement a bien été reçu, vous pouvez rattraper la commande manuellement.
+              </p>
+              <label className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
+                <input
+                  type="checkbox"
+                  checked={envoyerEmailPaiement}
+                  onChange={(e) => setEnvoyerEmailPaiement(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                Envoyer l'email de confirmation au client
+              </label>
+              <button
+                onClick={marquerPayee}
+                disabled={marquagePaiement}
+                className="mt-2 rounded-full border border-amber-500/40 px-4 py-1.5 text-xs font-bold text-amber-200 transition-colors hover:bg-amber-500/10 disabled:opacity-60"
+              >
+                {marquagePaiement ? "…" : "Marquer comme payée"}
+              </button>
+              {erreurPaiement && <p className="mt-1 text-xs text-red-400">{erreurPaiement}</p>}
+            </div>
           ) : (
             <p className="text-xs text-zinc-500">Rien à faire pour l'instant.</p>
           )}

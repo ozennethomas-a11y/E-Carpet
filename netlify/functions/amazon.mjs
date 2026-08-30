@@ -122,12 +122,21 @@ async function commandesRecentesPourAvis(token, marketplaceId) {
   const json = await amz(token, `/orders/v0/orders?${params}`);
   const commandesList = (json.payload?.Orders || []).filter((o) => o.OrderStatus === "Shipped");
 
-  return commandesList.slice(0, 20).map((o) => ({
-    commande: o.AmazonOrderId,
-    date: (o.PurchaseDate || "").slice(0, 10),
-    montant: o.OrderTotal?.Amount,
-    eligible: eligiblePourSollicitation(o),
-  }));
+  return commandesList.slice(0, 20).map((o) => {
+    // Date de livraison (pas d'achat) : c'est elle qui compte pour la fenêtre
+    // d'éligibilité Amazon (5 à 30 jours après livraison), donc c'est elle
+    // qu'il faut voir pour savoir quand envoyer la demande d'avis.
+    const livraison = o.LatestDeliveryDate || o.EarliestDeliveryDate || null;
+    const joursDepuisLivraison = livraison ? Math.floor((Date.now() - new Date(livraison).getTime()) / 86400_000) : null;
+    return {
+      commande: o.AmazonOrderId,
+      dateAchat: (o.PurchaseDate || "").slice(0, 10),
+      dateLivraison: livraison ? livraison.slice(0, 10) : null,
+      joursDepuisLivraison,
+      montant: o.OrderTotal?.Amount,
+      eligible: eligiblePourSollicitation(o),
+    };
+  });
 }
 
 async function envoyerSollicitation(token, orderId, marketplaceId) {
@@ -264,8 +273,23 @@ export default async (req) => {
     }
 
     if (section === "finances") {
-      const data = await financesAmazon(token, depuis);
-      return Response.json({ periode: { jours, depuis: depuis.slice(0, 10) }, ...data }, { headers: { "cache-control": "no-store" } });
+      // Mois calendaire (YYYY-MM, défaut : mois en cours) plutôt qu'un simple
+      // "N derniers jours" : permet de voir exactement ce qui a été payé sur
+      // un mois donné, et de remonter dans l'historique mois par mois.
+      const moisParam = url.searchParams.get("month");
+      const moisValide = moisParam && /^\d{4}-\d{2}$/.test(moisParam);
+      const [an, mois] = moisValide ? moisParam.split("-").map(Number) : [null, null];
+      const debutMois = moisValide ? new Date(Date.UTC(an, mois - 1, 1)) : null;
+      const finMois = moisValide ? new Date(Date.UTC(an, mois, 1)) : null;
+
+      const depuisFinances = moisValide ? debutMois.toISOString() : depuis;
+      const jusquaFinances = moisValide ? finMois.toISOString() : undefined;
+
+      const data = await financesAmazon(token, depuisFinances, jusquaFinances);
+      return Response.json(
+        { periode: { mois: moisValide ? moisParam : null, jours, depuis: depuisFinances.slice(0, 10) }, ...data },
+        { headers: { "cache-control": "no-store" } },
+      );
     }
 
     if (section === "offre") {

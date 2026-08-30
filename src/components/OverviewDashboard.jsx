@@ -28,17 +28,18 @@ export default function OverviewDashboard() {
 
   return (
     <div className="mb-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-acid/40 bg-slate-deep p-5">
-          <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Commandes en attente d'expédition · Site</div>
-          <div className="chiffre mt-2 font-display text-3xl font-bold text-white sm:text-4xl">{data.enAttente.site}</div>
+      <div className="rounded-2xl border border-acid/40 bg-slate-deep p-5">
+        <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Commandes en attente d'expédition</div>
+        <div className="chiffre mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+          {data.enAttente.site + (data.enAttente.amazon ?? 0)}
         </div>
-        <div className="rounded-2xl border border-acid/40 bg-slate-deep p-5">
-          <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Commandes en attente d'expédition · Amazon</div>
-          <div className="chiffre mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
-            {data.enAttente.amazon != null ? data.enAttente.amazon : "—"}
-          </div>
-          {data.enAttente.amazon == null && <div className="chiffre mt-1 text-xs text-zinc-500">indisponible</div>}
+        <div className="chiffre mt-1 text-xs text-zinc-500">
+          Site : {data.enAttente.site} · Amazon :{" "}
+          {data.enAttente.amazon != null ? (
+            data.enAttente.amazon
+          ) : (
+            <span title={data.enAttente.amazonRaison || ""}>indisponible{data.enAttente.amazonRaison ? ` — ${data.enAttente.amazonRaison}` : ""}</span>
+          )}
         </div>
       </div>
 
@@ -88,6 +89,50 @@ export default function OverviewDashboard() {
           variationPct={data.panierMoyen.variationPct}
           tendance={data.panierMoyen.tendance}
         />
+      </div>
+
+      <div className="my-6 border-t border-white/10" />
+
+      <div className="rounded-2xl border border-white/10 bg-slate-deep p-5">
+        <h2 className="font-display text-lg font-bold text-white">Livraisons en cours</h2>
+        <p className="mt-1 text-xs text-zinc-500">Suivi en direct via Packlink, tous canaux confondus (site, Amazon, saisies manuelles).</p>
+
+        {data.livraisons.indisponible ? (
+          <p className="mt-4 text-sm text-zinc-500">Indisponible — {data.livraisons.raison}</p>
+        ) : data.livraisons.liste.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-500">Aucune livraison en cours.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-zinc-500">
+                  <th className="py-2 pr-3">Statut</th>
+                  <th className="py-2 pr-3">Canal</th>
+                  <th className="py-2 pr-3">Transporteur</th>
+                  <th className="py-2 pr-3">Destination</th>
+                  <th className="py-2 pr-3">Référence</th>
+                  <th className="py-2">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.livraisons.liste.map((l) => (
+                  <tr key={l.reference} className="border-b border-white/5 last:border-0">
+                    <td className="py-2 pr-3">
+                      <span className="rounded-full bg-acid/10 px-2.5 py-1 text-xs font-semibold text-acid">{l.statut}</span>
+                    </td>
+                    <td className="py-2 pr-3 text-zinc-400">{l.source}</td>
+                    <td className="py-2 pr-3 text-zinc-400">{l.transporteur}</td>
+                    <td className="py-2 pr-3 text-zinc-400">
+                      {l.destinataireVille ? `${l.destinataireVille} (${l.destinataireCodePostal || ""})` : "—"}
+                    </td>
+                    <td className="chiffre py-2 pr-3 text-zinc-500">{l.commandeRef || l.reference}</td>
+                    <td className="chiffre py-2 text-zinc-500">{l.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -140,7 +140,7 @@ async function commandesDepuis(token, marketplaceId, depuisISO) {
   return toutes;
 }
 
-async function synchroniserAmazon() {
+export async function synchroniserAmazon() {
   const c = amazonCredentials();
   if (c.missing) return { erreur: "identifiants Amazon manquants" };
 

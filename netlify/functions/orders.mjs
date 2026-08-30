@@ -1,6 +1,7 @@
 import { sql } from "./lib/_db.mjs";
 import { sendEmail, orderShippedEmail, emailConfigured } from "./lib/_email.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { marquerCommandePayee } from "./lib/_orderPaid.mjs";
 
 async function listOrders() {
   const orders = await sql()`
@@ -79,6 +80,23 @@ export default async (req) => {
           await sendEmail({ to: order.email, subject, html }).catch((e) => console.error("[orders] email expédition:", e.message));
         }
 
+        return Response.json({ ok: true });
+      }
+
+      // Rattrapage manuel : marque une commande comme payée sans passer par
+      // le webhook Stripe (ex. paiement confirmé par ailleurs — client
+      // recontacté directement — pendant que le webhook était mal configuré).
+      // N'envoie jamais l'email de confirmation automatiquement : à cocher
+      // explicitement seulement si le client n'a pas déjà été prévenu autrement.
+      if (body.action === "marquer-payee") {
+        const { orderId, paymentIntent, envoyerEmail } = body;
+        if (!orderId) return Response.json({ error: "commande manquante" }, { status: 400 });
+
+        const result = await marquerCommandePayee(orderId, {
+          paymentIntent: paymentIntent || null,
+          envoyerEmail: !!envoyerEmail,
+        });
+        if (!result.ok) return Response.json({ error: result.reason }, { status: 409 });
         return Response.json({ ok: true });
       }
 

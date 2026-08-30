@@ -174,26 +174,67 @@ function Ventes() {
 
 // ---------- Finances ----------
 
+const MOIS_NOMS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+function moisActuel() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function decalerMois(mois, delta) {
+  const [an, m] = mois.split("-").map(Number);
+  const d = new Date(Date.UTC(an, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 function Finances() {
-  const [jours, setJours] = useState(90);
-  const { data, state } = useSection("finances", jours);
+  const [mois, setMois] = useState(moisActuel());
+  const [data, setData] = useState(null);
+  const [state, setState] = useState("loading");
+  const [detailOuvert, setDetailOuvert] = useState(false);
+
+  useEffect(() => {
+    setState("loading");
+    cachedFetch(`/api/amazon?section=finances&month=${mois}`)
+      .then((json) => {
+        setData(json);
+        setState(json.error || json.erreur ? "erreur" : "ok");
+      })
+      .catch(() => setState("erreur"));
+  }, [mois]);
 
   if (state === "loading" && !data) return <p className="text-sm text-zinc-500">Interrogation d'Amazon…</p>;
   if (state === "erreur") return <Erreur message={data?.error || data?.erreur} />;
 
   const tauxRemb = data.ventesBrutes ? Math.round((-data.remboursements / data.ventesBrutes) * 1000) / 10 : 0;
+  const [an, m] = mois.split("-").map(Number);
+  const estMoisEnCours = mois === moisActuel();
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-zinc-500">Depuis le {data.periode.depuis} · relevé financier Amazon</p>
-        <div className="flex rounded-full border border-white/10 bg-white/5 p-0.5">
-          {[30, 90, 180].map((d) => (
-            <button key={d} onClick={() => setJours(d)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${jours === d ? "bg-acid text-white" : "text-zinc-400 hover:text-white"}`}>
-              {d} jours
-            </button>
-          ))}
+        <p className="text-sm text-zinc-500">
+          {estMoisEnCours ? "Mois en cours" : "Relevé financier Amazon"} · {data.parCommande?.length || 0} commande(s)
+        </p>
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1">
+          <button
+            onClick={() => setMois((m) => decalerMois(m, -1))}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-white cursor-pointer"
+            aria-label="Mois précédent"
+          >
+            ‹
+          </button>
+          <span className="min-w-[110px] text-center text-xs font-semibold text-white">
+            {MOIS_NOMS[m - 1]} {an}
+          </span>
+          <button
+            onClick={() => setMois((m) => decalerMois(m, 1))}
+            disabled={estMoisEnCours}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-white disabled:opacity-30 cursor-pointer"
+            aria-label="Mois suivant"
+          >
+            ›
+          </button>
         </div>
       </div>
 
@@ -234,6 +275,54 @@ function Finances() {
           ))}
           {data.fraisParType.every((f) => f.montant === 0) && <p className="text-sm text-zinc-500">Aucun frais sur la période.</p>}
         </ul>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-slate-deep p-5">
+        <button
+          onClick={() => setDetailOuvert((v) => !v)}
+          className="flex w-full items-center justify-between text-left cursor-pointer"
+        >
+          <div>
+            <h2 className="font-display text-base font-bold text-white">Détail par commande</h2>
+            <p className="mt-1 text-xs text-zinc-500">Ce que chaque commande a rapporté et coûté en frais, pour voir précisément d'où vient la hausse.</p>
+          </div>
+          <span className="text-zinc-500">{detailOuvert ? "−" : "+"}</span>
+        </button>
+
+        {detailOuvert && (
+          <div className="mt-4 overflow-x-auto">
+            {!data.parCommande || data.parCommande.length === 0 ? (
+              <p className="text-sm text-zinc-500">Aucune commande sur la période.</p>
+            ) : (
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-zinc-500">
+                    <th className="py-2 pr-3">Commande</th>
+                    <th className="py-2 pr-3">Date</th>
+                    <th className="py-2 pr-3">Vente</th>
+                    <th className="py-2 pr-3">Frais</th>
+                    <th className="py-2">Détail des frais</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.parCommande.map((c) => (
+                    <tr key={c.orderId} className="border-b border-white/5 last:border-0 align-top">
+                      <td className="chiffre py-2 pr-3 text-zinc-300">{c.orderId}</td>
+                      <td className="chiffre py-2 pr-3 text-zinc-500">{(c.date || "").slice(0, 10)}</td>
+                      <td className="chiffre py-2 pr-3 font-bold text-white">{eur(c.ventesBrutes)}</td>
+                      <td className="chiffre py-2 pr-3 font-bold text-acid">{eur(c.totalFrais)}</td>
+                      <td className="py-2 text-xs text-zinc-500">
+                        {Object.entries(c.frais)
+                          .map(([type, montant]) => `${libelleFrais(type)} : ${eur(montant)}`)
+                          .join(" · ")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
 
       <p className="text-xs leading-relaxed text-zinc-600">
@@ -644,24 +733,38 @@ function AvisClients() {
         </h2>
         <div className="mt-4 flex flex-col gap-2">
           {data.commandes.length === 0 && <p className="text-sm text-zinc-500">Aucune commande récente sur {data.marketplace}.</p>}
-          {data.commandes.map((c) => (
-            <div key={c.commande} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-ink p-4">
-              <div>
-                <div className="text-sm text-white">{c.commande}</div>
-                <div className="text-xs text-zinc-500">{c.date} · <span className="chiffre">{c.montant} €</span></div>
+          {data.commandes.map((c) => {
+            const j = c.joursDepuisLivraison;
+            const statutDelai =
+              j == null
+                ? "date de livraison inconnue"
+                : j < 5
+                  ? `livré il y a ${j} jour${j > 1 ? "s" : ""} · encore ${5 - j} jour${5 - j > 1 ? "s" : ""} avant l'ouverture`
+                  : j <= 30
+                    ? `livré il y a ${j} jours · fenêtre ouverte encore ${30 - j} jour${30 - j > 1 ? "s" : ""}`
+                    : `livré il y a ${j} jours · fenêtre expirée (au-delà de 30 jours)`;
+            return (
+              <div key={c.commande} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-ink p-4">
+                <div>
+                  <div className="text-sm text-white">{c.commande}</div>
+                  <div className="text-xs text-zinc-500">
+                    Achat {c.dateAchat} · <span className="chiffre">{c.montant} €</span>
+                  </div>
+                  <div className={`mt-0.5 text-xs ${c.eligible ? "text-acid" : "text-zinc-600"}`}>{statutDelai}</div>
+                </div>
+                {envoyes.has(c.commande) ? (
+                  <span className="text-xs text-emerald-400">Demande envoyée</span>
+                ) : c.eligible ? (
+                  <button onClick={() => envoyer(c.commande, data.marketplaceId)} disabled={envoiEnCours === c.commande}
+                    className="rounded-full bg-acid px-4 py-1.5 font-display text-xs font-bold text-white cursor-pointer disabled:opacity-40">
+                    {envoiEnCours === c.commande ? "Envoi…" : "Demander un avis"}
+                  </button>
+                ) : (
+                  <span className="text-xs text-zinc-600">Pas encore éligible</span>
+                )}
               </div>
-              {envoyes.has(c.commande) ? (
-                <span className="text-xs text-emerald-400">Demande envoyée</span>
-              ) : c.eligible ? (
-                <button onClick={() => envoyer(c.commande, data.marketplaceId)} disabled={envoiEnCours === c.commande}
-                  className="rounded-full bg-acid px-4 py-1.5 font-display text-xs font-bold text-white cursor-pointer disabled:opacity-40">
-                  {envoiEnCours === c.commande ? "Envoi…" : "Demander un avis"}
-                </button>
-              ) : (
-                <span className="text-xs text-zinc-600">Pas encore éligible</span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -727,11 +830,12 @@ export default function AmazonPanel() {
   // Chaque sous-partie interroge l'API Amazon, dont le quota se remplit vite.
   // Une fois visitée, elle reste montée (juste masquée) : changer d'onglet ne
   // refait plus jamais la même requête.
-  const [visited, setVisited] = useState(new Set(["ventes"]));
+  // Tous les sous-onglets se chargent dès l'ouverture de la section Amazon
+  // (pas seulement au clic) : plus d'attente en passant de l'un à l'autre.
+  const [visited] = useState(new Set(SOUS_ONGLETS.map((s) => s.id)));
 
   function goTo(id) {
     setSous(id);
-    setVisited((v) => (v.has(id) ? v : new Set(v).add(id)));
   }
 
   return (

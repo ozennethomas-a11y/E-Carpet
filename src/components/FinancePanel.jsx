@@ -134,19 +134,33 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
           )}
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatTile label="Chiffre d'affaires total" value={formatPrice(data.ca.total)} hint={`Site ${formatPrice(data.ca.site)} · Amazon ${formatPrice(data.ca.amazon)}`} />
-            <StatTile label="Marge nette" value={formatPrice(data.margeNette)} />
+            <StatTile label="Chiffre d'affaires total (brut)" value={formatPrice(data.ca.total)} hint={`Site ${formatPrice(data.ca.site)} · Amazon ${formatPrice(data.ca.amazon)}`} />
+            <StatTile label="Marge nette" value={formatPrice(data.margeNette)} hint="Après coût produit, expédition, frais Stripe/Amazon, dépenses et pub" />
             <StatTile label="Dépenses hors vente" value={formatPrice(data.depenses.total)} />
           </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatTile label="Nombre de commandes" value={data.ordersCount} hint="Site + Amazon" />
+            <StatTile label="Panier moyen" value={formatPrice(data.panierMoyenCents)} hint="Site + Amazon" />
+          </div>
+
+          {data.skuAmazonSansCout?.length > 0 && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-300">
+              Coût produit non renseigné pour le(s) SKU Amazon : <strong>{data.skuAmazonSansCout.join(", ")}</strong> — la
+              marge nette ne tient pas compte du coût de revient de ces ventes.
+            </div>
+          )}
 
           <BarList
             title="Frais par poste"
             items={[
               { label: "Frais Stripe", value: Math.round(data.frais.stripe / 100) },
               { label: "Frais Amazon", value: Math.round(data.frais.amazon / 100) },
+              { label: "Expédition (site)", value: Math.round(data.frais.expedition / 100) },
               { label: "Publicité", value: Math.round(data.frais.publicite / 100) },
               { label: "Commissions affiliés", value: Math.round(data.frais.commissionsAffilies / 100) },
-              { label: "Coût produit", value: Math.round(data.coutProduit / 100) },
+              { label: "Coût produit (site)", value: Math.round(data.coutProduit / 100) },
+              { label: "Coût produit (Amazon)", value: Math.round(data.coutProduitAmazon / 100) },
             ].filter((i) => i.value > 0)}
             empty="Aucun frais sur la période."
           />

@@ -3,8 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- PWA pour l'admin : "Ajouter à l'écran d'accueil" depuis Safari iOS
+         ouvre directement /admin en plein écran (voir manifest-admin.json,
+         start_url). Sans effet sur la navigation normale du site. -->
+    <link rel="manifest" href="/manifest-admin.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="E-Carpet Admin" />
+    <meta name="theme-color" content="#0a0a0b" />
     <meta name="description" content="E-Carpet · Le tapis de sol premium 100% silicone pour trottinettes électriques. Imperméable, antidérapant, résistant à la chaleur. 130 × 40 cm." />
     <meta property="og:title" content="E-Carpet · Protégez votre sol, sublimez votre trottinette" />
     <meta property="og:description" content="Tapis 100% silicone imperméable pour trottinette électrique. Bordure anti-débordement, 130 × 40 cm, compatible tous modèles." />

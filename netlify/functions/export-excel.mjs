@@ -12,6 +12,8 @@ import { sql } from "./lib/_db.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./lib/_amazon.mjs";
 import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./lib/_googleAds.mjs";
+import { coutsExpeditionSite } from "./lib/_shipping.mjs";
+import { coutRevientAmazon } from "./lib/_amazonCogs.mjs";
 import { LOGO_WHITE_PNG_BASE64 } from "./lib/_logoAsset.mjs";
 
 const DAY_MS = 86400000;
@@ -304,7 +306,7 @@ async function chargerDonnees(from, to) {
     const c = amazonCredentials();
     if (!c.missing) {
       const token = await amazonToken(c);
-      amazon = await financesAmazon(token, from);
+      amazon = await financesAmazon(token, from, toExcl);
     }
   } catch (e) {
     amazon = { indisponible: true, raison: String(e.message || e) };
@@ -354,12 +356,27 @@ async function chargerDonnees(from, to) {
 
   const caSite = orders.reduce((s, o) => s + o.total_cents, 0);
   const stripeFeeCents = orders.reduce((s, o) => s + (o.stripe_fee_cents || 0), 0);
-  const caAmazon = amazon.indisponible ? 0 : Math.round((amazon.net || 0) * 100);
+  // Brut, cohérent avec caSite (avant, amazon.net était déjà net de ses
+  // propres frais, ce qui sous-évaluait le CA Amazon par rapport au site).
+  const caAmazon = amazon.indisponible ? 0 : Math.round((amazon.ventesBrutes || 0) * 100);
   const fraisAmazonCents = amazon.indisponible ? 0 : Math.round((amazon.fraisAmazon || 0) * 100);
   const publiciteCents = ads.indisponible ? 0 : Math.round((ads.depenseTotale || 0) * 100);
   const depensesTotalCents = depenses.reduce((s, d) => s + d.amount_cents, 0);
+  const amazonCogs = amazon.indisponible ? { coutCents: 0, skuSansCout: [] } : await coutRevientAmazon(amazon.parCommande);
+  const expeditionSite = await coutsExpeditionSite(`${from}T00:00:00Z`, `${toExcl}T00:00:00Z`);
+  const fraisExpeditionCents = expeditionSite.domicile.coutCents + expeditionSite.relais.coutCents;
+  const nbCommandes = orders.length + (amazon.indisponible ? 0 : amazon.parCommande?.length || 0);
+  const caTotalCents = caSite + caAmazon;
   const margeNetteCents =
-    caSite + caAmazon - stripeFeeCents - coutProduitCents - depensesTotalCents - commissionsCents - publiciteCents;
+    caTotalCents -
+    stripeFeeCents -
+    fraisAmazonCents -
+    coutProduitCents -
+    amazonCogs.coutCents -
+    fraisExpeditionCents -
+    depensesTotalCents -
+    commissionsCents -
+    publiciteCents;
 
   return {
     orders,
@@ -382,16 +399,18 @@ async function chargerDonnees(from, to) {
     kpis: {
       caSite,
       caAmazon,
-      caTotal: caSite + caAmazon,
+      caTotal: caTotalCents,
       stripeFeeCents,
       coutProduitCents,
+      coutProduitAmazonCents: amazonCogs.coutCents,
+      fraisExpeditionCents,
       depensesTotalCents,
       commissionsCents,
       publiciteCents,
       fraisAmazonCents,
       margeNetteCents,
-      nbCommandes: orders.length,
-      panierMoyenCents: orders.length ? Math.round(caSite / orders.length) : 0,
+      nbCommandes,
+      panierMoyenCents: nbCommandes ? Math.round(caTotalCents / nbCommandes) : 0,
     },
   };
 }
@@ -559,12 +578,16 @@ function feuilleFinance(wb, d) {
   const debut = bandeau(s, "Détail financier", { cols: 4 });
 
   const lignes = [
-    ["Recettes", "Chiffre d'affaires site", euros(d.kpis.caSite), `${d.kpis.nbCommandes} commande(s)`],
+    ["Recettes", "Chiffre d'affaires site", euros(d.kpis.caSite), `${d.orders.length} commande(s)`],
   ];
-  if (!d.amazon.indisponible) lignes.push(["Recettes", "Chiffre d'affaires Amazon (net)", euros(d.kpis.caAmazon), ""]);
+  if (!d.amazon.indisponible) {
+    lignes.push(["Recettes", "Chiffre d'affaires Amazon (brut)", euros(d.kpis.caAmazon), `${d.amazon.parCommande?.length || 0} commande(s)`]);
+  }
   lignes.push(["Charges", "Frais Stripe", -euros(d.kpis.stripeFeeCents), ""]);
   if (!d.amazon.indisponible) lignes.push(["Charges", "Frais Amazon", -euros(d.kpis.fraisAmazonCents), ""]);
-  lignes.push(["Charges", "Coût produit", -euros(d.kpis.coutProduitCents), ""]);
+  lignes.push(["Charges", "Coût produit (site)", -euros(d.kpis.coutProduitCents), ""]);
+  if (d.kpis.coutProduitAmazonCents) lignes.push(["Charges", "Coût produit (Amazon)", -euros(d.kpis.coutProduitAmazonCents), ""]);
+  if (d.kpis.fraisExpeditionCents) lignes.push(["Charges", "Expédition (site, estimé)", -euros(d.kpis.fraisExpeditionCents), ""]);
   lignes.push(["Charges", "Commissions affiliés", -euros(d.kpis.commissionsCents), ""]);
   if (!d.ads.indisponible) lignes.push(["Charges", "Publicité Google Ads", -euros(d.kpis.publiciteCents), ""]);
   for (const dep of d.depenses) {

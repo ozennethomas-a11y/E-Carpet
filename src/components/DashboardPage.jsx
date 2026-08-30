@@ -15,11 +15,14 @@ import PromoPanel from "./PromoPanel";
 import PartnersPanel from "./PartnersPanel";
 import FinancePanel from "./FinancePanel";
 import StockPanel from "./StockPanel";
+import ShippingPanel from "./ShippingPanel";
 import SocialPanel from "./SocialPanel";
 import MailingPanel from "./MailingPanel";
 import MailAlertsPanel from "./MailAlertsPanel";
 import OverviewDashboard from "./OverviewDashboard";
 import AdminAccessPanel from "./AdminAccessPanel";
+import FaceIdSettings from "./FaceIdSettings";
+import { startAuthentication } from "@simplewebauthn/browser";
 import { cachedFetchWithStatus, prefetch, clearCache } from "../lib/adminCache";
 
 // Vue par défaut de chaque onglet, téléchargée en une fois à la connexion
@@ -37,6 +40,7 @@ function urlsAPrecharger(isOwner) {
     "/api/links",
     "/api/mailing",
     "/api/stock",
+    `/api/shipping?month=${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
     "/api/cost-batches",
     "/api/seo?days=28",
     "/api/finance?days=30",
@@ -46,6 +50,11 @@ function urlsAPrecharger(isOwner) {
     "/api/social-ads",
     "/api/ads",
     "/api/amazon?section=ventes&days=30",
+    `/api/amazon?section=finances&month=${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    "/api/amazon?section=commandes",
+    "/api/amazon?section=offre",
+    "/api/amazon?section=avis",
+    "/api/amazon?section=compte",
     "/api/amazon-ads",
   ];
   if (isOwner) urls.push("/api/admin-auth?action=history", "/api/admin-auth?action=admins");
@@ -71,6 +80,7 @@ const SECTIONS = [
   },
   { id: "amazon", label: "Amazon" },
   { id: "finance", label: "Finance" },
+  { id: "expedition", label: "Expédition" },
   { id: "stock", label: "Stock" },
   { id: "social", label: "Réseaux sociaux" },
   {
@@ -227,6 +237,37 @@ export default function DashboardPage() {
     }
   }
 
+  async function connexionFaceId() {
+    setErreurConnexion("");
+    setEnvoi(true);
+    try {
+      const res = await fetch("/api/webauthn?action=login-options");
+      const data = await res.json();
+      if (data.error) return setErreurConnexion(data.error);
+
+      const response = await startAuthentication({ optionsJSON: data.options });
+
+      const verifyRes = await fetch("/api/webauthn?action=login-verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ response, state: data.state }),
+      });
+      const verifyData = await verifyRes.json();
+      if (verifyData.error) return setErreurConnexion(verifyData.error);
+      setConnecte(true);
+      fetch("/api/admin-auth?action=me")
+        .then((r) => r.json())
+        .then((d) => {
+          setIsOwner(!!d.isOwner);
+          setMonNom(d.name || "");
+        });
+    } catch (e) {
+      if (e.name !== "NotAllowedError") setErreurConnexion("Face ID non disponible ou non activé sur cet appareil.");
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
   if (connecte === null) return null;
 
   if (!connecte) {
@@ -267,6 +308,14 @@ export default function DashboardPage() {
             className="mt-4 w-full rounded-full bg-acid px-6 py-3 font-display font-bold text-white cursor-pointer disabled:opacity-60"
           >
             {envoi ? "Connexion…" : "Entrer"}
+          </button>
+          <button
+            type="button"
+            onClick={connexionFaceId}
+            disabled={envoi}
+            className="mt-2 w-full rounded-full border border-white/15 px-6 py-3 font-display text-sm font-bold text-zinc-300 transition-colors hover:text-white cursor-pointer disabled:opacity-60"
+          >
+            Se connecter avec Face ID
           </button>
           <button
             type="button"
@@ -324,7 +373,13 @@ export default function DashboardPage() {
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Admin</h1>
-          {monNom && <p className="mt-0.5 text-xs text-zinc-500">Connecté en tant que {monNom}</p>}
+          {monNom && (
+            <div className="mt-0.5 flex items-center gap-2">
+              <p className="text-xs text-zinc-500">Connecté en tant que {monNom}</p>
+              <span className="text-zinc-700">·</span>
+              <FaceIdSettings />
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {section === "finance" && (
@@ -433,6 +488,7 @@ export default function DashboardPage() {
       )}
 
       {section === "finance" && <FinancePanel periode={periodeFinance} onPeriodeChange={setPeriodeFinance} />}
+      {section === "expedition" && <ShippingPanel />}
       {section === "stock" && <StockPanel />}
       {section === "social" && <SocialPanel />}
       {section === "acces" && isOwner && <AdminAccessPanel tab={tab} />}

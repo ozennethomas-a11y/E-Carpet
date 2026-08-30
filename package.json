@@ -10,6 +10,8 @@
   "dependencies": {
     "@netlify/blobs": "^10.7.12",
     "@netlify/database": "^1.1.0",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.3",
     "@tailwindcss/vite": "^4.3.0",
     "@vitejs/plugin-react": "^6.0.2",
     "drizzle-orm": "^1.0.0-beta.22",

@@ -133,3 +133,39 @@ export async function creerBrouillonPourCommande(orderId) {
   await sql()`update orders set packlink_draft_reference = ${draft.reference} where id = ${orderId}`;
   return { reference: draft.reference, colis };
 }
+
+const STATUTS_TERMINES = new Set(["DELIVERED", "CANCELED"]);
+const LIBELLE_STATUT = {
+  READY_TO_PRINT: "Étiquette à imprimer",
+  AWAITING_COMPLETION: "En attente de finalisation",
+  IN_TRANSIT: "En transit",
+  PICKED_UP: "Récupéré par le transporteur",
+  DELIVERED: "Livré",
+  CANCELED: "Annulé",
+};
+
+const LIBELLE_SOURCE = {
+  amazon_inbound: "Amazon",
+  "e-carpet-website": "Site",
+  PRO: "Packlink (manuel)",
+};
+
+// Livraisons en cours, tous canaux confondus (site + Amazon + créées à la
+// main dans Packlink) : Packlink est la seule source qui voit vraiment le
+// statut de transit réel, notre base ne sait dire que "expédié" ou non.
+export async function livraisonsEnCours(key, { limite = 15 } = {}) {
+  const json = await packlinkGet("/v1/shipments", key);
+  return (json.shipments || [])
+    .filter((s) => !s.canceled && !STATUTS_TERMINES.has(s.status))
+    .slice(0, limite)
+    .map((s) => ({
+      reference: s.reference,
+      commandeRef: s.shipment_custom_reference || null,
+      statut: LIBELLE_STATUT[s.status] || s.status,
+      source: LIBELLE_SOURCE[s.source] || s.source,
+      transporteur: s.carrier,
+      destinataireVille: s.delivery?.city || null,
+      destinataireCodePostal: s.delivery?.zip_code || null,
+      date: s.orderDate,
+    }));
+}

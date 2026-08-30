@@ -15,6 +15,7 @@ import {
 import { verifyTotp, generateSecret, otpauthUri } from "./lib/_totp.mjs";
 import { constantTimeEqual, hashPassword, verifyPassword } from "./lib/_crypto.mjs";
 import { sql } from "./lib/_db.mjs";
+import { synchroniserAmazon } from "./stock.mjs";
 
 // Amorçage : tant qu'aucun compte n'existe en base, le tout premier login
 // avec les anciennes variables DASHBOARD_PASSWORD/ADMIN_TOTP_SECRET (déjà en
@@ -33,7 +34,7 @@ async function bootstrapOwnerIfNeeded(name, password, totp) {
   return createAdmin({ name: name || "Thomas", passwordHash, totpSecret: legacyTotpSecret, isOwner: true });
 }
 
-export default async (req) => {
+export default async (req, context) => {
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
 
@@ -83,6 +84,15 @@ export default async (req) => {
     await resetLoginAttempts(name);
     const token = await createAdminSession(admin.id);
     await recordLoginHistory(admin.id, req).catch((e) => console.error("[admin-auth] échec journal connexion:", e.message));
+
+    // Synchronise le stock avec les ventes Amazon à chaque connexion (en plus
+    // du cron toutes les 4h) : se fait en arrière-plan après la réponse, pour
+    // ne pas ralentir la connexion — un admin voit ainsi des données à jour
+    // sans avoir à cliquer "Synchroniser" manuellement.
+    context.waitUntil(
+      synchroniserAmazon().catch((e) => console.error("[admin-auth] échec synchro stock Amazon:", e.message)),
+    );
+
     return Response.json({ ok: true }, { headers: { "Set-Cookie": adminSessionCookieHeader(token) } });
   }
 

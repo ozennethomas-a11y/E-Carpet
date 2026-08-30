@@ -2,6 +2,8 @@ import { sql } from "./lib/_db.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, financesAmazon } from "./lib/_amazon.mjs";
 import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampagnes } from "./lib/_googleAds.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { coutsExpeditionSite } from "./lib/_shipping.mjs";
+import { coutRevientAmazon } from "./lib/_amazonCogs.mjs";
 
 const DAY_MS = 86400000;
 const PAID_STATUSES = ["payee", "expediee"];
@@ -93,12 +95,12 @@ async function commissionsAffiliesData(from, toExcl) {
   return rows.reduce((s, r) => s + r.amount_cents, 0);
 }
 
-async function amazonData(depuisISO) {
+async function amazonData(depuisISO, jusquaISO) {
   const c = amazonCredentials();
   if (c.missing) return { indisponible: true, raison: "identifiants Amazon manquants" };
   try {
     const token = await amazonToken(c);
-    return await financesAmazon(token, depuisISO);
+    return await financesAmazon(token, depuisISO, jusquaISO);
   } catch (e) {
     return { indisponible: true, raison: String(e.message || e) };
   }
@@ -134,9 +136,9 @@ export default async (req) => {
       const { from, to } = resolveRange(url);
       const toExcl = toExclusive(to);
 
-      const [site, amazon, ads, depenses, commissionsAffiliesCents, produits, coutsProduits] = await Promise.all([
+      const [site, amazon, ads, depenses, commissionsAffiliesCents, produits, coutsProduits, expeditionSite] = await Promise.all([
         siteData(from, toExcl),
-        amazonData(from),
+        amazonData(from, toExcl),
         googleAdsData(from),
         depensesData(from, toExcl),
         commissionsAffiliesData(from, toExcl),
@@ -147,25 +149,47 @@ export default async (req) => {
           join products p on p.id = pc.product_id
           order by pc.effective_from desc
         `,
+        coutsExpeditionSite(`${from}T00:00:00Z`, `${toExcl}T00:00:00Z`),
       ]);
 
+      const amazonCogs = amazon.indisponible ? { coutCents: 0, skuSansCout: [] } : await coutRevientAmazon(amazon.parCommande);
+
+      // Chiffre d'affaires : toujours le montant BRUT des ventes, cohérent
+      // entre Site et Amazon. Avant, le CA Amazon était en réalité déjà net
+      // de ses propres frais (amazon.net), ce qui le sous-évaluait par
+      // rapport au CA site et rendait le total incohérent.
       const caSite = site.revenueCents;
-      const caAmazon = amazon.indisponible ? 0 : Math.round((amazon.net || 0) * 100);
+      const caAmazon = amazon.indisponible ? 0 : Math.round((amazon.ventesBrutes || 0) * 100);
       const fraisAmazonCents = amazon.indisponible ? 0 : Math.round((amazon.fraisAmazon || 0) * 100);
       const publiciteCents = ads.indisponible ? 0 : Math.round((ads.depenseTotale || 0) * 100);
+      const fraisExpeditionCents = expeditionSite.domicile.coutCents + expeditionSite.relais.coutCents;
+
+      const ordersCount = site.ordersCount + (amazon.indisponible ? 0 : amazon.parCommande?.length || 0);
+      const caTotalCents = caSite + caAmazon;
+      const panierMoyenCents = ordersCount ? Math.round(caTotalCents / ordersCount) : 0;
 
       const margeNetteCents =
-        caSite + caAmazon - site.stripeFeeCents - site.coutProduitCents - depenses.total - commissionsAffiliesCents - publiciteCents;
+        caTotalCents -
+        site.stripeFeeCents -
+        fraisAmazonCents -
+        site.coutProduitCents -
+        amazonCogs.coutCents -
+        fraisExpeditionCents -
+        depenses.total -
+        commissionsAffiliesCents -
+        publiciteCents;
 
       if (url.searchParams.get("export") === "csv") {
         const lignes = [];
         lignes.push({ date: from, source: "Site", categorie: "Chiffre d'affaires", montantCents: caSite, note: `${site.ordersCount} commande(s)` });
         if (!amazon.indisponible) {
-          lignes.push({ date: from, source: "Amazon", categorie: "Chiffre d'affaires net", montantCents: caAmazon, note: "" });
+          lignes.push({ date: from, source: "Amazon", categorie: "Chiffre d'affaires brut", montantCents: caAmazon, note: `${amazon.parCommande?.length || 0} commande(s)` });
           lignes.push({ date: from, source: "Amazon", categorie: "Frais Amazon", montantCents: -fraisAmazonCents, note: "" });
+          if (amazonCogs.coutCents) lignes.push({ date: from, source: "Amazon", categorie: "Coût produit", montantCents: -amazonCogs.coutCents, note: "" });
         }
         if (site.stripeFeeCents) lignes.push({ date: from, source: "Site", categorie: "Frais Stripe", montantCents: -site.stripeFeeCents, note: "" });
         if (site.coutProduitCents) lignes.push({ date: from, source: "Site", categorie: "Coût produit", montantCents: -site.coutProduitCents, note: "" });
+        if (fraisExpeditionCents) lignes.push({ date: from, source: "Expédition", categorie: "Domicile + point relais (estimé)", montantCents: -fraisExpeditionCents, note: "" });
         if (commissionsAffiliesCents) lignes.push({ date: from, source: "Affiliation", categorie: "Commissions", montantCents: -commissionsAffiliesCents, note: "" });
         if (!ads.indisponible && publiciteCents) lignes.push({ date: from, source: "Google Ads", categorie: "Publicité", montantCents: -publiciteCents, note: "" });
         for (const d of depenses.liste) {
@@ -182,14 +206,20 @@ export default async (req) => {
       return Response.json(
         {
           range: { from, to },
-          ca: { site: caSite, amazon: caAmazon, total: caSite + caAmazon },
+          ca: { site: caSite, amazon: caAmazon, total: caTotalCents },
+          ordersCount,
+          panierMoyenCents,
           frais: {
             stripe: site.stripeFeeCents,
             amazon: fraisAmazonCents,
+            expedition: fraisExpeditionCents,
             publicite: publiciteCents,
             commissionsAffilies: commissionsAffiliesCents,
           },
           coutProduit: site.coutProduitCents,
+          coutProduitAmazon: amazonCogs.coutCents,
+          skuAmazonSansCout: amazonCogs.skuSansCout,
+          expeditionSite,
           margeNette: margeNetteCents,
           produitsSansCout: site.produitsSansCout,
           ordersWithoutStripeFee: site.ordersWithoutStripeFee,
