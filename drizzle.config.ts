@@ -5,6 +5,6 @@ export default defineConfig({
   schema: './db/schema.ts',
   out: 'netlify/database/migrations',
   dbCredentials: {
-    url: process.env.NETLIFY_DATABASE_URL!,
+    url: process.env.NEON_DATABASE_URL!,
   },
 })

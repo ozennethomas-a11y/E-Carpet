@@ -1,14 +1,13 @@
-import { getDatabase } from "@netlify/database";
+import { neon } from "@neondatabase/serverless";
 
 let cached;
 
-// On utilise directement `sql` (tagged template, fourni par @netlify/database)
-// plutôt que drizzle-orm : le driver `pg` bundlé par esbuild pour les
-// fonctions Netlify ignore silencieusement le connectionString fourni et
-// retombe sur le port Postgres par défaut (5432), donc les requêtes
-// échouent en local. `sql` passe par le même client déjà correctement
-// configuré par @netlify/database, en local comme en prod.
+// Base migrée de "Netlify DB" (Neon revendu par Netlify, facturé en crédits
+// Netlify) vers un compte Neon en direct le 2026-08-31 : le calcul de la base
+// consommait à lui seul la quasi-totalité du forfait de crédits mensuel (voir
+// mémoire "e-carpet-verification-discipline-credits"). Le pilote officiel
+// Neon (HTTP, sans connexion persistante) remplace `getDatabase().sql`.
 export function sql() {
-  if (!cached) cached = getDatabase().sql;
+  if (!cached) cached = neon(process.env.NEON_DATABASE_URL);
   return cached;
 }
