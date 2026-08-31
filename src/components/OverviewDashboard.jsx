@@ -12,12 +12,19 @@ export default function OverviewDashboard() {
   async function ouvrirEtiquette(reference) {
     setEtiquetteErreur(null);
     setEtiquetteEnCours(reference);
+    // L'onglet doit être ouvert de façon synchrone, dans le même tick que le
+    // clic : sinon le navigateur ne reconnaît plus le geste utilisateur une
+    // fois l'appel réseau ci-dessous terminé et bloque silencieusement le
+    // window.open (aucune erreur visible, juste "rien ne se passe").
+    const onglet = window.open("", "_blank", "noopener,noreferrer");
     try {
       const res = await fetch(`/api/packlink?label=${encodeURIComponent(reference)}`);
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error || `HTTP ${res.status}`);
-      window.open(json.url, "_blank", "noopener,noreferrer");
+      if (onglet) onglet.location.href = json.url;
+      else window.open(json.url, "_blank", "noopener,noreferrer");
     } catch (e) {
+      onglet?.close();
       setEtiquetteErreur({ reference, message: e.message || "échec du téléchargement" });
     } finally {
       setEtiquetteEnCours(null);
