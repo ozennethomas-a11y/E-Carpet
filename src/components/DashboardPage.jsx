@@ -263,7 +263,15 @@ export default function DashboardPage() {
           setMonNom(d.name || "");
         });
     } catch (e) {
-      if (e.name !== "NotAllowedError") setErreurConnexion("Face ID non disponible ou non activé sur cet appareil.");
+      // Toujours afficher un message, même pour "NotAllowedError" : ce code
+      // couvre aussi bien une annulation volontaire qu'un vrai échec (timeout,
+      // activation utilisateur perdue en PWA sur iOS...) — le masquer
+      // systématiquement donnait l'impression que rien ne se passait du tout.
+      setErreurConnexion(
+        e.name === "NotAllowedError"
+          ? "Connexion Face ID annulée ou indisponible sur cet appareil."
+          : "Face ID non disponible ou non activé sur cet appareil.",
+      );
     } finally {
       setEnvoi(false);
     }
