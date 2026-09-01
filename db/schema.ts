@@ -368,3 +368,18 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   deviceName: text('device_name'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+// Paramètres de l'onglet Pilotage : le solde de trésorerie et les hypothèses
+// de réassort ne sont déductibles d'aucune autre table (le solde bancaire ne
+// transite pas par le site, le délai fournisseur n'est pas mesuré). Une seule
+// ligne, id = 1. Sans elle, Pilotage affiche « donnée insuffisante » partout
+// où un runway serait nécessaire, plutôt qu'une projection inventée.
+export const pilotageSettings = pgTable('pilotage_settings', {
+  id: integer('id').primaryKey(),
+  tresorerieCents: integer('tresorerie_cents'),
+  tresorerieDate: timestamp('tresorerie_date'),
+  delaiReassortJours: integer('delai_reassort_jours').notNull().default(60),
+  couvertureCibleJours: integer('couverture_cible_jours').notNull().default(120),
+  stockSecuriteJours: integer('stock_securite_jours').notNull().default(21),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
