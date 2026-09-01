@@ -14,6 +14,7 @@ import CustomersPanel from "./CustomersPanel";
 import PromoPanel from "./PromoPanel";
 import PartnersPanel from "./PartnersPanel";
 import FinancePanel from "./FinancePanel";
+import PilotagePanel from "./PilotagePanel";
 import StockPanel from "./StockPanel";
 import ShippingPanel from "./ShippingPanel";
 import SocialPanel from "./SocialPanel";
@@ -45,6 +46,7 @@ function urlsAPrecharger(isOwner) {
     "/api/cost-batches",
     "/api/seo?days=28",
     "/api/finance?days=30",
+    "/api/pilotage?days=180",
     "/api/finance-comparison",
     "/api/social-auth?action=status",
     "/api/social-schedule",
@@ -81,6 +83,9 @@ const SECTIONS = [
   },
   { id: "amazon", label: "Amazon" },
   { id: "finance", label: "Finance" },
+  // Placé juste après Finance : Pilotage repart des mêmes chiffres, mais pour
+  // projeter (runway, réassort, priorités) au lieu de constater.
+  { id: "pilotage", label: "Pilotage" },
   { id: "expedition", label: "Expédition" },
   { id: "stock", label: "Stock" },
   { id: "social", label: "Réseaux sociaux" },
@@ -499,6 +504,7 @@ export default function DashboardPage() {
       )}
 
       {section === "finance" && <FinancePanel periode={periodeFinance} onPeriodeChange={setPeriodeFinance} />}
+      {section === "pilotage" && <PilotagePanel />}
       {section === "expedition" && <ShippingPanel />}
       {section === "stock" && <StockPanel />}
       {section === "social" && <SocialPanel />}
