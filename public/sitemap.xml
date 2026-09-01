@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://e-carpet.shop/</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -49,32 +49,38 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://e-carpet.shop/blog/rentree-remettre-sa-trottinette-en-route</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://e-carpet.shop/avis</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://e-carpet.shop/legal/mentions-legales</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://e-carpet.shop/legal/cgv</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://e-carpet.shop/legal/confidentialite</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://e-carpet.shop/legal/cookies</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
