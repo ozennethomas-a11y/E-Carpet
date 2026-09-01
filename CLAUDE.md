@@ -9,6 +9,16 @@ Landing page one-page pour un tapis en silicone destiné aux trottinettes
 - **DNS** : chez IONOS (`A @ → 75.2.60.5`, `CNAME www → e-carpet.netlify.app`).
   Ne jamais toucher aux enregistrements MX/TXT/DKIM : ils gèrent l'e-mail du domaine.
 
+## Documents E-Carpet (comptabilité, juridique, marketing)
+
+Deux dossiers à la racine du projet, **gitignorés, jamais poussés sur
+GitHub** (voir `.gitignore`) :
+- `Documents-bruts/` : dépôt en vrac par le propriétaire (factures, relevés,
+  photos, vidéos...).
+- `Documents-tries/` : classement organisé par l'agent `finance` (partie
+  comptable) et `marketing` — voir leurs fichiers dans `.claude/agents/` pour
+  l'arborescence exacte et les règles de classement.
+
 ## Déploiement
 
 `git push` sur `main` → Netlify build et déploie automatiquement (~1 min).

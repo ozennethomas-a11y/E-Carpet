@@ -8,3 +8,8 @@ dist
 .netlify
 .env
 .tools
+
+# Documents E-Carpet (comptabilité, juridique, médias bruts) — JAMAIS sur
+# GitHub, contenu sensible géré uniquement en local.
+/Documents-bruts/
+/Documents-tries/
