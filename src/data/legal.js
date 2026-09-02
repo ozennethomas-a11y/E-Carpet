@@ -3,9 +3,9 @@
 
 export const COMPANY = {
   name: "E-Carpet",
+  legalName: "Thomas Ozenne",
   address: "5 Cour Moderne, 59000 Lille, France",
   siren: "935 170 654",
-  vat: "FR83935170654",
   email: "service-client@e-carpet.shop",
   host: "Netlify, Inc., 512 2nd Street, Suite 200, San Francisco, CA 94107, États-Unis",
 };
@@ -16,11 +16,11 @@ export const LEGAL = {
     updated: "2026",
     blocks: [
       { type: "h2", text: "Éditeur du site" },
-      { type: "p", text: `Le site e-carpet.shop est édité par ${COMPANY.name}, dont le siège social est situé ${COMPANY.address}.` },
-      { type: "p", text: `SIREN : ${COMPANY.siren} · Numéro de TVA intracommunautaire : ${COMPANY.vat}.` },
+      { type: "p", text: `Le site e-carpet.shop est édité par ${COMPANY.legalName}, entrepreneur individuel exerçant sous le nom commercial ${COMPANY.name}, domicilié ${COMPANY.address}.` },
+      { type: "p", text: `SIREN : ${COMPANY.siren} · TVA non applicable, article 293 B du Code général des impôts.` },
       { type: "p", text: `Contact : ${COMPANY.email}.` },
       { type: "h2", text: "Directeur de la publication" },
-      { type: "p", text: `Le représentant légal d'${COMPANY.name}.` },
+      { type: "p", text: `${COMPANY.legalName}.` },
       { type: "h2", text: "Hébergeur" },
       { type: "p", text: `Le site est hébergé par ${COMPANY.host}.` },
       { type: "h2", text: "Propriété intellectuelle" },
@@ -41,7 +41,7 @@ export const LEGAL = {
       { type: "h2", text: "2. Commande" },
       { type: "p", text: "Toute commande passée sur e-carpet.shop ou sur Amazon fait l'objet d'une confirmation par e-mail. Un numéro de suivi est communiqué dès l'expédition du colis." },
       { type: "h2", text: "3. Prix" },
-      { type: "p", text: "Les prix des produits sont indiqués en euros, toutes taxes comprises (TTC). Les tarifs peuvent être modifiés à tout moment, mais les produits sont facturés sur la base du tarif en vigueur au moment de la validation de la commande." },
+      { type: "p", text: "Les prix des produits sont indiqués en euros. TVA non applicable, article 293 B du Code général des impôts. Les tarifs peuvent être modifiés à tout moment, mais les produits sont facturés sur la base du tarif en vigueur au moment de la validation de la commande." },
       { type: "h2", text: "4. Paiement" },
       { type: "p", text: "Pour les commandes passées sur e-carpet.shop, le paiement s'effectue par carte bancaire via Stripe, prestataire de paiement en ligne. Les données de carte bancaire sont saisies et traitées directement par Stripe et ne transitent ni ne sont conservées par E-Carpet. Pour les commandes passées sur Amazon, le paiement s'effectue via les moyens proposés par Amazon et selon ses propres conditions." },
       { type: "h2", text: "5. Livraison" },

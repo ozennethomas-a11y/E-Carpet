@@ -160,7 +160,11 @@ export default async (req) => {
       // rapport au CA site et rendait le total incohérent.
       const caSite = site.revenueCents;
       const caAmazon = amazon.indisponible ? 0 : Math.round((amazon.ventesBrutes || 0) * 100);
-      const fraisAmazonCents = amazon.indisponible ? 0 : Math.round((amazon.fraisAmazon || 0) * 100);
+      // amazon.fraisAmazon est négatif (voir _amazon.mjs : totalFrais cumule
+      // des montants négatifs) — valeur absolue nécessaire ici, sinon la
+      // soustraction plus bas ajoute les frais à la marge au lieu de les
+      // retrancher. Bug trouvé et corrigé le 2026-09-02.
+      const fraisAmazonCents = amazon.indisponible ? 0 : Math.round(Math.abs(amazon.fraisAmazon || 0) * 100);
       const publiciteCents = ads.indisponible ? 0 : Math.round((ads.depenseTotale || 0) * 100);
       const amazonOrdersCount = amazon.indisponible ? 0 : amazon.parCommande?.length || 0;
       // Amazon ne facture pas ses propres frais de port (ShippingHB reste à 0)
