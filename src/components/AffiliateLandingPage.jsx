@@ -1,5 +1,6 @@
 import { navigate } from "../navigation";
 import { ArrowIcon } from "./ui";
+import { INFLUENCERS } from "../data/influencers";
 
 const AVANTAGES = [
   {
@@ -58,23 +59,31 @@ export default function AffiliateLandingPage() {
         </nav>
       </header>
 
-      <main className="pt-32 pb-20">
-        <div className="mx-auto max-w-3xl px-4 text-center">
-          <h1 className="text-balance font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
-            Faites rouler votre communauté avec E-Carpet.
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-balance text-base leading-relaxed text-zinc-400">
-            Vous parlez mobilité urbaine à une audience qui roule en trottinette électrique ? Devenez
-            partenaire E-Carpet : partagez votre code promo personnel et touchez une commission sur
-            chaque commande. Pas de minimum d'audience, pas de contrat compliqué.
-          </p>
-          <button
-            onClick={() => navigate("/influenceurs/inscription")}
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-acid px-7 py-3.5 font-display text-sm font-bold text-white cursor-pointer"
-          >
-            Devenir partenaire
-            <ArrowIcon className="h-4 w-4" />
-          </button>
+      <main className="pb-20">
+        <div className="relative overflow-hidden pt-32">
+          <img
+            src="/images/Photo_trottinette_sur_tapis_.webp"
+            alt="Trottinette électrique posée sur un tapis E-Carpet"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-ink via-ink/90 to-ink" />
+          <div className="relative mx-auto max-w-3xl px-4 pb-16 text-center">
+            <h1 className="text-balance font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
+              Faites rouler votre communauté avec E-Carpet.
+            </h1>
+            <p className="mx-auto mt-5 max-w-xl text-balance text-base leading-relaxed text-zinc-400">
+              Vous parlez mobilité urbaine à une audience qui roule en trottinette électrique ? Devenez
+              partenaire E-Carpet : partagez votre code promo personnel et touchez une commission sur
+              chaque commande. Pas de minimum d'audience, pas de contrat compliqué.
+            </p>
+            <button
+              onClick={() => navigate("/influenceurs/inscription")}
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-acid px-7 py-3.5 font-display text-sm font-bold text-white cursor-pointer"
+            >
+              Devenir partenaire
+              <ArrowIcon className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="mx-auto mt-16 grid max-w-4xl gap-4 px-4 sm:grid-cols-2">
@@ -97,6 +106,36 @@ export default function AffiliateLandingPage() {
                 <h3 className="mt-3 font-display text-base font-bold text-white">{e.titre}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{e.texte}</p>
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mx-auto mt-20 max-w-4xl px-4">
+          <h2 className="text-center font-display text-2xl font-bold text-white">Ils roulent déjà avec nous</h2>
+          <p className="mx-auto mt-2 max-w-lg text-balance text-center text-sm text-zinc-400">
+            Des créateurs mobilité qui font déjà partie du programme.
+          </p>
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {INFLUENCERS.map((inf) => (
+              <a
+                key={inf.handle}
+                href={inf.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 cursor-pointer"
+              >
+                <img
+                  src={inf.image}
+                  alt={`${inf.name} avec son tapis E-Carpet`}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-2.5">
+                  <div className="truncate text-xs font-semibold text-white">{inf.name}</div>
+                  <div className="truncate text-[11px] text-zinc-400">{inf.handle}</div>
+                </div>
+              </a>
             ))}
           </div>
         </div>
