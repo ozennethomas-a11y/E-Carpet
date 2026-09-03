@@ -41,13 +41,27 @@ function fromBase64Url(str) {
 
 export async function credentialsPourAdmin(adminId) {
   const rows = await sql()`
-    select id, credential_id as "credentialId", device_name as "deviceName", created_at as "createdAt"
+    select id, credential_id as "credentialId", device_name as "deviceName", created_at as "createdAt",
+           last_used_at as "lastUsedAt"
     from webauthn_credentials where admin_id = ${adminId} order by created_at desc
   `;
   return rows;
 }
 
+// Limite volontairement basse : Face ID doit rester réservé à quelques
+// appareils choisis, pas s'accumuler sans contrôle (voir mémoire/discussion
+// du 03/09/2026 — une clé peut aussi se synchroniser automatiquement entre
+// appareils Apple d'un même compte iCloud, ce qui n'est pas visible ici,
+// d'où l'intérêt de garder ce nombre volontairement restreint).
+export const MAX_CREDENTIALS_PAR_ADMIN = 3;
+
 export async function enregistrerCredential(adminId, { credentialID, credentialPublicKey, counter }, deviceName) {
+  const [{ count }] = await sql()`select count(*)::int as count from webauthn_credentials where admin_id = ${adminId}`;
+  if (count >= MAX_CREDENTIALS_PAR_ADMIN) {
+    throw new Error(
+      `Limite de ${MAX_CREDENTIALS_PAR_ADMIN} appareils Face ID atteinte. Retirez un appareil existant avant d'en ajouter un nouveau.`,
+    );
+  }
   await sql()`
     insert into webauthn_credentials (admin_id, credential_id, public_key, counter, device_name)
     values (${adminId}, ${credentialID}, ${toBase64Url(credentialPublicKey)}, ${counter}, ${deviceName || null})
@@ -68,7 +82,7 @@ export async function credentialParId(credentialId) {
 }
 
 export async function majCompteur(credentialDbId, counter) {
-  await sql()`update webauthn_credentials set counter = ${counter} where id = ${credentialDbId}`;
+  await sql()`update webauthn_credentials set counter = ${counter}, last_used_at = now() where id = ${credentialDbId}`;
 }
 
 export async function supprimerCredential(adminId, credentialDbId) {

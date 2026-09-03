@@ -66,11 +66,15 @@ export default async (req, context) => {
     if (!verification.verified) return Response.json({ error: "vérification échouée" }, { status: 400 });
 
     const { credential } = verification.registrationInfo;
-    await enregistrerCredential(
-      admin.id,
-      { credentialID: credential.id, credentialPublicKey: credential.publicKey, counter: credential.counter },
-      deviceName || "Cet appareil",
-    );
+    try {
+      await enregistrerCredential(
+        admin.id,
+        { credentialID: credential.id, credentialPublicKey: credential.publicKey, counter: credential.counter },
+        deviceName || "Cet appareil",
+      );
+    } catch (e) {
+      return Response.json({ error: e.message || "échec de l'enregistrement" }, { status: 400 });
+    }
     return Response.json({ ok: true });
   }
 

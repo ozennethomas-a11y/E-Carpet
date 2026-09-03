@@ -63,9 +63,14 @@ export default function FaceIdSettings() {
       </button>
 
       {ouvert && (
-        <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-2xl border border-white/10 bg-slate-deep p-4 shadow-2xl">
+        <div className="absolute left-0 top-full z-20 mt-2 w-80 rounded-2xl border border-white/10 bg-slate-deep p-4 shadow-2xl">
           <p className="text-xs leading-relaxed text-zinc-400">
-            Active Face ID/Touch ID sur cet appareil pour te connecter sans mot de passe ni code — à faire une fois par appareil.
+            Active Face ID/Touch ID sur cet appareil pour te connecter sans mot de passe ni code — 3 appareils maximum.
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-amber-300/80">
+            Sur iPhone/iPad/Mac liés au même compte iCloud, une clé activée sur l'un peut se synchroniser
+            automatiquement sur les autres (trousseau iCloud) — ce n'est pas visible ci-dessous. Vérifie la
+            "dernière utilisation" de chaque appareil pour repérer une activité inattendue.
           </p>
 
           {erreur && <p className="mt-2 text-xs text-red-400">{erreur}</p>}
@@ -83,11 +88,17 @@ export default function FaceIdSettings() {
           ) : credentials.length === 0 ? (
             <p className="mt-3 text-xs text-zinc-500">Aucun appareil activé pour l'instant.</p>
           ) : (
-            <ul className="mt-3 flex flex-col gap-1.5">
+            <ul className="mt-3 flex flex-col gap-2">
               {credentials.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-2 text-xs text-zinc-300">
-                  <span>{c.deviceName || "Appareil"}</span>
-                  <button onClick={() => supprimer(c.id)} className="text-red-400 hover:text-red-300 cursor-pointer">
+                <li key={c.id} className="flex items-start justify-between gap-2 text-xs text-zinc-300">
+                  <div>
+                    <div>{c.deviceName || "Appareil"}</div>
+                    <div className="mt-0.5 text-[11px] text-zinc-500">
+                      Dernière utilisation :{" "}
+                      {c.lastUsedAt ? new Date(c.lastUsedAt).toLocaleString("fr-FR") : "jamais"}
+                    </div>
+                  </div>
+                  <button onClick={() => supprimer(c.id)} className="shrink-0 text-red-400 hover:text-red-300 cursor-pointer">
                     Retirer
                   </button>
                 </li>

@@ -139,6 +139,7 @@ export const webauthnCredentials = pgTable('webauthn_credentials', {
   counter: integer('counter').notNull().default(0),
   deviceName: text('device_name'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at'),
 })
 
 export const sessions = pgTable('sessions', {
