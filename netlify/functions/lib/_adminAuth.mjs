@@ -3,9 +3,13 @@ import { sql } from "./_db.mjs";
 import { randomToken, parseCookies } from "./_auth.mjs";
 
 export const ADMIN_SESSION_COOKIE = "ecarpet_admin_session";
-// Filet de sécurité côté serveur seulement : la session ne doit normalement
-// jamais durer aussi longtemps côté client, voir le cookie "de session" ci-dessous.
-const SESSION_DAYS = 7;
+// Expiration réelle de la session, forcée côté serveur : demandé
+// explicitement le 03/09/2026, le cookie "de session" (sans Max-Age,
+// ci-dessous) ne suffisait pas à lui seul — un appareil qui ne ferme jamais
+// vraiment l'app (PWA restée en arrière-plan) restait connecté
+// indéfiniment. Avec cette limite, même une session jamais fermée expire
+// après 1h et redemande une connexion.
+const SESSION_HOURS = 1;
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000;
@@ -16,12 +20,9 @@ function secureFlag() {
   return process.env.CONTEXT === "dev" ? "" : " Secure;";
 }
 
-// Cookie "de session" (pas de Max-Age) : demandé explicitement — rester
-// déconnecté à chaque fermeture de l'app plutôt que rester connecté en
-// silence. Le navigateur/l'app efface ce cookie en fermant complètement,
-// donc rouvrir l'app redemande toujours une connexion (rapide via Face ID).
-// L'expiration de 7 jours ci-dessus reste en base comme filet de sécurité,
-// au cas où l'app resterait ouverte en arrière-plan sans jamais se fermer.
+// Cookie "de session" (pas de Max-Age) : rester déconnecté à chaque
+// fermeture complète de l'app, en plus de l'expiration serveur d'1h
+// ci-dessus qui couvre le cas où l'app ne ferme jamais vraiment.
 export function adminSessionCookieHeader(token, { clear = false } = {}) {
   const value = clear ? "" : token;
   const expiration = clear ? " Max-Age=0;" : "";
@@ -56,7 +57,7 @@ export async function createAdmin({ name, passwordHash, totpSecret, isOwner = fa
 
 export async function createAdminSession(adminId) {
   const token = randomToken();
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000);
   await sql()`insert into admin_sessions (admin_id, token, expires_at) values (${adminId}, ${token}, ${expiresAt})`;
   return token;
 }
