@@ -13,24 +13,25 @@ export function vapidPublicKey() {
   return process.env.VAPID_PUBLIC_KEY || null;
 }
 
-// Un seul appareil autorisé par admin (demandé explicitement le
-// 03/09/2026 : le téléphone de Thomas, rien d'autre) — tout nouvel
-// abonnement remplace le précédent plutôt que de s'accumuler.
+// Verrouillé sur UN SEUL appareil, définitivement, demandé explicitement le
+// 03/09/2026 : une fois l'appareil de Thomas enregistré, ni un ajout ni une
+// suppression ne doivent être possibles depuis l'admin lui-même — sinon
+// n'importe qui disposant d'une session admin valide (session volée...)
+// pourrait rediriger silencieusement les alertes de connexion vers son
+// propre téléphone, ce qui viderait cette alerte de son intérêt. Un vrai
+// changement d'appareil (perte du téléphone...) doit passer par une
+// intervention directe en base, jamais par l'interface.
 export async function enregistrerAbonnement(adminId, subscription, deviceName) {
-  await sql()`delete from push_subscriptions where admin_id = ${adminId} and endpoint <> ${subscription.endpoint}`;
+  const [{ count }] = await sql()`select count(*)::int as count from push_subscriptions where admin_id = ${adminId}`;
+  if (count > 0) {
+    throw new Error(
+      "Un appareil est déjà enregistré et verrouillé pour ce compte — aucun changement possible depuis l'admin.",
+    );
+  }
   await sql()`
     insert into push_subscriptions (admin_id, endpoint, p256dh, auth, device_name)
     values (${adminId}, ${subscription.endpoint}, ${subscription.keys.p256dh}, ${subscription.keys.auth}, ${deviceName || null})
-    on conflict (endpoint) do update set admin_id = excluded.admin_id, p256dh = excluded.p256dh, auth = excluded.auth
   `;
-}
-
-export async function supprimerAbonnement(adminId, endpoint) {
-  await sql()`delete from push_subscriptions where admin_id = ${adminId} and endpoint = ${endpoint}`;
-}
-
-export async function supprimerAbonnementParId(adminId, id) {
-  await sql()`delete from push_subscriptions where admin_id = ${adminId} and id = ${id}`;
 }
 
 export async function abonnementsPourAdmin(adminId) {

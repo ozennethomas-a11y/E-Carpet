@@ -63,15 +63,6 @@ export default function PushNotifications({ inline = false }) {
     }
   }
 
-  async function retirer(id) {
-    await fetch("/api/push?action=supprimer", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    charger();
-  }
-
   if (!inline) {
     return (
       <div className="relative inline-block">
@@ -94,38 +85,30 @@ export default function PushNotifications({ inline = false }) {
   return (
     <div className="max-w-xl rounded-2xl border border-white/10 bg-ink p-5">
       <p className="text-xs leading-relaxed text-zinc-400">
-        Alerte reçue sur le téléphone (nouvelle commande payée, connexion à l'admin) — un seul appareil autorisé à
-        la fois : activer sur un nouvel appareil désactive automatiquement le précédent.
+        Alerte reçue sur le téléphone (nouvelle commande payée, connexion à l'admin) — verrouillé sur un seul
+        appareil. Une fois activé, il ne peut plus être changé ni retiré depuis cet écran, volontairement (pour
+        qu'une session admin compromise ne puisse pas rediriger les alertes ailleurs).
       </p>
 
       {erreur && <p className="mt-2 text-xs text-red-400">{erreur}</p>}
 
-      <button
-        onClick={activer}
-        disabled={statut === "activation"}
-        className="mt-3 rounded-full bg-acid px-4 py-2 text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60 cursor-pointer"
-      >
-        {statut === "activation" ? "…" : "Activer sur cet appareil"}
-      </button>
-
       {abonnements === null ? (
         <p className="mt-3 text-xs text-zinc-500">Chargement…</p>
       ) : abonnements.length === 0 ? (
-        <p className="mt-3 text-xs text-zinc-500">Aucun appareil activé pour l'instant.</p>
+        <button
+          onClick={activer}
+          disabled={statut === "activation"}
+          className="mt-3 rounded-full bg-acid px-4 py-2 text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60 cursor-pointer"
+        >
+          {statut === "activation" ? "…" : "Activer sur cet appareil"}
+        </button>
       ) : (
-        <ul className="mt-3 flex flex-col gap-2">
-          {abonnements.map((a) => (
-            <li key={a.id} className="flex items-start justify-between gap-2 rounded-xl border border-white/10 bg-slate-deep p-3 text-xs text-zinc-300">
-              <div>
-                <div className="font-semibold text-zinc-200">{a.deviceName || "Appareil"}</div>
-                <div className="mt-0.5 text-[11px] text-zinc-500">Activé le {new Date(a.createdAt).toLocaleDateString("fr-FR")}</div>
-              </div>
-              <button onClick={() => retirer(a.id)} className="shrink-0 text-red-400 hover:text-red-300 cursor-pointer">
-                Retirer
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-3 rounded-xl border border-white/10 bg-slate-deep p-3 text-xs text-zinc-300">
+          <div className="font-semibold text-emerald-400">Verrouillé sur : {abonnements[0].deviceName || "Appareil"}</div>
+          <div className="mt-0.5 text-[11px] text-zinc-500">
+            Activé le {new Date(abonnements[0].createdAt).toLocaleDateString("fr-FR")}
+          </div>
+        </div>
       )}
     </div>
   );
