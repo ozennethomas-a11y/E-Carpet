@@ -34,7 +34,14 @@ function connecter(reseau) {
   window.location.href = `/api/social-auth?action=${action}`;
 }
 
-function CarteReseau({ reseau, compte, onDeconnecter, occupe }) {
+function nombreCourt(n) {
+  if (n === null || n === undefined) return null;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".0", "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(".0", "")}k`;
+  return String(n);
+}
+
+function CarteReseau({ reseau, compte, onDeconnecter, occupe, stats }) {
   const connecte = !!compte;
   return (
     <div className="rounded-xl border border-white/10 bg-ink p-4">
@@ -62,6 +69,28 @@ function CarteReseau({ reseau, compte, onDeconnecter, occupe }) {
           </Bouton>
         )}
       </div>
+
+      {connecte && (
+        <div className="mt-3 border-t border-white/10 pt-3">
+          {stats?.erreur ? (
+            <p className="text-xs text-red-400">{stats.erreur}</p>
+          ) : stats?.statsIndisponibles ? (
+            <p className="text-xs text-zinc-500">{stats.raison}</p>
+          ) : stats?.abonnes != null ? (
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-lg font-bold text-white">{nombreCourt(stats.abonnes)}</span>
+              <span className="text-xs text-zinc-500">abonnés</span>
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-500">Chargement des statistiques...</p>
+          )}
+          {stats?.derniersPosts?.length > 0 && (
+            <div className="mt-2 text-xs text-zinc-500">
+              Dernière publication : {stats.derniersPosts[0].likes} j'aime · {stats.derniersPosts[0].commentaires} commentaires
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -525,7 +554,7 @@ function Publicites({ compteParReseau }) {
   );
 }
 
-function DetailReseau({ reseau, compte, onDeconnecter, occupe }) {
+function DetailReseau({ reseau, compte, onDeconnecter, occupe, stats }) {
   if (!compte) {
     return (
       <div className="rounded-xl border border-white/10 bg-ink p-6 text-center">
@@ -540,12 +569,78 @@ function DetailReseau({ reseau, compte, onDeconnecter, occupe }) {
   }
   return (
     <div className="rounded-xl border border-white/10 bg-ink p-5">
-      <div className="text-xs uppercase tracking-wider text-zinc-500">Compte connecté</div>
-      <div className="mt-1 font-display text-lg font-bold text-white">{compte.accountName}</div>
-      <div className="mt-1 text-xs text-zinc-500">Identifiant : {compte.accountId}</div>
-      <div className="mt-1 text-xs text-zinc-500">Connecté depuis le {formatDate(compte.connectedAt)}</div>
-      {compte.expiresAt && <div className="mt-1 text-xs text-zinc-500">Jeton valable jusqu'au {formatDate(compte.expiresAt)}</div>}
-      <div className="mt-4 flex gap-2">
+      <div className="flex items-start gap-4">
+        {stats?.avatar && <img src={stats.avatar} alt="" className="h-14 w-14 rounded-full border border-white/10" />}
+        <div>
+          <div className="text-xs uppercase tracking-wider text-zinc-500">Compte connecté</div>
+          <div className="mt-1 font-display text-lg font-bold text-white">{compte.accountName}</div>
+          <div className="mt-1 text-xs text-zinc-500">Identifiant : {compte.accountId}</div>
+          <div className="mt-1 text-xs text-zinc-500">Connecté depuis le {formatDate(compte.connectedAt)}</div>
+          {compte.expiresAt && <div className="mt-1 text-xs text-zinc-500">Jeton valable jusqu'au {formatDate(compte.expiresAt)}</div>}
+        </div>
+      </div>
+
+      {stats?.erreur ? (
+        <p className="mt-4 text-xs text-red-400">{stats.erreur}</p>
+      ) : stats?.statsIndisponibles ? (
+        <p className="mt-4 text-xs text-zinc-500">{stats.raison}</p>
+      ) : (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {stats?.abonnes != null && (
+            <div className="rounded-lg border border-white/10 bg-slate-deep p-3">
+              <div className="text-xs text-zinc-500">Abonnés</div>
+              <div className="font-display text-xl font-bold text-white">{stats.abonnes.toLocaleString("fr-FR")}</div>
+            </div>
+          )}
+          {stats?.mentionsJaime != null && stats.mentionsJaime !== stats.abonnes && (
+            <div className="rounded-lg border border-white/10 bg-slate-deep p-3">
+              <div className="text-xs text-zinc-500">Mentions J'aime</div>
+              <div className="font-display text-xl font-bold text-white">{stats.mentionsJaime.toLocaleString("fr-FR")}</div>
+            </div>
+          )}
+          {stats?.categorie && (
+            <div className="rounded-lg border border-white/10 bg-slate-deep p-3">
+              <div className="text-xs text-zinc-500">Catégorie</div>
+              <div className="mt-1 text-sm text-zinc-300">{stats.categorie}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {stats?.description && <p className="mt-3 text-xs leading-relaxed text-zinc-500">{stats.description}</p>}
+      {stats?.lien && (
+        <a href={stats.lien} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs text-acid hover:underline">
+          {stats.lien}
+        </a>
+      )}
+
+      {stats?.derniersPosts?.length > 0 && (
+        <div className="mt-5">
+          <div className="text-xs uppercase tracking-wider text-zinc-500">Dernières publications</div>
+          <div className="mt-2 flex flex-col gap-2">
+            {stats.derniersPosts.map((p, i) => (
+              <a
+                key={i}
+                href={p.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-lg border border-white/10 bg-slate-deep p-3 transition-colors hover:border-white/20"
+              >
+                <p className="text-xs text-zinc-300">{p.message}</p>
+                <div className="mt-1.5 flex flex-wrap gap-3 text-[11px] text-zinc-500">
+                  <span>{formatDate(p.date)}</span>
+                  <span>{p.likes} j'aime</span>
+                  <span>{p.commentaires} commentaires</span>
+                  {p.partages != null && <span>{p.partages} partages</span>}
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+      {stats?.postsErreur && <p className="mt-3 text-xs text-zinc-500">Publications indisponibles : {stats.postsErreur}</p>}
+
+      <div className="mt-5 flex gap-2">
         <Bouton ton="neutre" onClick={() => connecter(reseau.id)}>
           Reconnecter
         </Bouton>
@@ -567,6 +662,7 @@ export default function SocialPanel() {
   const [sousOnglet, setSousOnglet] = useState("general");
   const [message, setMessage] = useState(null); // { type: 'ok' | 'erreur', texte }
   const [refreshProgrammation, setRefreshProgrammation] = useState(0);
+  const [stats, setStats] = useState({}); // { facebook, instagram, tiktok }
 
   const load = useCallback(async () => {
     setError("");
@@ -582,6 +678,13 @@ export default function SocialPanel() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!comptes?.length) return;
+    cachedFetch("/api/social-stats")
+      .then((data) => !data.error && setStats(data))
+      .catch(() => {});
+  }, [comptes]);
 
   // Le retour d'OAuth (Meta/TikTok) redirige vers /admin avec un paramètre de
   // résultat : on l'affiche une fois puis on nettoie l'URL.
@@ -660,7 +763,7 @@ export default function SocialPanel() {
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {RESEAUX.map((r) => (
-              <CarteReseau key={r.id} reseau={r} compte={compteParReseau[r.id]} onDeconnecter={deconnecter} occupe={occupe} />
+              <CarteReseau key={r.id} reseau={r} compte={compteParReseau[r.id]} onDeconnecter={deconnecter} occupe={occupe} stats={stats[r.id]} />
             ))}
           </div>
         </div>
@@ -681,6 +784,7 @@ export default function SocialPanel() {
             compte={compteParReseau[sousOnglet]}
             onDeconnecter={deconnecter}
             occupe={occupe}
+            stats={stats[sousOnglet]}
           />
         </div>
       )}
