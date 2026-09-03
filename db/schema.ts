@@ -383,3 +383,23 @@ export const pilotageSettings = pgTable('pilotage_settings', {
   stockSecuriteJours: integer('stock_securite_jours').notNull().default(21),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
+
+// Suivi manuel des influenceurs contactés (distinct de la table `affiliates`,
+// qui ne concerne que ceux ayant un compte actif sur l'espace partenaire).
+// Sert de tableau éditable dans l'admin (Réseaux sociaux > Influenceurs),
+// alimenté au départ depuis le suivi Notion externe du propriétaire.
+export const influencerContacts = pgTable('influencer_contacts', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  platform: text('platform'),
+  followers: text('followers'),
+  contact: text('contact'),
+  offer: text('offer'),
+  status: text('status').notNull().default('a_contacter'),
+  publication: text('publication'),
+  onSite: boolean('on_site').notNull().default(false),
+  nextAction: text('next_action'),
+  note: text('note'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { cachedFetch, invalidateCache } from "../lib/adminCache";
+import InfluencersPanel from "./InfluencersPanel";
 
 const RESEAUX = [
   { id: "facebook", label: "Facebook", couleur: "#1877F2" },
@@ -620,6 +621,7 @@ export default function SocialPanel() {
       <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
         {[
           { id: "general", label: "Général" },
+          { id: "influenceurs", label: "Influenceurs" },
           { id: "publier", label: "Publier" },
           { id: "programmation", label: "Programmation" },
           { id: "publicites", label: "Publicités" },
@@ -662,6 +664,8 @@ export default function SocialPanel() {
             ))}
           </div>
         </div>
+      ) : sousOnglet === "influenceurs" ? (
+        <InfluencersPanel />
       ) : sousOnglet === "publier" ? (
         <div className="mt-6">
           <Publier compteParReseau={compteParReseau} onProgramme={() => setRefreshProgrammation((n) => n + 1)} />
