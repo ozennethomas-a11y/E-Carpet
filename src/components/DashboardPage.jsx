@@ -415,6 +415,12 @@ export default function DashboardPage() {
     setRafraichissement(false);
   }
 
+  async function seDeconnecter() {
+    clearCache();
+    setConnecte(false);
+    await fetch("/api/admin-auth?action=logout", { method: "POST" }).catch(() => {});
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-12">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -460,6 +466,17 @@ export default function DashboardPage() {
             >
               <path d="M21 12a9 9 0 1 1-2.64-6.36" />
               <path d="M21 3v6h-6" />
+            </svg>
+          </button>
+          <button
+            onClick={seDeconnecter}
+            title="Se déconnecter"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-300 transition-colors hover:text-white cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
             </svg>
           </button>
           <button
