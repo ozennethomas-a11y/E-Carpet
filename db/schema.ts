@@ -357,12 +357,29 @@ export const mailingSends = pgTable('mailing_sends', {
   openedAt: timestamp('opened_at'),
 })
 
-// Abonnements aux notifications push du back-office (une ligne par appareil
-// où un admin a activé les notifications, via l'app PWA installée sur
-// l'écran d'accueil) : nouvelle commande payée, pour l'instant.
+// Abonnements aux notifications push "générales" du back-office (une ligne
+// par appareil où un admin a activé les notifications) : nouvelle commande
+// payée, etc. Libre : plusieurs appareils par admin, ajout/retrait sans
+// restriction. Ne concerne PAS l'alerte de connexion, voir
+// loginAlertDevices ci-dessous.
 export const pushSubscriptions = pgTable('push_subscriptions', {
   id: serial('id').primaryKey(),
   adminId: integer('admin_id').notNull().references(() => admins.id),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  deviceName: text('device_name'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// Appareil unique et verrouillé par admin, dédié exclusivement à l'alerte
+// de sécurité "connexion à l'admin" — volontairement séparé de
+// pushSubscriptions : une fois défini, ni ajout ni suppression possible
+// depuis l'interface (voir lib/_push.mjs). Empêche qu'une session admin
+// compromise redirige cette alerte précise vers un autre appareil, sans
+// pour autant restreindre les notifications générales (commandes...).
+export const loginAlertDevices = pgTable('login_alert_devices', {
+  adminId: integer('admin_id').primaryKey().references(() => admins.id),
   endpoint: text('endpoint').notNull().unique(),
   p256dh: text('p256dh').notNull(),
   auth: text('auth').notNull(),
