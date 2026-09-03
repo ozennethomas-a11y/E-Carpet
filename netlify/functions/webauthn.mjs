@@ -5,6 +5,7 @@ import {
   createAdminSession,
   getAdminSessionFromRequest,
   recordLoginHistory,
+  deconnecterTousLesAppareils,
 } from "./lib/_adminAuth.mjs";
 import {
   rpID,
@@ -16,6 +17,7 @@ import {
   credentialParId,
   majCompteur,
   supprimerCredential,
+  premierCredentialPourAdmin,
 } from "./lib/_webauthn.mjs";
 import { synchroniserAmazon } from "./stock.mjs";
 import { notifierAlerteConnexion } from "./lib/_push.mjs";
@@ -145,6 +147,64 @@ export default async (req, context) => {
       synchroniserAmazon().catch((e) => console.error("[webauthn] échec synchro stock Amazon:", e.message)),
     );
     return Response.json({ ok: true }, { headers: { "Set-Cookie": adminSessionCookieHeader(token) } });
+  }
+
+  // --- Déconnexion d'urgence de tous les appareils : action la plus
+  // sensible du back-office (tout le monde est éjecté). Restreinte à une
+  // preuve cryptographique en direct — pas juste "être connecté" — et
+  // scopée à la toute première clé Face ID jamais enregistrée par cet
+  // admin, pour qu'un seul appareil physique précis puisse la déclencher. ---
+  if (req.method === "GET" && action === "logout-all-options") {
+    const admin = await getAdminSessionFromRequest(req);
+    if (!admin) return Response.json({ error: "unauthorized" }, { status: 401 });
+
+    const premier = await premierCredentialPourAdmin(admin.id);
+    if (!premier) {
+      return Response.json(
+        { error: "aucune clé Face ID enregistrée — cette action nécessite d'avoir activé Face ID sur au moins un appareil" },
+        { status: 400 },
+      );
+    }
+
+    const options = await generateAuthenticationOptions({
+      rpID: rpID(),
+      userVerification: "required",
+      allowCredentials: [{ id: premier.credentialId }],
+    });
+    await sauverChallenge(`logout-all:${admin.id}`, options.challenge);
+    return Response.json({ options });
+  }
+
+  if (req.method === "POST" && action === "logout-all-verify") {
+    const admin = await getAdminSessionFromRequest(req);
+    if (!admin) return Response.json({ error: "unauthorized" }, { status: 401 });
+
+    const { response } = await req.json().catch(() => ({}));
+    const saved = await lireEtConsommerChallenge(`logout-all:${admin.id}`);
+    if (!saved) return Response.json({ error: "session expirée, réessayez" }, { status: 400 });
+
+    const premier = await premierCredentialPourAdmin(admin.id);
+    if (!premier || premier.credentialId !== response?.id) {
+      return Response.json({ error: "seule la toute première clé Face ID enregistrée peut déclencher cette action" }, { status: 403 });
+    }
+
+    let verification;
+    try {
+      verification = await verifyAuthenticationResponse({
+        response,
+        expectedChallenge: saved.challenge,
+        expectedOrigin: expectedOrigin(),
+        expectedRPID: rpID(),
+        credential: { id: premier.credentialId, publicKey: premier.publicKey, counter: premier.counter },
+      });
+    } catch (e) {
+      return Response.json({ error: e.message || "vérification échouée" }, { status: 400 });
+    }
+    if (!verification.verified) return Response.json({ error: "vérification échouée" }, { status: 401 });
+
+    await majCompteur(premier.id, verification.authenticationInfo.newCounter);
+    const nb = await deconnecterTousLesAppareils();
+    return Response.json({ ok: true, nb }, { headers: { "Set-Cookie": adminSessionCookieHeader(null, { clear: true }) } });
   }
 
   return Response.json({ error: "action inconnue" }, { status: 400 });

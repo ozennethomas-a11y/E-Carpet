@@ -39,6 +39,19 @@ function fromBase64Url(str) {
   return new Uint8Array(Buffer.from(str, "base64url"));
 }
 
+// Le tout premier appareil Face ID enregistré par cet admin — sert d'ancre
+// pour les actions les plus sensibles (déconnexion globale) : seule cette
+// clé précise, cryptographiquement liée à un seul appareil physique, peut
+// les déclencher.
+export async function premierCredentialPourAdmin(adminId) {
+  const [row] = await sql()`
+    select id, credential_id as "credentialId", public_key as "publicKey", counter, device_name as "deviceName"
+    from webauthn_credentials where admin_id = ${adminId} order by created_at asc limit 1
+  `;
+  if (!row) return null;
+  return { ...row, publicKey: fromBase64Url(row.publicKey) };
+}
+
 export async function credentialsPourAdmin(adminId) {
   const rows = await sql()`
     select id, credential_id as "credentialId", device_name as "deviceName", created_at as "createdAt",

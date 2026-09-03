@@ -97,6 +97,16 @@ export async function destroyAdminSession(req) {
   if (token) await sql()`delete from admin_sessions where token = ${token}`;
 }
 
+// Action d'urgence : invalide toutes les sessions actives, tous admins et
+// tous appareils confondus (y compris celle de la personne qui déclenche
+// l'action — tout le monde redemande une connexion). Utile après un doute
+// de sécurité (session potentiellement compromise) sans savoir laquelle.
+export async function deconnecterTousLesAppareils() {
+  const [{ count: nbAvant }] = await sql()`select count(*)::int as count from admin_sessions`;
+  await sql()`delete from admin_sessions`;
+  return nbAvant;
+}
+
 // Blocage par compte (clé = nom en minuscule), sur une fenêtre glissante,
 // pour qu'un mot de passe erroné sur un compte ne bloque pas les autres.
 // Stocké dans Netlify Blobs : donnée éphémère, pas besoin de migration.

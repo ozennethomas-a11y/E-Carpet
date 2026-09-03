@@ -1,5 +1,80 @@
 import { useEffect, useState } from "react";
+import { startAuthentication } from "@simplewebauthn/browser";
 import { cachedFetch, invalidateCache } from "../lib/adminCache";
+
+// Action la plus sensible du back-office : réservée à une preuve Face ID en
+// direct, scopée à la toute première clé jamais enregistrée par cet admin —
+// pas juste "être connecté" comme avant. Voir netlify/functions/webauthn.mjs
+// (logout-all-options / logout-all-verify).
+function DeconnecterTout() {
+  const [confirmation, setConfirmation] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  const [resultat, setResultat] = useState(null);
+  const [erreur, setErreur] = useState("");
+
+  async function executer() {
+    setEnCours(true);
+    setErreur("");
+    try {
+      const res = await fetch("/api/webauthn?action=logout-all-options");
+      const data = await res.json();
+      if (data.error) return setErreur(data.error);
+
+      const response = await startAuthentication({ optionsJSON: data.options });
+
+      const verifyRes = await fetch("/api/webauthn?action=logout-all-verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ response }),
+      });
+      const verifyData = await verifyRes.json();
+      if (verifyData.error) return setErreur(verifyData.error);
+      setResultat(verifyData.nb);
+      setConfirmation(false);
+    } catch {
+      setErreur("Face ID annulé ou indisponible.");
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+      <p className="text-xs leading-relaxed text-red-200">
+        Déconnecte immédiatement tous les appareils, tous comptes admin confondus (y compris le tien) — chacun
+        redemandera une connexion complète. Réservé à une vérification Face ID de la toute première clé enregistrée
+        (voir onglet Face ID). À utiliser en cas de doute sur une session compromise.
+      </p>
+      {resultat !== null && <p className="mt-2 text-xs text-emerald-400">{resultat} session(s) invalidée(s).</p>}
+      {erreur && <p className="mt-2 text-xs text-red-400">{erreur}</p>}
+      {!confirmation ? (
+        <button
+          onClick={() => setConfirmation(true)}
+          className="mt-2 rounded-full border border-red-500/30 px-4 py-1.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/10 cursor-pointer"
+        >
+          Déconnecter tous les appareils
+        </button>
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-red-400">Confirmer avec Face ID ?</span>
+          <button
+            onClick={executer}
+            disabled={enCours}
+            className="rounded-full bg-red-500/90 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-red-500 disabled:opacity-60 cursor-pointer"
+          >
+            {enCours ? "…" : "Vérifier Face ID et tout déconnecter"}
+          </button>
+          <button
+            onClick={() => setConfirmation(false)}
+            className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-zinc-300 transition-colors hover:text-white cursor-pointer"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ConnexionsTab() {
   const [history, setHistory] = useState(null);
@@ -12,9 +87,22 @@ function ConnexionsTab() {
   }, []);
 
   if (error) return <p className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-sm text-red-400">{error}</p>;
-  if (!history) return <p className="text-sm text-zinc-500">Chargement…</p>;
-  if (history.length === 0) return <p className="text-sm text-zinc-500">Aucune connexion enregistrée pour l'instant.</p>;
 
+  return (
+    <div>
+      <DeconnecterTout />
+      {!history ? (
+        <p className="text-sm text-zinc-500">Chargement…</p>
+      ) : history.length === 0 ? (
+        <p className="text-sm text-zinc-500">Aucune connexion enregistrée pour l'instant.</p>
+      ) : (
+        <ConnexionsTable history={history} />
+      )}
+    </div>
+  );
+}
+
+function ConnexionsTable({ history }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-white/10">
       <table className="w-full text-sm">
