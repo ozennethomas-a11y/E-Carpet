@@ -105,6 +105,7 @@ const SECTIONS = [
       { id: "connexions", label: "Connexions" },
       { id: "comptes", label: "Comptes" },
       { id: "faceid", label: "Face ID" },
+      { id: "notifications", label: "Notifications" },
     ],
   },
 ];
@@ -391,8 +392,6 @@ export default function DashboardPage() {
           {monNom && (
             <div className="mt-0.5 flex items-center gap-2">
               <p className="text-xs text-zinc-500">Connecté en tant que {monNom}</p>
-              <span className="text-zinc-700">·</span>
-              <PushNotifications />
             </div>
           )}
         </div>
@@ -512,7 +511,12 @@ export default function DashboardPage() {
           <FaceIdSettings inline />
         </div>
       )}
-      {section === "acces" && isOwner && tab !== "faceid" && <AdminAccessPanel tab={tab} />}
+      {section === "acces" && isOwner && tab === "notifications" && (
+        <div className="mt-2">
+          <PushNotifications inline />
+        </div>
+      )}
+      {section === "acces" && isOwner && tab !== "faceid" && tab !== "notifications" && <AdminAccessPanel tab={tab} />}
 
       {section === "site" && tab === "analyse" && state === "unconfigured" && (
         <p className="rounded-2xl border border-white/10 bg-slate-deep p-6 text-sm text-zinc-300">

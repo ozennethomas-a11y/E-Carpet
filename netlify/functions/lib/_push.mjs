@@ -13,7 +13,11 @@ export function vapidPublicKey() {
   return process.env.VAPID_PUBLIC_KEY || null;
 }
 
+// Un seul appareil autorisé par admin (demandé explicitement le
+// 03/09/2026 : le téléphone de Thomas, rien d'autre) — tout nouvel
+// abonnement remplace le précédent plutôt que de s'accumuler.
 export async function enregistrerAbonnement(adminId, subscription, deviceName) {
+  await sql()`delete from push_subscriptions where admin_id = ${adminId} and endpoint <> ${subscription.endpoint}`;
   await sql()`
     insert into push_subscriptions (admin_id, endpoint, p256dh, auth, device_name)
     values (${adminId}, ${subscription.endpoint}, ${subscription.keys.p256dh}, ${subscription.keys.auth}, ${deviceName || null})
@@ -23,6 +27,10 @@ export async function enregistrerAbonnement(adminId, subscription, deviceName) {
 
 export async function supprimerAbonnement(adminId, endpoint) {
   await sql()`delete from push_subscriptions where admin_id = ${adminId} and endpoint = ${endpoint}`;
+}
+
+export async function supprimerAbonnementParId(adminId, id) {
+  await sql()`delete from push_subscriptions where admin_id = ${adminId} and id = ${id}`;
 }
 
 export async function abonnementsPourAdmin(adminId) {
