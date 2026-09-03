@@ -403,18 +403,21 @@ function PickupMap({ points, selected, onSelect, onPointsChange }) {
     }
   }
 
-  // Crée la carte une seule fois, avec des tuiles CartoDB Voyager (plus
-  // lisibles que les tuiles OSM par défaut) et une recherche automatique de
-  // points relais quand l'utilisateur déplace la carte.
+  // Crée la carte une seule fois et une recherche automatique de points
+  // relais quand l'utilisateur déplace la carte.
+  //
+  // Tuiles OSM standard (CartoDB Voyager, utilisé avant, exige désormais une
+  // clé API sur son offre gratuite — les tuiles s'affichaient couvertes du
+  // filigrane "API KEY REQUIRED", constaté le 03/09/2026).
   useEffect(() => {
     if (!containerRef.current || valides.length === 0) return;
 
     if (!mapRef.current) {
       mapRef.current = L.map(containerRef.current, { scrollWheelZoom: true });
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: "abc",
+        maxZoom: 19,
       }).addTo(mapRef.current);
 
       mapRef.current.on("moveend", () => {
@@ -435,7 +438,12 @@ function PickupMap({ points, selected, onSelect, onPointsChange }) {
       return marker;
     });
 
-    if (shouldFitRef.current) {
+    // `!map._loaded` : filet pour une carte qui vient d'être (re)créée sans
+    // jamais avoir eu de centre/zoom — shouldFitRef seul ne suffit pas si un
+    // remontage React (StrictMode en dev, ou un remontage réel) recrée la
+    // carte après que le flag ait déjà été consommé, sinon Leaflet n'a
+    // aucune vue et ne charge donc jamais aucune tuile.
+    if (shouldFitRef.current || !map._loaded) {
       shouldFitRef.current = false;
       programmaticMoveRef.current = true;
       const bounds = L.latLngBounds(valides.map((p) => [Number(p.lat), Number(p.long)]));
