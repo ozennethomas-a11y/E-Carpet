@@ -18,6 +18,7 @@ import {
   supprimerCredential,
 } from "./lib/_webauthn.mjs";
 import { synchroniserAmazon } from "./stock.mjs";
+import { notifierTousLesAdmins } from "./lib/_push.mjs";
 
 export default async (req, context) => {
   const url = new URL(req.url);
@@ -131,6 +132,15 @@ export default async (req, context) => {
     await majCompteur(cred.id, verification.authenticationInfo.newCounter);
     const token = await createAdminSession(cred.adminId);
     await recordLoginHistory(cred.adminId, req).catch((e) => console.error("[webauthn] échec journal connexion:", e.message));
+
+    const ipConnexion = req.headers.get("x-nf-client-connection-ip") || req.headers.get("x-forwarded-for") || "IP inconnue";
+    context.waitUntil(
+      notifierTousLesAdmins({
+        title: "Connexion à l'admin E-Carpet",
+        body: `${cred.name} vient de se connecter (Face ID, ${cred.deviceName || "appareil"}) depuis ${ipConnexion}.`,
+      }).catch((e) => console.error("[webauthn] échec alerte connexion:", e.message)),
+    );
+
     context.waitUntil(
       synchroniserAmazon().catch((e) => console.error("[webauthn] échec synchro stock Amazon:", e.message)),
     );

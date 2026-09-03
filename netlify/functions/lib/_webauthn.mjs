@@ -73,7 +73,7 @@ export async function enregistrerCredential(adminId, { credentialID, credentialP
 export async function credentialParId(credentialId) {
   const [row] = await sql()`
     select c.id, c.admin_id as "adminId", c.credential_id as "credentialId", c.public_key as "publicKey", c.counter,
-           a.name, a.is_owner as "isOwner"
+           c.device_name as "deviceName", a.name, a.is_owner as "isOwner"
     from webauthn_credentials c join admins a on a.id = c.admin_id
     where c.credential_id = ${credentialId}
   `;

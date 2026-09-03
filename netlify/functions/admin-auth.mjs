@@ -16,6 +16,7 @@ import { verifyTotp, generateSecret, otpauthUri } from "./lib/_totp.mjs";
 import { constantTimeEqual, hashPassword, verifyPassword } from "./lib/_crypto.mjs";
 import { sql } from "./lib/_db.mjs";
 import { synchroniserAmazon } from "./stock.mjs";
+import { notifierTousLesAdmins } from "./lib/_push.mjs";
 
 // Amorçage : tant qu'aucun compte n'existe en base, le tout premier login
 // avec les anciennes variables DASHBOARD_PASSWORD/ADMIN_TOTP_SECRET (déjà en
@@ -84,6 +85,18 @@ export default async (req, context) => {
     await resetLoginAttempts(name);
     const token = await createAdminSession(admin.id);
     await recordLoginHistory(admin.id, req).catch((e) => console.error("[admin-auth] échec journal connexion:", e.message));
+
+    // Alerte de sécurité à chaque connexion (mot de passe + code) : envoyée
+    // à tous les admins abonnés aux notifications push, gratuit (même
+    // mécanisme que l'alerte "nouvelle commande"). En arrière-plan, ne
+    // retarde jamais la connexion elle-même.
+    const ipConnexion = req.headers.get("x-nf-client-connection-ip") || req.headers.get("x-forwarded-for") || "IP inconnue";
+    context.waitUntil(
+      notifierTousLesAdmins({
+        title: "Connexion à l'admin E-Carpet",
+        body: `${admin.name} vient de se connecter (mot de passe) depuis ${ipConnexion}.`,
+      }).catch((e) => console.error("[admin-auth] échec alerte connexion:", e.message)),
+    );
 
     // Synchronise le stock avec les ventes Amazon à chaque connexion (en plus
     // du cron toutes les 4h) : se fait en arrière-plan après la réponse, pour
