@@ -12,7 +12,6 @@ import AmazonPanel from "./AmazonPanel";
 import OrdersPanel from "./OrdersPanel";
 import CustomersPanel from "./CustomersPanel";
 import PromoPanel from "./PromoPanel";
-import PartnersPanel from "./PartnersPanel";
 import FinancePanel from "./FinancePanel";
 import PilotagePanel from "./PilotagePanel";
 import StockPanel from "./StockPanel";
@@ -74,7 +73,6 @@ const SECTIONS = [
       { id: "commandes", label: "Commandes" },
       { id: "clients", label: "Clients" },
       { id: "promos", label: "Codes promo" },
-      { id: "influenceurs", label: "Influenceurs" },
       { id: "avis", label: "Avis" },
       { id: "liens", label: "Liens" },
       { id: "blog", label: "Blog" },
@@ -586,7 +584,6 @@ export default function DashboardPage() {
 
       {section === "site" && tab === "promos" && <PromoPanel />}
 
-      {section === "site" && tab === "influenceurs" && <PartnersPanel />}
 
       {section === "site" && tab === "liens" && <LinksManager campaigns={data?.campaigns || []} />}
 

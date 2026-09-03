@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { cachedFetch, invalidateCache } from "../lib/adminCache";
 import InfluencersPanel from "./InfluencersPanel";
+import PartnersPanel from "./PartnersPanel";
 
 const RESEAUX = [
   { id: "facebook", label: "Facebook", couleur: "#1877F2" },
@@ -768,7 +769,18 @@ export default function SocialPanel() {
           </div>
         </div>
       ) : sousOnglet === "influenceurs" ? (
-        <InfluencersPanel />
+        <div className="mt-6 space-y-8">
+          <InfluencersPanel />
+          <div>
+            <h3 className="font-display text-sm font-bold text-white">Candidatures au programme d'affiliation</h3>
+            <p className="mt-1 text-xs text-zinc-500">
+              Anciennement dans Site — regroupé ici avec le reste du suivi influenceurs.
+            </p>
+            <div className="mt-3">
+              <PartnersPanel />
+            </div>
+          </div>
+        </div>
       ) : sousOnglet === "publier" ? (
         <div className="mt-6">
           <Publier compteParReseau={compteParReseau} onProgramme={() => setRefreshProgrammation((n) => n + 1)} />
