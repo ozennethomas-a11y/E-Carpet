@@ -100,6 +100,27 @@ export default async (req) => {
         return Response.json({ ok: true });
       }
 
+      // Supprime une commande jamais payée (panier abandonné). Restreint
+      // volontairement au statut 'en_attente_paiement' : jamais de commande
+      // payée/expédiée, même à la demande, pour ne pas perdre une preuve
+      // comptable ou casser une commission d'affilié déjà due.
+      if (body.action === "supprimer") {
+        const { orderId } = body;
+        if (!orderId) return Response.json({ error: "commande manquante" }, { status: 400 });
+
+        const [order] = await sql()`select id, status from orders where id = ${orderId}`;
+        if (!order) return Response.json({ error: "commande introuvable" }, { status: 404 });
+        if (order.status !== "en_attente_paiement") {
+          return Response.json({ error: "seule une commande en attente de paiement peut être supprimée" }, { status: 409 });
+        }
+
+        await sql()`delete from order_items where order_id = ${orderId}`;
+        await sql()`delete from affiliate_commissions where order_id = ${orderId}`;
+        await sql()`update stock_movements set order_id = null where order_id = ${orderId}`;
+        await sql()`delete from orders where id = ${orderId}`;
+        return Response.json({ ok: true });
+      }
+
       return Response.json({ error: "action inconnue" }, { status: 400 });
     }
 

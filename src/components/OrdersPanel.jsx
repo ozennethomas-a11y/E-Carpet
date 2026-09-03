@@ -88,6 +88,9 @@ function OrderRow({ order, onUpdated }) {
   const [marquagePaiement, setMarquagePaiement] = useState(false);
   const [erreurPaiement, setErreurPaiement] = useState("");
   const [envoyerEmailPaiement, setEnvoyerEmailPaiement] = useState(false);
+  const [confirmationSuppression, setConfirmationSuppression] = useState(false);
+  const [suppression, setSuppression] = useState(false);
+  const [erreurSuppression, setErreurSuppression] = useState("");
 
   const addr = order.shippingAddress || {};
   const isRelais = addr.deliveryMode === "relais";
@@ -129,6 +132,26 @@ function OrderRow({ order, onUpdated }) {
       setErreurPaiement("Échec de l'opération.");
     } finally {
       setMarquagePaiement(false);
+    }
+  }
+
+  async function supprimer() {
+    setErreurSuppression("");
+    setSuppression(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "supprimer", orderId: order.id }),
+      });
+      const data = await res.json();
+      if (data.error) return setErreurSuppression(data.error);
+      invalidateCache("/api/orders");
+      onUpdated();
+    } catch {
+      setErreurSuppression("Échec de la suppression.");
+    } finally {
+      setSuppression(false);
     }
   }
 
@@ -282,6 +305,38 @@ function OrderRow({ order, onUpdated }) {
                 {marquagePaiement ? "…" : "Marquer comme payée"}
               </button>
               {erreurPaiement && <p className="mt-1 text-xs text-red-400">{erreurPaiement}</p>}
+
+              <div className="mt-3 border-t border-amber-500/20 pt-3">
+                <p className="text-xs leading-relaxed text-zinc-500">
+                  Panier abandonné, jamais payé ? Vous pouvez supprimer définitivement cette commande.
+                </p>
+                {!confirmationSuppression ? (
+                  <button
+                    onClick={() => setConfirmationSuppression(true)}
+                    className="mt-2 rounded-full border border-red-500/30 px-4 py-1.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/10 cursor-pointer"
+                  >
+                    Supprimer la commande
+                  </button>
+                ) : (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-red-400">Suppression définitive, confirmez :</span>
+                    <button
+                      onClick={supprimer}
+                      disabled={suppression}
+                      className="rounded-full bg-red-500/90 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-red-500 disabled:opacity-60 cursor-pointer"
+                    >
+                      {suppression ? "…" : "Oui, supprimer"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmationSuppression(false)}
+                      className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-zinc-300 transition-colors hover:text-white cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                )}
+                {erreurSuppression && <p className="mt-1 text-xs text-red-400">{erreurSuppression}</p>}
+              </div>
             </div>
           ) : (
             <p className="text-xs text-zinc-500">Rien à faire pour l'instant.</p>
