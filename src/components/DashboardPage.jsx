@@ -104,6 +104,7 @@ const SECTIONS = [
     tabs: [
       { id: "connexions", label: "Connexions" },
       { id: "comptes", label: "Comptes" },
+      { id: "faceid", label: "Face ID" },
     ],
   },
 ];
@@ -391,8 +392,6 @@ export default function DashboardPage() {
             <div className="mt-0.5 flex items-center gap-2">
               <p className="text-xs text-zinc-500">Connecté en tant que {monNom}</p>
               <span className="text-zinc-700">·</span>
-              <FaceIdSettings />
-              <span className="text-zinc-700">·</span>
               <PushNotifications />
             </div>
           )}
@@ -508,7 +507,12 @@ export default function DashboardPage() {
       {section === "expedition" && <ShippingPanel />}
       {section === "stock" && <StockPanel />}
       {section === "social" && <SocialPanel />}
-      {section === "acces" && isOwner && <AdminAccessPanel tab={tab} />}
+      {section === "acces" && isOwner && tab === "faceid" && (
+        <div className="mt-2">
+          <FaceIdSettings inline />
+        </div>
+      )}
+      {section === "acces" && isOwner && tab !== "faceid" && <AdminAccessPanel tab={tab} />}
 
       {section === "site" && tab === "analyse" && state === "unconfigured" && (
         <p className="rounded-2xl border border-white/10 bg-slate-deep p-6 text-sm text-zinc-300">
