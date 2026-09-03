@@ -25,7 +25,7 @@ import AdminAccessPanel from "./AdminAccessPanel";
 import FaceIdSettings from "./FaceIdSettings";
 import PushNotifications from "./PushNotifications";
 import { startAuthentication } from "@simplewebauthn/browser";
-import { cachedFetchWithStatus, prefetch, clearCache } from "../lib/adminCache";
+import { cachedFetchWithStatus, prefetch, clearCache, setUnauthorizedHandler } from "../lib/adminCache";
 
 // Vue par défaut de chaque onglet, téléchargée en une fois à la connexion
 // pour qu'ensuite changer d'onglet n'attende plus aucune requête réseau.
@@ -198,6 +198,37 @@ export default function DashboardPage() {
       })
       .catch(() => setConnecte(false));
   }, []);
+
+  // Renvoie à l'écran de connexion dès qu'un appel API renvoie 401 (session
+  // expirée), quel que soit l'onglet ouvert — avant, seul l'onglet Analyse
+  // le détectait, donnant l'impression de rester connecté indéfiniment sur
+  // les autres onglets malgré l'expiration serveur (1h).
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      clearCache();
+      setConnecte(false);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  // Filet de sécurité pour un onglet resté ouvert sans qu'aucun appel API ne
+  // parte entre-temps (ex. Accès, Face ID) : revérifie la session toutes les
+  // 5 minutes pour détecter une expiration même sans requête de données.
+  useEffect(() => {
+    if (!connecte) return;
+    const id = setInterval(() => {
+      fetch("/api/admin-auth?action=me")
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d.connecte) {
+            clearCache();
+            setConnecte(false);
+          }
+        })
+        .catch(() => {});
+    }, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [connecte]);
 
   useEffect(() => {
     if (connecte) load(periode);
