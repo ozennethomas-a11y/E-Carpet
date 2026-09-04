@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../navigation";
 import { formatPrice } from "../cart";
 import { ArrowIcon } from "./ui";
-import { StatTile } from "./charts";
+import { StatTile, LineChart } from "./charts";
 
 const COMMISSION_LABELS = { due: "En attente", annulee: "Annulée", payee: "Versée" };
 
@@ -81,6 +81,29 @@ export default function AffiliateSpacePage() {
   const [lienCopie, setLienCopie] = useState(false);
   const params = new URLSearchParams(window.location.search);
   const erreur = params.get("erreur");
+
+  // Série des 30 derniers jours (commandes non annulées) construite côté
+  // client à partir de l'historique déjà chargé — pas d'appel API en plus.
+  const ordersSeries = useMemo(() => {
+    if (!data?.commissions) return [];
+    const DAY_MS = 86400000;
+    const parJour = new Map();
+    for (const c of data.commissions) {
+      if (c.status === "annulee") continue;
+      const jour = new Date(c.createdAt).toISOString().slice(0, 10);
+      const entry = parJour.get(jour) || { orders: 0, revenueCents: 0 };
+      entry.orders += 1;
+      entry.revenueCents += c.totalCents;
+      parJour.set(jour, entry);
+    }
+    const jours = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(Date.now() - i * DAY_MS).toISOString().slice(0, 10);
+      const entry = parJour.get(date) || { orders: 0, revenueCents: 0 };
+      jours.push({ date, ...entry });
+    }
+    return jours;
+  }, [data?.commissions]);
 
   const affiliateLink = useMemo(() => {
     if (!data?.affiliate?.campaignSlug) return null;
@@ -197,6 +220,18 @@ export default function AffiliateSpacePage() {
             <StatTile label="Chiffre d'affaires généré" value={formatPrice(data.kpi.revenueCents)} />
             <StatTile label="Commission due" value={formatPrice(data.kpi.dueCents)} />
             <StatTile label="Commission versée" value={formatPrice(data.kpi.paidCents)} />
+          </div>
+
+          <div className="mt-4">
+            <LineChart
+              data={ordersSeries}
+              title="Commandes générées par jour (30 derniers jours)"
+              value={(d) => d.orders}
+              sub={(d) => d.revenueCents}
+              tableHeaders={["Commandes", "CA"]}
+              formatSub={(n) => formatPrice(n)}
+              tooltip={(d) => `${d.orders} commande${d.orders > 1 ? "s" : ""} · ${formatPrice(d.revenueCents)}`}
+            />
           </div>
 
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
