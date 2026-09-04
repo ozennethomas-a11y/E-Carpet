@@ -41,7 +41,19 @@ async function addTaggedLink(origin, source, campaign, note) {
   return label;
 }
 
-async function createAffiliatePromoCode(name, commissionPercent) {
+// Le code est choisi par le candidat lui-même à l'inscription
+// (`requested_promo_code`, voir AffiliateApplyPage.jsx) — utilisé tel quel.
+// Filet pour les candidatures antérieures à ce changement, sans code
+// demandé : génère un code à partir du nom, comme avant.
+async function createAffiliatePromoCode(name, requestedCode, commissionPercent) {
+  if (requestedCode) {
+    const [row] = await sql()`
+      insert into promo_codes (code, type, value, source) values (${requestedCode}, 'percent', ${commissionPercent}, 'affilie')
+      returning id, code
+    `;
+    return row;
+  }
+
   const base = slug(name).toUpperCase().replace(/-/g, "").slice(0, 6) || "PARTENAIRE";
   for (let essai = 0; essai < 5; essai++) {
     const code = `${base}${randomSuffix()}`;
@@ -66,6 +78,7 @@ function toJson(a) {
     social: a.social,
     audience: a.audience,
     message: a.message,
+    requestedPromoCode: a.requested_promo_code,
     status: a.status,
     commissionPercent: a.commission_percent,
     promoCode: a.promo_code || null,
@@ -108,7 +121,18 @@ export default async (req) => {
         if (!affiliate) return Response.json({ error: "candidature introuvable" }, { status: 404 });
         if (affiliate.status === "actif") return Response.json({ error: "déjà actif" }, { status: 400 });
 
-        const promo = await createAffiliatePromoCode(affiliate.name, commissionPercent);
+        let promo;
+        try {
+          promo = await createAffiliatePromoCode(affiliate.name, affiliate.requested_promo_code, commissionPercent);
+        } catch (e) {
+          if (String(e.message || e).toLowerCase().includes("unique")) {
+            return Response.json(
+              { error: `le code "${affiliate.requested_promo_code}" a été pris entre-temps, demandez au candidat d'en choisir un autre` },
+              { status: 409 },
+            );
+          }
+          throw e;
+        }
         const campaignSlug = slug(affiliate.name) || `partenaire-${affiliate.id}`;
         await addTaggedLink(siteOrigin(req), "affilie", campaignSlug, affiliate.name);
 

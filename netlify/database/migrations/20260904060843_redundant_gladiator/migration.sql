@@ -1,0 +1,1 @@
+ALTER TABLE "affiliates" ADD COLUMN IF NOT EXISTS "requested_promo_code" text;

@@ -36,12 +36,29 @@ export default async (req, context) => {
       return Response.json({ error: "nom ou email manquant" }, { status: 400 });
     }
 
+    // Code choisi par le candidat lui-même (voir AffiliateApplyPage.jsx) —
+    // utilisé tel quel à l'approbation, à la place d'un code généré à partir
+    // du nom. Vérifié dès la candidature pour que le candidat sache tout de
+    // suite s'il doit en choisir un autre, plutôt qu'au moment de
+    // l'approbation par l'admin, bien plus tard.
+    const promoCode = clean(body.promoCode, 20).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (promoCode.length < 4) {
+      return Response.json({ error: "le code promo doit faire au moins 4 caractères (lettres/chiffres)" }, { status: 400 });
+    }
+
     const [existing] = await sql()`select id from affiliates where email = ${email}`;
     if (existing) return Response.json({ error: "une candidature existe déjà pour cet email" }, { status: 400 });
 
+    const [codePris] = await sql()`select id from promo_codes where code = ${promoCode}`;
+    if (codePris) return Response.json({ error: "ce code promo est déjà utilisé, choisissez-en un autre" }, { status: 400 });
+    const [codeDejaDemande] = await sql()`
+      select id from affiliates where requested_promo_code = ${promoCode} and status != 'refuse'
+    `;
+    if (codeDejaDemande) return Response.json({ error: "ce code promo est déjà réservé par une autre candidature, choisissez-en un autre" }, { status: 400 });
+
     await sql()`
-      insert into affiliates (email, name, social, audience, message)
-      values (${email}, ${name}, ${clean(body.social, 120)}, ${clean(body.audience, 120)}, ${clean(body.message, 1000)})
+      insert into affiliates (email, name, social, audience, message, requested_promo_code)
+      values (${email}, ${name}, ${clean(body.social, 120)}, ${clean(body.audience, 120)}, ${clean(body.message, 1000)}, ${promoCode})
     `;
 
     if (emailConfigured()) {

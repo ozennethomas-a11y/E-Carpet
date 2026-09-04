@@ -2,7 +2,7 @@ import { useState } from "react";
 import { navigate } from "../navigation";
 import { ArrowIcon } from "./ui";
 
-const EMPTY = { name: "", email: "", social: "", audience: "", message: "" };
+const EMPTY = { name: "", email: "", social: "", audience: "", promoCode: "", message: "" };
 
 export default function AffiliateApplyPage() {
   const [form, setForm] = useState(EMPTY);
@@ -96,6 +96,19 @@ export default function AffiliateApplyPage() {
                 onChange={(e) => setForm((f) => ({ ...f, audience: e.target.value }))}
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none focus:border-acid"
               />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-zinc-500">Code promo souhaité (4 à 20 lettres/chiffres)</label>
+              <input
+                required
+                value={form.promoCode}
+                onChange={(e) => setForm((f) => ({ ...f, promoCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) }))}
+                placeholder="VOTRECODE"
+                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 uppercase tracking-wide text-white outline-none focus:border-acid"
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                C'est ce code que vos abonnés utiliseront à la commande — choisissez-le facile à retenir.
+              </p>
             </div>
             <div>
               <label className="mb-1 block text-xs text-zinc-500">Un mot sur votre contenu (facultatif)</label>

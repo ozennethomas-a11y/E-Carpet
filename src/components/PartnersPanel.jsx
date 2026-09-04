@@ -16,6 +16,12 @@ function Carte({ a, children }) {
             {a.email}
             {a.social && ` · ${a.social}`}
             {a.audience && ` · ${a.audience}`}
+            {a.requestedPromoCode && (
+              <>
+                {" · code souhaité "}
+                <span className="font-bold text-white">{a.requestedPromoCode}</span>
+              </>
+            )}
           </div>
           {a.message && <p className="mt-2 max-w-xl text-xs leading-relaxed text-zinc-400">{a.message}</p>}
         </div>
