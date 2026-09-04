@@ -13,6 +13,7 @@ import { checkAndRecord } from "./lib/_rateLimit.mjs";
 
 const TOKEN_MINUTES = 15;
 const clean = (v, max) => String(v ?? "").trim().slice(0, max);
+const RESEAUX_AFFILIES = ["TikTok", "Instagram", "Facebook", "YouTube"];
 
 export default async (req, context) => {
   const url = new URL(req.url);
@@ -34,6 +35,18 @@ export default async (req, context) => {
     const name = clean(body.name, 100);
     if (!email || !email.includes("@") || !name) {
       return Response.json({ error: "nom ou email manquant" }, { status: 400 });
+    }
+
+    // Réseau social : obligatoirement l'un des quatre proposés (liste fermée,
+    // pas de texte libre), avec un nombre d'abonnés — condition posée pour
+    // évaluer sérieusement une candidature.
+    const social = clean(body.social, 120);
+    if (!RESEAUX_AFFILIES.includes(social)) {
+      return Response.json({ error: "sélectionnez un réseau social dans la liste" }, { status: 400 });
+    }
+    const audience = clean(body.audience, 120);
+    if (!audience || !/^\d+$/.test(audience) || Number(audience) < 0) {
+      return Response.json({ error: "indiquez votre nombre d'abonnés" }, { status: 400 });
     }
 
     // Code choisi par le candidat lui-même (voir AffiliateApplyPage.jsx) —
@@ -58,8 +71,29 @@ export default async (req, context) => {
 
     await sql()`
       insert into affiliates (email, name, social, audience, message, requested_promo_code)
-      values (${email}, ${name}, ${clean(body.social, 120)}, ${clean(body.audience, 120)}, ${clean(body.message, 1000)}, ${promoCode})
+      values (${email}, ${name}, ${social}, ${audience}, ${clean(body.message, 1000)}, ${promoCode})
     `;
+
+    // Fait apparaître la candidature dans le tableau de suivi influenceurs
+    // (Réseaux sociaux > Influenceurs) au même endroit que le reste du
+    // démarchage manuel, pour une vue unique de tout ce qui est en cours —
+    // par email plutôt que par nom, pour retrouver la même personne si elle
+    // recandidate ou était déjà suivie manuellement sous un autre nom.
+    const prochaineAction = "Étudier la candidature au programme d'affiliation";
+    const [dejaSuivi] = await sql()`select id from influencer_contacts where contact = ${email}`;
+    if (dejaSuivi) {
+      await sql()`
+        update influencer_contacts
+        set name = ${name}, platform = ${social}, followers = ${audience}, status = 'en_cours',
+            next_action = ${prochaineAction}, updated_at = now()
+        where id = ${dejaSuivi.id}
+      `;
+    } else {
+      await sql()`
+        insert into influencer_contacts (name, platform, followers, contact, status, next_action)
+        values (${name}, ${social}, ${audience}, ${email}, 'en_cours', ${prochaineAction})
+      `;
+    }
 
     if (emailConfigured()) {
       const { subject, html } = affiliateApplicationReceivedEmail({ name });

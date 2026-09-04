@@ -2,6 +2,8 @@ import { useState } from "react";
 import { navigate } from "../navigation";
 import { ArrowIcon } from "./ui";
 
+const RESEAUX = ["TikTok", "Instagram", "Facebook", "YouTube"];
+
 const EMPTY = { name: "", email: "", social: "", audience: "", promoCode: "", message: "" };
 
 export default function AffiliateApplyPage() {
@@ -81,17 +83,25 @@ export default function AffiliateApplyPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-zinc-500">Réseau (Instagram, TikTok, YouTube…)</label>
-              <input
+              <label className="mb-1 block text-xs text-zinc-500">Réseau social</label>
+              <select
+                required
                 value={form.social}
                 onChange={(e) => setForm((f) => ({ ...f, social: e.target.value }))}
-                placeholder="@votre_pseudo"
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none focus:border-acid"
-              />
+              >
+                <option value="" disabled>Choisissez un réseau</option>
+                {RESEAUX.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-zinc-500">Audience (nombre d'abonnés, portée...)</label>
+              <label className="mb-1 block text-xs text-zinc-500">Nombre d'abonnés</label>
               <input
+                required
+                type="number"
+                min="0"
                 value={form.audience}
                 onChange={(e) => setForm((f) => ({ ...f, audience: e.target.value }))}
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none focus:border-acid"
