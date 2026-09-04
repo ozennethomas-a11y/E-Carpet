@@ -1,5 +1,7 @@
+import { getStore } from "@netlify/blobs";
 import { sql } from "./lib/_db.mjs";
 import { siteOrigin } from "./lib/_siteOrigin.mjs";
+import { campaignLabelOf } from "./shared/sources.mjs";
 import { sendEmail, affiliateApplicationReceivedEmail, affiliateMagicLinkEmail, emailConfigured } from "./lib/_email.mjs";
 import { randomToken } from "./lib/_auth.mjs";
 import {
@@ -153,6 +155,21 @@ export default async (req, context) => {
     const paidCents = commissions.filter((c) => c.status === "payee").reduce((s, c) => s + c.amount_cents, 0);
     const validOrders = commissions.filter((c) => c.status !== "annulee");
 
+    // Nombre de clics sur le lien personnel : compté par track.mjs à chaque
+    // visite taguée (?utm_source=affilie&utm_campaign=<campaignSlug>), stocké
+    // par jour dans le même store "analytics" que le reste des statistiques
+    // du site — on additionne juste tous les jours connus pour ce libellé.
+    let clicksCount = 0;
+    if (affiliate.campaign_slug) {
+      const label = campaignLabelOf("affilie", affiliate.campaign_slug);
+      const store = getStore("analytics");
+      const idx = await store.get("index", { type: "json" }).catch(() => null);
+      const jours = await Promise.all(
+        (idx?.days || []).map((date) => store.get(`day/${date}`, { type: "json" }).catch(() => null)),
+      );
+      clicksCount = jours.reduce((s, d) => s + (d?.campaigns?.[label] || 0), 0);
+    }
+
     return Response.json({
       affiliate: {
         email: affiliate.email,
@@ -168,6 +185,7 @@ export default async (req, context) => {
         revenueCents: validOrders.reduce((s, c) => s + c.total_cents, 0),
         dueCents,
         paidCents,
+        clicksCount,
       },
       commissions: commissions.map((c) => ({
         id: c.id,

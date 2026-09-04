@@ -192,6 +192,7 @@ export default function AffiliateSpacePage() {
           )}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <StatTile label="Clics sur votre lien" value={data.kpi.clicksCount.toLocaleString("fr-FR")} />
             <StatTile label="Commandes générées" value={data.kpi.ordersCount.toLocaleString("fr-FR")} />
             <StatTile label="Chiffre d'affaires généré" value={formatPrice(data.kpi.revenueCents)} />
             <StatTile label="Commission due" value={formatPrice(data.kpi.dueCents)} />
