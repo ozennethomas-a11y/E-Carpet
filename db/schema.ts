@@ -169,6 +169,11 @@ export const affiliates = pgTable('affiliates', {
   name: text('name').notNull(),
   social: text('social'),
   audience: text('audience'),
+  // Un ou plusieurs réseaux choisis à la candidature, chacun avec son lien de
+  // profil et son nombre d'abonnés — remplace social/audience (conservés
+  // pour les candidatures antérieures à ce champ) : [{ platform, link,
+  // followers }, ...].
+  networks: jsonb('networks'),
   message: text('message'),
   // Code choisi par le candidat lui-même à l'inscription (voir
   // AffiliateApplyPage.jsx) — utilisé tel quel à l'approbation au lieu d'un

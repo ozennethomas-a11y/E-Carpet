@@ -77,6 +77,7 @@ function toJson(a) {
     name: a.name,
     social: a.social,
     audience: a.audience,
+    networks: a.networks || null,
     message: a.message,
     requestedPromoCode: a.requested_promo_code,
     status: a.status,

@@ -14,8 +14,8 @@ function Carte({ a, children }) {
           <div className="font-display text-sm font-bold text-white">{a.name}</div>
           <div className="mt-0.5 text-xs text-zinc-500">
             {a.email}
-            {a.social && ` · ${a.social}`}
-            {a.audience && ` · ${a.audience}`}
+            {!a.networks && a.social && ` · ${a.social}`}
+            {!a.networks && a.audience && ` · ${a.audience}`}
             {a.requestedPromoCode && (
               <>
                 {" · code souhaité "}
@@ -23,6 +23,21 @@ function Carte({ a, children }) {
               </>
             )}
           </div>
+          {Array.isArray(a.networks) && a.networks.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {a.networks.map((n, i) => (
+                <a
+                  key={i}
+                  href={n.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-zinc-300 underline-offset-2 hover:text-white hover:underline"
+                >
+                  {n.platform} · <span className="chiffre font-bold">{Number(n.followers).toLocaleString("fr-FR")}</span> abonnés
+                </a>
+              ))}
+            </div>
+          )}
           {a.message && <p className="mt-2 max-w-xl text-xs leading-relaxed text-zinc-400">{a.message}</p>}
         </div>
         <div className="text-xs text-zinc-500">Candidature du {formatDate(a.createdAt)}</div>

@@ -37,17 +37,32 @@ export default async (req, context) => {
       return Response.json({ error: "nom ou email manquant" }, { status: 400 });
     }
 
-    // Réseau social : obligatoirement l'un des quatre proposés (liste fermée,
-    // pas de texte libre), avec un nombre d'abonnés — condition posée pour
-    // évaluer sérieusement une candidature.
-    const social = clean(body.social, 120);
-    if (!RESEAUX_AFFILIES.includes(social)) {
-      return Response.json({ error: "sélectionnez un réseau social dans la liste" }, { status: 400 });
+    // Réseaux sociaux : au moins un des quatre proposés (liste fermée, pas de
+    // texte libre), chacun avec son lien de profil et son nombre d'abonnés —
+    // condition posée pour évaluer sérieusement une candidature, et pouvoir
+    // vérifier le profil en cliquant dessus.
+    const networksIn = Array.isArray(body.networks) ? body.networks : [];
+    const networks = networksIn.map((n) => ({
+      platform: clean(n?.platform, 20),
+      link: clean(n?.link, 300),
+      followers: clean(n?.followers, 20),
+    }));
+    if (networks.length === 0) {
+      return Response.json({ error: "sélectionnez au moins un réseau social" }, { status: 400 });
     }
-    const audience = clean(body.audience, 120);
-    if (!audience || !/^\d+$/.test(audience) || Number(audience) < 0) {
-      return Response.json({ error: "indiquez votre nombre d'abonnés" }, { status: 400 });
+    for (const n of networks) {
+      if (!RESEAUX_AFFILIES.includes(n.platform)) {
+        return Response.json({ error: "réseau social invalide" }, { status: 400 });
+      }
+      if (!n.link || !/^https?:\/\//.test(n.link)) {
+        return Response.json({ error: `lien de profil manquant ou invalide pour ${n.platform}` }, { status: 400 });
+      }
+      if (!/^\d+$/.test(n.followers)) {
+        return Response.json({ error: `nombre d'abonnés manquant pour ${n.platform}` }, { status: 400 });
+      }
     }
+    const platformsLabel = networks.map((n) => n.platform).join(", ");
+    const followersLabel = networks.map((n) => `${n.platform}: ${n.followers}`).join(" · ");
 
     // Code choisi par le candidat lui-même (voir AffiliateApplyPage.jsx) —
     // utilisé tel quel à l'approbation, à la place d'un code généré à partir
@@ -70,8 +85,8 @@ export default async (req, context) => {
     if (codeDejaDemande) return Response.json({ error: "ce code promo est déjà réservé par une autre candidature, choisissez-en un autre" }, { status: 400 });
 
     await sql()`
-      insert into affiliates (email, name, social, audience, message, requested_promo_code)
-      values (${email}, ${name}, ${social}, ${audience}, ${clean(body.message, 1000)}, ${promoCode})
+      insert into affiliates (email, name, social, audience, networks, message, requested_promo_code)
+      values (${email}, ${name}, ${platformsLabel}, ${followersLabel}, ${JSON.stringify(networks)}::jsonb, ${clean(body.message, 1000)}, ${promoCode})
     `;
 
     // Fait apparaître la candidature dans le tableau de suivi influenceurs
@@ -84,14 +99,14 @@ export default async (req, context) => {
     if (dejaSuivi) {
       await sql()`
         update influencer_contacts
-        set name = ${name}, platform = ${social}, followers = ${audience}, status = 'en_cours',
+        set name = ${name}, platform = ${platformsLabel}, followers = ${followersLabel}, status = 'en_cours',
             next_action = ${prochaineAction}, updated_at = now()
         where id = ${dejaSuivi.id}
       `;
     } else {
       await sql()`
         insert into influencer_contacts (name, platform, followers, contact, status, next_action)
-        values (${name}, ${social}, ${audience}, ${email}, 'en_cours', ${prochaineAction})
+        values (${name}, ${platformsLabel}, ${followersLabel}, ${email}, 'en_cours', ${prochaineAction})
       `;
     }
 

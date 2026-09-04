@@ -4,22 +4,53 @@ import { ArrowIcon } from "./ui";
 
 const RESEAUX = ["TikTok", "Instagram", "Facebook", "YouTube"];
 
-const EMPTY = { name: "", email: "", social: "", audience: "", promoCode: "", message: "" };
+const EMPTY = { name: "", email: "", promoCode: "", message: "" };
 
 export default function AffiliateApplyPage() {
   const [form, setForm] = useState(EMPTY);
+  // Un réseau peut être sélectionné sans être encore rempli (lien/abonnés
+  // vides) : { platform: { link, followers } }.
+  const [reseaux, setReseaux] = useState({});
   const [state, setState] = useState("idle"); // idle | envoi | envoye | erreur
   const [erreur, setErreur] = useState("");
 
+  function basculerReseau(platform) {
+    setReseaux((r) => {
+      const next = { ...r };
+      if (next[platform]) delete next[platform];
+      else next[platform] = { link: "", followers: "" };
+      return next;
+    });
+  }
+
+  function majReseau(platform, champ, valeur) {
+    setReseaux((r) => ({ ...r, [platform]: { ...r[platform], [champ]: valeur } }));
+  }
+
   async function submit(e) {
     e.preventDefault();
-    setState("envoi");
     setErreur("");
+
+    const networks = Object.entries(reseaux).map(([platform, v]) => ({
+      platform,
+      link: v.link.trim(),
+      followers: v.followers.trim(),
+    }));
+    if (networks.length === 0) {
+      setErreur("Sélectionnez au moins un réseau social.");
+      return;
+    }
+    if (networks.some((n) => !n.link || !n.followers)) {
+      setErreur("Indiquez le lien et le nombre d'abonnés pour chaque réseau sélectionné.");
+      return;
+    }
+
+    setState("envoi");
     try {
       const res = await fetch("/api/affiliate-auth?action=apply", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, networks }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -83,29 +114,50 @@ export default function AffiliateApplyPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-zinc-500">Réseau social</label>
-              <select
-                required
-                value={form.social}
-                onChange={(e) => setForm((f) => ({ ...f, social: e.target.value }))}
-                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none focus:border-acid"
-              >
-                <option value="" disabled>Choisissez un réseau</option>
+              <label className="mb-1 block text-xs text-zinc-500">Réseaux sociaux (au moins un)</label>
+              <div className="flex flex-wrap gap-2">
                 {RESEAUX.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => basculerReseau(r)}
+                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                      reseaux[r] ? "border-acid bg-acid/10 text-acid" : "border-white/15 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {r}
+                  </button>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-zinc-500">Nombre d'abonnés</label>
-              <input
-                required
-                type="number"
-                min="0"
-                value={form.audience}
-                onChange={(e) => setForm((f) => ({ ...f, audience: e.target.value }))}
-                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white outline-none focus:border-acid"
-              />
+              </div>
+
+              {Object.keys(reseaux).length > 0 && (
+                <div className="mt-3 flex flex-col gap-3">
+                  {RESEAUX.filter((r) => reseaux[r]).map((r) => (
+                    <div key={r} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-2 text-xs font-semibold text-white">{r}</div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <input
+                          required
+                          type="url"
+                          value={reseaux[r].link}
+                          onChange={(e) => majReseau(r, "link", e.target.value)}
+                          placeholder="Lien de votre profil"
+                          className="flex-1 rounded-xl border border-white/15 bg-transparent px-4 py-2.5 text-sm text-white outline-none focus:border-acid"
+                        />
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          value={reseaux[r].followers}
+                          onChange={(e) => majReseau(r, "followers", e.target.value)}
+                          placeholder="Nombre d'abonnés"
+                          className="w-full rounded-xl border border-white/15 bg-transparent px-4 py-2.5 text-sm text-white outline-none focus:border-acid sm:w-40"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-xs text-zinc-500">Code promo souhaité (4 à 20 lettres/chiffres)</label>
