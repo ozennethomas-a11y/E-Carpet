@@ -1,9 +1,18 @@
 import { useLang } from "../i18n/LanguageContext";
 import { navigate } from "../navigation";
-import { getArticle, formatDate } from "../data/articles";
+import { getArticle, getPublishedArticles, formatDate } from "../data/articles";
 import { BuyButton } from "./ui";
 import SubPageHeader from "./SubPageHeader";
 import Footer from "./Footer";
+
+// Related articles: cheap internal-linking win. Picks up to 3 other published
+// articles, deterministically (by slug) so the choice doesn't change on every
+// render, and excludes the current one.
+function getRelated(slug, max = 3) {
+  return getPublishedArticles()
+    .filter((a) => a.slug !== slug)
+    .slice(0, max);
+}
 
 export default function ArticlePage({ slug }) {
   const { t } = useLang();
@@ -58,6 +67,35 @@ export default function ArticlePage({ slug }) {
               return <p key={i} className="leading-relaxed text-zinc-300">{block.text}</p>;
             })}
           </div>
+
+          {(() => {
+            const related = getRelated(slug);
+            if (!related.length) return null;
+            return (
+              <div className="mt-12">
+                <h2 className="mb-5 font-display text-xl font-bold text-white">{t.blog.relatedTitle}</h2>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {related.map((a) => (
+                    <a
+                      key={a.slug}
+                      href={`/blog/${a.slug}`}
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                        e.preventDefault();
+                        navigate(`/blog/${a.slug}`);
+                      }}
+                      className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-deep text-left transition-colors duration-300 hover:border-acid/40 cursor-pointer"
+                    >
+                      <div className="aspect-[16/10] overflow-hidden">
+                        <img src={a.cover} alt={a.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      </div>
+                      <p className="p-4 font-display text-sm font-bold leading-snug text-white">{a.title}</p>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="mt-12 rounded-3xl border border-white/10 bg-slate-deep p-8 text-center">
             <p className="mb-5 font-display text-xl font-bold text-white">{t.blog.ctaTitle}</p>

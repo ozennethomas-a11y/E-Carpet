@@ -112,7 +112,18 @@ export function buildGraph(path, faq, avisReels) {
     if (faq?.items?.length) graph.push(faqPage(faq.items));
   } else if (path.startsWith("/blog/")) {
     const a = ARTICLES.find((x) => x.slug === path.slice("/blog/".length));
-    if (a) graph.push(articleSchema(a));
+    if (a) {
+      graph.push(articleSchema(a));
+      graph.push({
+        "@type": "BreadcrumbList",
+        "@id": `${SITE}/blog/${a.slug}#breadcrumb`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Accueil", item: SITE },
+          { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE}/blog` },
+          { "@type": "ListItem", position: 3, name: a.title, item: `${SITE}/blog/${a.slug}` },
+        ],
+      });
+    }
   } else if (path === "/blog") {
     graph.push({
       "@type": "Blog",

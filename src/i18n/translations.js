@@ -16,6 +16,7 @@ export const translations = {
       backToBlog: "Tous les articles",
       notFound: "Article introuvable.",
       ctaTitle: "Prêt à protéger votre sol ?",
+      relatedTitle: "À lire aussi",
     },
     reviewForm: {
       kicker: "Votre avis",
@@ -157,6 +158,7 @@ export const translations = {
       backToBlog: "All articles",
       notFound: "Article not found.",
       ctaTitle: "Ready to protect your floor?",
+      relatedTitle: "You might also like",
     },
     reviewForm: {
       kicker: "Your review",
@@ -298,6 +300,7 @@ export const translations = {
       backToBlog: "Alle Artikel",
       notFound: "Artikel nicht gefunden.",
       ctaTitle: "Bereit, deinen Boden zu schützen?",
+      relatedTitle: "Das könnte dich auch interessieren",
     },
     reviewForm: {
       kicker: "Deine Bewertung",
@@ -439,6 +442,7 @@ export const translations = {
       backToBlog: "Wszystkie artykuły",
       notFound: "Nie znaleziono artykułu.",
       ctaTitle: "Gotów chronić swoją podłogę?",
+      relatedTitle: "Zobacz też",
     },
     reviewForm: {
       kicker: "Twoja opinia",
