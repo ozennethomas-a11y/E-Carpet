@@ -1,6 +1,7 @@
 import { motion, useInView, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useLang } from "../i18n/LanguageContext";
+import { useAvis } from "../hooks/useAvis";
 import { Reveal } from "./ui";
 
 function Counter({ to, suffix = "", decimals = 0 }) {
@@ -19,10 +20,17 @@ function Counter({ to, suffix = "", decimals = 0 }) {
 
 export default function Stats() {
   const { t } = useLang();
+  const { realCount, realAverage } = useAvis();
 
   const stats = [
     { value: <><span className="text-acid">+</span><Counter to={2000} /></>, label: t.stats.clients },
-    { value: <><Counter to={4.9} decimals={1} /><span className="text-acid">/5</span></>, label: t.stats.rating },
+    {
+      // Tant qu'il n'y a pas encore de vrai avis de visiteur, on garde la
+      // note d'exemple (4,9) plutôt que d'afficher "0 avis" — jamais de vrai
+      // compte à 0 présenté comme si c'était la réalité.
+      value: <><Counter to={realCount ? realAverage : 4.9} decimals={1} /><span className="text-acid">/5</span></>,
+      label: realCount ? `${t.stats.rating} · ${realCount} avis vérifiés` : t.stats.rating,
+    },
     { value: <><Counter to={72} /><span className="text-acid">h</span></>, label: t.stats.delivery },
     { value: <><Counter to={30} /><span className="text-acid">j</span></>, label: t.stats.returns },
   ];

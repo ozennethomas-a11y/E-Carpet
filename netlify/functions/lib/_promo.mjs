@@ -13,5 +13,6 @@ export async function findValidPromo(code) {
 
 export function computeDiscountCents(row, subtotalCents) {
   if (row.type === "percent") return Math.round((subtotalCents * row.value) / 100);
+  if (row.type === "free_shipping") return 0; // s'applique aux frais de port, pas au sous-total
   return Math.min(row.value, subtotalCents);
 }

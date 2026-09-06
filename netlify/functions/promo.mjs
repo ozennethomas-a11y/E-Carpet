@@ -46,8 +46,10 @@ export default async (req) => {
       const body = await req.json();
 
       if (body.action === "create") {
-        const type = body.type === "fixed" ? "fixed" : "percent";
-        const value = Math.round(Number(body.value));
+        const type = ["fixed", "free_shipping"].includes(body.type) ? body.type : "percent";
+        // La livraison offerte n'a pas de "valeur" à proprement parler : on
+        // stocke 1 par convention, jamais utilisé par computeDiscountCents.
+        const value = type === "free_shipping" ? 1 : Math.round(Number(body.value));
         if (!Number.isFinite(value) || value <= 0) {
           return Response.json({ error: "valeur invalide" }, { status: 400 });
         }

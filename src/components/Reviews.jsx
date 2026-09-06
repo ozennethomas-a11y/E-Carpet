@@ -1,6 +1,7 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { useLang } from "../i18n/LanguageContext";
+import { useAvis } from "../hooks/useAvis";
 import { Kicker, Reveal, Stars } from "./ui";
 
 function ReviewCard({ review, index }) {
@@ -38,18 +39,7 @@ export default function Reviews() {
   // Modération : les avis maison mis en veille disparaissent, les avis de
   // visiteurs approuvés s'ajoutent. Si l'appel échoue, on affiche la liste
   // d'origine plutôt qu'une section vide.
-  const [moderation, setModeration] = useState({ masques: [], avis: [] });
-  useEffect(() => {
-    fetch("/api/avis?public=1")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setModeration(d))
-      .catch(() => {});
-  }, []);
-
-  const items = [
-    ...t.reviews.items.filter((_, i) => !moderation.masques.includes(`base-${i}`)),
-    ...moderation.avis,
-  ];
+  const { items } = useAvis();
 
   return (
     <section id="reviews" className="relative overflow-hidden pt-28 pb-12 sm:pt-36 sm:pb-16">

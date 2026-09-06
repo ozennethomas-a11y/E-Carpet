@@ -37,7 +37,7 @@ export default async (req) => {
   if (address.deliveryMode !== "relais" && (!address.line1 || !address.city)) {
     return Response.json({ error: "adresse incomplète" }, { status: 400 });
   }
-  const shippingCents = SHIPPING_CENTS[address.deliveryMode] ?? SHIPPING_CENTS.domicile;
+  let shippingCents = SHIPPING_CENTS[address.deliveryMode] ?? SHIPPING_CENTS.domicile;
 
   try {
     const productIds = items.map((it) => it.productId);
@@ -61,6 +61,7 @@ export default async (req) => {
       if (result.error) throw new Error(`code promo : ${result.error}`);
       promo = result.row;
       discountCents = computeDiscountCents(promo, subtotalCents);
+      if (promo.type === "free_shipping") shippingCents = 0;
     }
 
     const totalCents = Math.max(0, subtotalCents - discountCents) + shippingCents;

@@ -1,9 +1,11 @@
 // Données structurées JSON-LD, adaptées à la page affichée.
 //
-// Volontairement SANS aggregateRating ni Review : les avis affichés sur le site
-// sont fictifs. Les déclarer à Google en données structurées reviendrait à lui
-// soumettre de faux avis, ce qu'il sanctionne explicitement. À réintroduire le
-// jour où de vrais avis seront collectés via /avis.
+// aggregateRating ajouté uniquement à partir de vrais avis de visiteurs
+// (déposés via /avis, approuvés en admin) — jamais à partir des avis
+// "maison" d'exemple du carrousel, qui sont fictifs. Les déclarer à Google
+// en données structurées reviendrait à lui soumettre de faux avis, ce qu'il
+// sanctionne explicitement. Tant qu'aucun vrai avis n'est approuvé, le champ
+// est simplement absent (pas de note à 0 ni de note inventée).
 
 import { INSTAGRAM_URL, TIKTOK_URL, CONTACT_EMAIL } from "./config.js";
 import { ARTICLES } from "./data/articles.js";
@@ -92,11 +94,21 @@ function articleSchema(a) {
  * @param {string} path chemin propre (ex. "/blog/mon-article")
  * @param {{items: {q:string,a:string}[]}} faq bloc FAQ traduit
  */
-export function buildGraph(path, faq) {
+export function buildGraph(path, faq, avisReels) {
   const graph = [organization, website];
 
   if (path === "/" || path === "") {
-    graph.push(product);
+    const p = { ...product };
+    if (avisReels?.length) {
+      const count = avisReels.length;
+      const average = avisReels.reduce((s, a) => s + (a.rating || 0), 0) / count;
+      p.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: average.toFixed(1),
+        reviewCount: count,
+      };
+    }
+    graph.push(p);
     if (faq?.items?.length) graph.push(faqPage(faq.items));
   } else if (path.startsWith("/blog/")) {
     const a = ARTICLES.find((x) => x.slug === path.slice("/blog/".length));
@@ -125,6 +137,17 @@ export function applyStructuredData(path, faq) {
     document.head.appendChild(el);
   }
   el.textContent = JSON.stringify(buildGraph(path, faq));
+
+  // Sur l'accueil, complète ensuite avec la note moyenne réelle une fois les
+  // avis chargés (fetch async, ne bloque jamais l'affichage initial).
+  if (path === "/" || path === "") {
+    fetch("/api/avis?public=1")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.avis?.length) el.textContent = JSON.stringify(buildGraph(path, faq, d.avis));
+      })
+      .catch(() => {});
+  }
 }
 
 // Réexport pour le script de build qui écrit le JSON-LD statique de l'accueil.

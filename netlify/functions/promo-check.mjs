@@ -19,6 +19,7 @@ export default async (req, context) => {
     type: result.row.type,
     value: result.row.value,
     discountCents,
+    freeShipping: result.row.type === "free_shipping",
   });
 };
 

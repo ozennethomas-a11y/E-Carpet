@@ -16,6 +16,7 @@ const STATUT_COULEUR = {
 };
 
 function formatValeur(c) {
+  if (c.type === "free_shipping") return "Livraison offerte";
   return c.type === "percent" ? `${c.value}%` : `${(c.value / 100).toFixed(2)} €`;
 }
 
@@ -62,7 +63,9 @@ export default function PromoPanel() {
     e.preventDefault();
     setFormError("");
     setDernierCode(null);
-    if (!form.value || Number(form.value) <= 0) return setFormError("Indiquez une valeur supérieure à 0.");
+    if (form.type !== "free_shipping" && (!form.value || Number(form.value) <= 0)) {
+      return setFormError("Indiquez une valeur supérieure à 0.");
+    }
     if (form.type === "percent" && Number(form.value) > 100) return setFormError("Un pourcentage ne peut pas dépasser 100.");
     if (form.duree === "date" && !form.expiresAt) return setFormError("Choisissez une date d'expiration.");
 
@@ -75,7 +78,7 @@ export default function PromoPanel() {
           action: "create",
           code: form.code,
           type: form.type,
-          value: Number(form.value),
+          value: form.type === "free_shipping" ? 1 : Number(form.value),
           maxUses: form.usage === "illimite" ? null : 1,
           expiresAt: form.duree === "date" ? form.expiresAt : null,
         }),
@@ -126,7 +129,7 @@ export default function PromoPanel() {
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Type de réduction</label>
             <div className="flex rounded-full border border-white/10 bg-white/5 p-0.5">
-              {[{ id: "percent", label: "Pourcentage" }, { id: "fixed", label: "Montant fixe" }].map((t) => (
+              {[{ id: "percent", label: "Pourcentage" }, { id: "fixed", label: "Montant fixe" }, { id: "free_shipping", label: "Livraison offerte" }].map((t) => (
                 <button
                   key={t.id}
                   type="button"
@@ -141,20 +144,22 @@ export default function PromoPanel() {
             </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs text-zinc-500">
-              Valeur {form.type === "percent" ? "(%)" : "(€)"}
-            </label>
-            <input
-              type="number"
-              min="0"
-              step={form.type === "percent" ? "1" : "0.01"}
-              value={form.value}
-              onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
-              placeholder={form.type === "percent" ? "10" : "5.00"}
-              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-acid"
-            />
-          </div>
+          {form.type !== "free_shipping" && (
+            <div>
+              <label className="mb-1 block text-xs text-zinc-500">
+                Valeur {form.type === "percent" ? "(%)" : "(€)"}
+              </label>
+              <input
+                type="number"
+                min="0"
+                step={form.type === "percent" ? "1" : "0.01"}
+                value={form.value}
+                onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
+                placeholder={form.type === "percent" ? "10" : "5.00"}
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-acid"
+              />
+            </div>
+          )}
 
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Nombre d'utilisations</label>

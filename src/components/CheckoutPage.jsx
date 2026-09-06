@@ -87,7 +87,7 @@ export default function CheckoutPage() {
         setPromoError(data.error || "Code invalide.");
         return;
       }
-      setPromo({ code: data.code, discountCents: data.discountCents });
+      setPromo({ code: data.code, discountCents: data.discountCents, freeShipping: !!data.freeShipping });
     } catch {
       setPromoError("Impossible de vérifier ce code, réessayez.");
     } finally {
@@ -286,21 +286,26 @@ export default function CheckoutPage() {
             <span>Sous-total</span>
             <span>{formatPrice(cart.totalCents, cart.items[0]?.currency)}</span>
           </div>
-          {promo && (
+          {promo && promo.discountCents > 0 && (
             <div className="flex items-center justify-between text-sm text-acid">
               <span>Réduction ({promo.code})</span>
               <span>-{formatPrice(promo.discountCents, cart.items[0]?.currency)}</span>
             </div>
           )}
           <div className="flex items-center justify-between text-sm text-zinc-400">
-            <span>Livraison</span>
-            <span>{formatPrice(SHIPPING_CENTS[form.deliveryMode])}</span>
+            <span>Livraison{promo?.freeShipping && ` (${promo.code})`}</span>
+            {promo?.freeShipping ? (
+              <span className="text-acid">Offerte</span>
+            ) : (
+              <span>{formatPrice(SHIPPING_CENTS[form.deliveryMode])}</span>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <span className="text-lg text-zinc-300">Total</span>
             <span className="font-display text-2xl font-bold text-acid">
               {formatPrice(
-                Math.max(0, cart.totalCents - (promo?.discountCents || 0)) + SHIPPING_CENTS[form.deliveryMode],
+                Math.max(0, cart.totalCents - (promo?.discountCents || 0)) +
+                  (promo?.freeShipping ? 0 : SHIPPING_CENTS[form.deliveryMode]),
                 cart.items[0]?.currency,
               )}
             </span>
