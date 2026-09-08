@@ -1,3 +1,4 @@
+import { envoiBloque } from "./_env.mjs";
 import { sql } from "./_db.mjs";
 import { decryptToken, encryptToken } from "./_socialCrypto.mjs";
 
@@ -114,6 +115,16 @@ async function publierTiktok({ caption, videoUrl }) {
 export async function publierSurReseaux({ caption = "", imageUrl, videoUrl, networks = [] }) {
   const demandes = new Set(networks);
   const resultats = [];
+
+  // Jamais de publication réelle depuis un environnement de test : un post
+  // parti par erreur est public et irrattrapable (voir lib/_env.mjs).
+  if (envoiBloque("publication réseaux sociaux", [...demandes].join(", "))) {
+    return [...demandes].map((network) => ({
+      network,
+      ok: false,
+      error: "bloqué : environnement de test",
+    }));
+  }
 
   if (demandes.has("facebook")) {
     if (!imageUrl) resultats.push({ network: "facebook", ok: false, error: "une image est requise" });

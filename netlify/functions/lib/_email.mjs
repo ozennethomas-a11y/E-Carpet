@@ -1,3 +1,4 @@
+import { envoiBloque } from "./_env.mjs";
 const FROM = { email: "commande@e-carpet.shop", name: "E-Carpet" };
 
 export function emailConfigured() {
@@ -7,6 +8,10 @@ export function emailConfigured() {
 export async function sendEmail({ to, subject, html }) {
   const key = process.env.BREVO_API_KEY;
   if (!key) throw new Error("BREVO_API_KEY manquante");
+
+  // Aucun email réel ne part d'un environnement de test, même avec une clé
+  // Brevo valide chargée depuis le .env (voir lib/_env.mjs).
+  if (envoiBloque("email", to)) return { blocked: true, to, subject };
 
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",

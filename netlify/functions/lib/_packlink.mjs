@@ -1,3 +1,4 @@
+import { envoiBloque } from "./_env.mjs";
 // Helpers Packlink PRO partagés entre packlink.mjs (recherche de points
 // relais + création manuelle de brouillon depuis l'admin) et
 // stripe-webhook.mjs (création automatique du brouillon dès qu'une commande
@@ -80,6 +81,11 @@ export async function packlinkGet(path, key) {
 }
 
 async function packlinkPost(path, key, body) {
+  // Toute écriture Packlink (brouillon d'expédition, étiquette) est bloquée
+  // hors production : elle engagerait un vrai transporteur (voir lib/_env.mjs).
+  if (envoiBloque("Packlink", path)) {
+    return { blocked: true, path };
+  }
   const res = await fetch(`${API}${path}`, {
     method: "POST",
     headers: { authorization: key, "content-type": "application/json" },
