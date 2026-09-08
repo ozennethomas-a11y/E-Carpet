@@ -12,9 +12,9 @@ import { sql } from "./lib/_db.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { credentials as amazonCredentials, getAccessToken as amazonToken, amz } from "./lib/_amazon.mjs";
 import { packlinkCredentials, livraisonsEnCours, commandesATraiter } from "./lib/_packlink.mjs";
+import { STATUTS_PAYES } from "./lib/_statuts.mjs";
 
 const DAY_MS = 86400000;
-const PAID_STATUSES = ["payee", "expediee", "livree"];
 const JOURS_TENDANCE = 14;
 
 function pctChange(actuel, precedent) {
@@ -57,12 +57,12 @@ export default async (req) => {
       sql()`
         select id, customer_id, email, total_cents, created_at from orders
         where created_at >= ${debutAujourdhui.toISOString()} and created_at <= ${maintenant.toISOString()}
-          and status = any(${PAID_STATUSES})
+          and status = any(${STATUTS_PAYES})
       `,
       sql()`
         select id, customer_id, email, total_cents, created_at from orders
         where created_at >= ${debutHier.toISOString()} and created_at <= ${hierMemeHeure.toISOString()}
-          and status = any(${PAID_STATUSES})
+          and status = any(${STATUTS_PAYES})
       `,
     ]);
 
@@ -77,7 +77,7 @@ export default async (req) => {
     const premieresCommandes = await sql()`
       select customer_id, email, min(created_at) as premiere
       from orders
-      where status = any(${PAID_STATUSES})
+      where status = any(${STATUTS_PAYES})
       group by customer_id, email
     `;
     const premiereParClient = new Map();
@@ -176,7 +176,7 @@ export default async (req) => {
 
     const commandesPeriode = await sql()`
       select customer_id, email, total_cents, created_at from orders
-      where created_at >= ${jours[0].toISOString()} and status = any(${PAID_STATUSES})
+      where created_at >= ${jours[0].toISOString()} and status = any(${STATUTS_PAYES})
     `;
     const parJour = new Map(jours.map((j) => [jourISO(j), { ventes: 0, commandes: 0, recurrentes: 0, amazon: 0 }]));
     for (const o of commandesPeriode) {

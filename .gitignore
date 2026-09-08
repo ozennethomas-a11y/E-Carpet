@@ -13,3 +13,6 @@ dist
 # GitHub, contenu sensible géré uniquement en local.
 /Documents-bruts/
 /Documents-tries/
+
+# Fichier d'icône de dossier créé par le Finder
+Icon?

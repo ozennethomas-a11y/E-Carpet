@@ -19,6 +19,10 @@ const STATUT_COULEUR = {
   remboursee: "text-red-400",
 };
 
+// Les ventes PayPal et B2B sont saisies à la main : elles n'ont jamais
+// transité par le site, mais doivent entrer dans le chiffre d'affaires.
+const CANAL_LABEL = { site: "Site", paypal: "PayPal", b2b: "B2B" };
+
 function formatPrice(cents, currency = "eur") {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(cents / 100);
 }
@@ -29,6 +33,7 @@ export default function OrdersPanel() {
   const [filter, setFilter] = useState("toutes");
   const [recherche, setRecherche] = useState("");
   const [importOuvert, setImportOuvert] = useState(false);
+  const [saisieOuverte, setSaisieOuverte] = useState(false);
 
   const load = useCallback(async () => {
     setError("");
@@ -92,12 +97,20 @@ export default function OrdersPanel() {
           className="min-w-[260px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-acid"
         />
         <button
+          onClick={() => setSaisieOuverte((v) => !v)}
+          className="rounded-full border border-acid/40 bg-acid/10 px-4 py-2 text-xs text-white transition-colors hover:bg-acid/20"
+        >
+          {saisieOuverte ? "Annuler la saisie" : "Saisir une vente PayPal ou B2B"}
+        </button>
+        <button
           onClick={() => setImportOuvert((v) => !v)}
           className="rounded-full border border-white/15 px-4 py-2 text-xs text-zinc-300 transition-colors hover:text-white"
         >
           {importOuvert ? "Fermer l'import CSV" : "Importer des numéros de suivi (CSV)"}
         </button>
       </div>
+
+      {saisieOuverte && <SaisieVenteManuelle onCree={() => { setSaisieOuverte(false); load(); }} />}
 
       {importOuvert && <ImportSuiviCSV onImported={load} />}
 
@@ -108,6 +121,114 @@ export default function OrdersPanel() {
           <OrderRow key={o.id} order={o} onUpdated={load} />
         ))}
       </div>
+    </div>
+  );
+}
+
+// Saisie d'une vente réalisée hors du site. Historiquement, PayPal et le B2B
+// n'existaient nulle part en base : le chiffre d'affaires affiché ne couvrait
+// qu'une partie des ventes réelles, sans que rien ne l'indique.
+//
+// Aucun email n'est envoyé et aucun mouvement de stock n'est créé : ces ventes
+// sont enregistrées après coup, le client a déjà été servi et le stock réel a
+// déjà été recalé à la main.
+function SaisieVenteManuelle({ onCree }) {
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const [canal, setCanal] = useState("paypal");
+  const [date, setDate] = useState(aujourdhui);
+  const [montant, setMontant] = useState("");
+  const [quantite, setQuantite] = useState("1");
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+
+  const montantCents = Math.round(parseFloat(String(montant).replace(",", ".")) * 100);
+  const valide = Number.isFinite(montantCents) && montantCents > 0 && date && date <= aujourdhui;
+
+  async function enregistrer() {
+    setErreur("");
+    setEnvoi(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "creer-manuelle",
+          channel: canal,
+          date,
+          totalCents: montantCents,
+          quantity: parseInt(quantite, 10) || 1,
+          nom,
+          email,
+          note,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) return setErreur(data.error);
+      invalidateCache("/api/orders");
+      onCree();
+    } catch {
+      setErreur("Enregistrement impossible.");
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  const champ = "w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-acid";
+
+  return (
+    <div className="mb-4 rounded-2xl border border-acid/25 bg-acid/5 p-5">
+      <h3 className="font-display text-sm font-bold text-white">Vente hors site</h3>
+      <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+        Pour rattacher au chiffre d'affaires une vente encaissée par PayPal ou en direct B2B.
+        Aucun email n'est envoyé au client, et le stock n'est pas modifié.
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="text-xs text-zinc-400">
+          Canal
+          <select value={canal} onChange={(e) => setCanal(e.target.value)} className={`mt-1 ${champ}`}>
+            <option value="paypal">PayPal</option>
+            <option value="b2b">B2B (MF-World…)</option>
+          </select>
+        </label>
+        <label className="text-xs text-zinc-400">
+          Date de la vente
+          <input type="date" max={aujourdhui} value={date} onChange={(e) => setDate(e.target.value)} className={`mt-1 ${champ}`} />
+        </label>
+        <label className="text-xs text-zinc-400">
+          Montant encaissé (€)
+          <input inputMode="decimal" placeholder="37,99" value={montant} onChange={(e) => setMontant(e.target.value)} className={`mt-1 ${champ}`} />
+        </label>
+        <label className="text-xs text-zinc-400">
+          Nombre de tapis
+          <input inputMode="numeric" value={quantite} onChange={(e) => setQuantite(e.target.value)} className={`mt-1 ${champ}`} />
+        </label>
+        <label className="text-xs text-zinc-400">
+          Client (facultatif)
+          <input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Nom ou société" className={`mt-1 ${champ}`} />
+        </label>
+        <label className="text-xs text-zinc-400">
+          Email (facultatif)
+          <input value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1 ${champ}`} />
+        </label>
+        <label className="text-xs text-zinc-400 sm:col-span-2">
+          Note (facultatif)
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Référence, facture…" className={`mt-1 ${champ}`} />
+        </label>
+      </div>
+
+      {erreur && <p className="mt-3 text-xs text-red-400">{erreur}</p>}
+
+      <button
+        onClick={enregistrer}
+        disabled={!valide || envoi}
+        className="mt-4 rounded-full bg-acid px-5 py-2 text-xs font-bold text-white disabled:opacity-40"
+      >
+        {envoi ? "Enregistrement…" : "Enregistrer la vente"}
+      </button>
     </div>
   );
 }
@@ -320,6 +441,11 @@ function OrderRow({ order, onUpdated }) {
           </div>
         </div>
         <span className={`font-display text-xs font-bold ${STATUT_COULEUR[order.status]}`}>{STATUT_LABEL[order.status]}</span>
+        {order.channel && order.channel !== "site" && (
+          <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">
+            {CANAL_LABEL[order.channel] || order.channel}
+          </span>
+        )}
       </button>
 
       {open && (

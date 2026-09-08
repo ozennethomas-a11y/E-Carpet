@@ -15,9 +15,9 @@ import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampa
 import { coutsExpeditionSite, TARIF_DOMICILE_CENTS } from "./lib/_shipping.mjs";
 import { coutRevientAmazon } from "./lib/_amazonCogs.mjs";
 import { LOGO_WHITE_PNG_BASE64 } from "./lib/_logoAsset.mjs";
+import { STATUTS_PAYES } from "./lib/_statuts.mjs";
 
 const DAY_MS = 86400000;
-const PAID_STATUSES = ["payee", "expediee"];
 const EUR = "#,##0.00 €";
 const EUR0 = "#,##0 €";
 
@@ -141,7 +141,7 @@ async function chargerDonnees(from, to) {
   const orders = await sql()`
     select id, order_number, status, total_cents, stripe_fee_cents, created_at
     from orders
-    where created_at >= ${from}::date and created_at < ${toExcl}::date and status = any(${PAID_STATUSES})
+    where created_at >= ${from}::date and created_at < ${toExcl}::date and status = any(${STATUTS_PAYES})
     order by created_at
   `;
   const orderIds = orders.map((o) => o.id);

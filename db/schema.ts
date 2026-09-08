@@ -64,6 +64,13 @@ export const orders = pgTable('orders', {
   orderNumber: integer('order_number').notNull().unique(),
   customerId: integer('customer_id').references(() => customers.id),
   email: text('email').notNull(),
+  // Canal de vente : 'site' (Stripe), 'paypal' ou 'b2b' (MF-World...).
+  // Historiquement, seules les ventes du site entraient en base : PayPal et le
+  // B2B n'existaient nulle part, ce qui rendait toute analyse de marge ou de
+  // saisonnalité structurellement fausse. Les commandes hors site sont saisies
+  // à la main (voir l'action 'creer-manuelle' dans orders.mjs) et n'ont ni
+  // identifiants Stripe, ni frais Stripe, ni expédition suivie.
+  channel: text('channel').notNull().default('site'),
   status: text('status').notNull().default('en_attente_paiement'),
   totalCents: integer('total_cents').notNull(),
   currency: text('currency').notNull().default('eur'),

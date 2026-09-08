@@ -17,7 +17,9 @@ const MOIS_MAX = 36;
 // modèle local — signale beaucoup plus fiablement une limite qu'il a sous les
 // yeux au moment de rédiger que celle lue dans un préambule lointain.
 const LIMITE_CANAUX =
-  "Ces chiffres ne couvrent QUE les ventes du site. Les ventes Amazon, PayPal et B2B (MF-World) ne sont pas dans le système : le total réel est supérieur. À signaler dans la réponse.";
+  "Ces chiffres ne couvrent PAS les ventes Amazon (outil ventes_amazon si disponible) : le total réel est supérieur. " +
+  "Les ventes PayPal et B2B (MF-World) ne sont comptées que si elles ont été saisies à la main dans l'admin ; " +
+  "le champ par_canal indique lesquelles le sont réellement. Si par_canal ne contient que 'site', c'est que rien n'a encore été saisi pour ces canaux — à signaler dans la réponse.";
 const LIMITE_STATUTS =
   "Les commandes annulées et en attente de paiement sont exclues de ces totaux. À signaler s'il en existe sur la période.";
 const LIMITE_STOCK =
@@ -45,7 +47,7 @@ function limite(params, defaut = 20, max = 100) {
 export const OUTILS = {
   ventes_periode: {
     description:
-      "Chiffre d'affaires, nombre de commandes et panier moyen du site sur une période. Exclut les commandes annulées et non payées. Ne couvre pas les ventes Amazon (outil ventes_amazon) ni les ventes PayPal/B2B historiques, absentes du système.",
+      "Chiffre d'affaires, nombre de commandes et panier moyen sur une période, ventilés par canal de vente (site, paypal, b2b). Exclut les commandes annulées et non payées. Ne couvre pas les ventes Amazon.",
     schema: {
       type: "object",
       properties: {
@@ -74,11 +76,21 @@ export const OUTILS = {
         where created_at >= ${from}::date and created_at < (${to}::date + interval '1 day')
           and status in ('annulee', 'en_attente_paiement')
       `;
+      // Ventilation par canal : permet de dire d'où vient le chiffre
+      // d'affaires, et surtout de constater qu'un canal est absent.
+      const parCanal = await sql()`
+        select channel, count(*)::int as nb_commandes, coalesce(sum(total_cents), 0)::int as ca_cents
+        from orders
+        where created_at >= ${from}::date and created_at < (${to}::date + interval '1 day')
+          and status not in ('annulee', 'en_attente_paiement')
+        group by channel order by ca_cents desc
+      `;
       return {
         periode: { from, to },
         ...r,
         panier_moyen_cents: r.nb_commandes ? Math.round(r.ca_cents / r.nb_commandes) : 0,
         commandes_exclues: exclues.nb,
+        par_canal: parCanal,
         limites: [LIMITE_CANAUX, LIMITE_STATUTS],
       };
     },
@@ -127,7 +139,7 @@ export const OUTILS = {
       const n = limite(params);
       const statut = typeof params?.statut === "string" ? params.statut : null;
       const rows = await sql()`
-        select o.order_number, o.created_at, o.status, o.total_cents, o.shipping_cost_cents,
+        select o.order_number, o.created_at, o.status, o.channel, o.total_cents, o.shipping_cost_cents,
                o.tracking_carrier, o.tracking_number, o.email,
                c.first_name, c.last_name
         from orders o

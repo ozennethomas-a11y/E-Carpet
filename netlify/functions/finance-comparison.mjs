@@ -8,9 +8,9 @@
 
 import { sql } from "./lib/_db.mjs";
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
+import { STATUTS_PAYES } from "./lib/_statuts.mjs";
 
 const DAY_MS = 86400000;
-const PAID_STATUSES = ["payee", "expediee", "livree"];
 
 function pctChange(actuel, precedent) {
   if (!precedent) return actuel ? 100 : 0;
@@ -44,7 +44,7 @@ async function donneesPeriode(debut, fin) {
   const orders = await sql()`
     select id, total_cents, stripe_fee_cents, created_at from orders
     where created_at >= ${debut.toISOString()} and created_at < ${finExclusive.toISOString()}
-      and status = any(${PAID_STATUSES})
+      and status = any(${STATUTS_PAYES})
   `;
   const orderIds = orders.map((o) => o.id);
   const items = orderIds.length

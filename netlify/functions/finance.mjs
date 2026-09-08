@@ -4,9 +4,9 @@ import { credentials as adsCredentials, getAccessToken as adsToken, depenseCampa
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { coutsExpeditionSite, TARIF_DOMICILE_CENTS } from "./lib/_shipping.mjs";
 import { coutRevientAmazon } from "./lib/_amazonCogs.mjs";
+import { STATUTS_PAYES } from "./lib/_statuts.mjs";
 
 const DAY_MS = 86400000;
-const PAID_STATUSES = ["payee", "expediee"];
 
 // Même logique de plage que stats.mjs, pour que les deux tableaux de bord
 // affichent la même période avec les mêmes réglages.
@@ -34,9 +34,9 @@ function toExclusive(dateStr) {
 
 async function siteData(from, toExcl) {
   const orders = await sql()`
-    select id, order_number, status, total_cents, stripe_fee_cents, created_at
+    select id, order_number, status, channel, total_cents, stripe_fee_cents, created_at
     from orders
-    where created_at >= ${from}::date and created_at < ${toExcl}::date and status = any(${PAID_STATUSES})
+    where created_at >= ${from}::date and created_at < ${toExcl}::date and status = any(${STATUTS_PAYES})
   `;
   const orderIds = orders.map((o) => o.id);
 
@@ -65,10 +65,32 @@ async function siteData(from, toExcl) {
   }
 
   const revenueCents = orders.reduce((s, o) => s + o.total_cents, 0);
-  const stripeFeeCents = orders.reduce((s, o) => s + (o.stripe_fee_cents || 0), 0);
-  const ordersWithoutStripeFee = orders.filter((o) => o.stripe_fee_cents == null).length;
+  // Les frais Stripe ne concernent que les ventes encaissées par Stripe : une
+  // vente PayPal ou B2B saisie à la main n'en a pas, et ne doit donc pas être
+  // comptée comme « commande sans frais Stripe renseignés ».
+  const viaStripe = orders.filter((o) => o.channel === "site");
+  const stripeFeeCents = viaStripe.reduce((s, o) => s + (o.stripe_fee_cents || 0), 0);
+  const ordersWithoutStripeFee = viaStripe.filter((o) => o.stripe_fee_cents == null).length;
 
-  return { revenueCents, stripeFeeCents, ordersWithoutStripeFee, coutProduitCents, produitsSansCout: [...produitsSansCout], ordersCount: orders.length };
+  // Ventilation par canal : sans elle, le total mélange les ventes du site et
+  // les ventes PayPal/B2B saisies après coup, et on ne peut plus dire d'où
+  // vient réellement le chiffre d'affaires.
+  const parCanal = {};
+  for (const o of orders) {
+    const c = parCanal[o.channel] || (parCanal[o.channel] = { canal: o.channel, revenueCents: 0, ordersCount: 0 });
+    c.revenueCents += o.total_cents;
+    c.ordersCount += 1;
+  }
+
+  return {
+    revenueCents,
+    stripeFeeCents,
+    ordersWithoutStripeFee,
+    coutProduitCents,
+    produitsSansCout: [...produitsSansCout],
+    ordersCount: orders.length,
+    parCanal: Object.values(parCanal).sort((a, b) => b.revenueCents - a.revenueCents),
+  };
 }
 
 async function depensesData(from, toExcl) {
