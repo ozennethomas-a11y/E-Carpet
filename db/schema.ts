@@ -7,6 +7,9 @@ export const products = pgTable('products', {
   priceCents: integer('price_cents').notNull(),
   currency: text('currency').notNull().default('eur'),
   stock: integer('stock').notNull().default(0),
+  // Seuil sous lequel StockPanel affiche une alerte de réassort — nul tant
+  // que non configuré, pas d'alerte affichée dans ce cas.
+  reorderThreshold: integer('reorder_threshold'),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
@@ -76,6 +79,10 @@ export const orders = pgTable('orders', {
   discountCents: integer('discount_cents').notNull().default(0),
   affiliateId: integer('affiliate_id').references(() => affiliates.id),
   stripeFeeCents: integer('stripe_fee_cents'),
+  // Coût réel de l'étiquette, saisi une fois connu (Packlink n'expose pas le
+  // prix par API, voir shipping.mjs) — remplace le tarif moyen estimé dans
+  // les calculs de marge dès qu'il est renseigné.
+  shippingCostCents: integer('shipping_cost_cents'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
@@ -248,6 +255,10 @@ export const costBatches = pgTable('cost_batches', {
   label: text('label').notNull(),
   quantity: integer('quantity').notNull(),
   orderDate: timestamp('order_date').notNull(),
+  supplier: text('supplier'),
+  // Nom du fichier déposé dans Documents-tries/01-Comptabilite/Factures-recues/
+  // — même convention que le suivi manuel, pas un vrai système d'upload.
+  invoiceFile: text('invoice_file'),
   productCostId: integer('product_cost_id').references(() => productCosts.id),
   // Mouvement de stock (entrée) généré automatiquement à la création du lot —
   // permet de l'annuler proprement si le lot est supprimé.
