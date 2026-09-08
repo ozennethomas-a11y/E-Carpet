@@ -19,7 +19,8 @@ export default async (req) => {
   try {
     if (req.method === "GET") {
       const batches = await sql()`
-        select b.id, b.product_id, p.name as product_name, b.label, b.quantity, b.order_date, b.product_cost_id, pc.unit_cost_cents
+        select b.id, b.product_id, p.name as product_name, b.label, b.quantity, b.order_date, b.product_cost_id, pc.unit_cost_cents,
+          b.supplier, b.invoice_file
         from cost_batches b
         join products p on p.id = b.product_id
         left join product_costs pc on pc.id = b.product_cost_id
@@ -40,6 +41,8 @@ export default async (req) => {
           quantity: b.quantity,
           orderDate: b.order_date,
           unitCostCents: b.unit_cost_cents,
+          supplier: b.supplier,
+          invoiceFile: b.invoice_file,
           totalCents: (lignesParLot[b.id] || []).reduce((s, l) => s + l.amountCents, 0),
           lignes: lignesParLot[b.id] || [],
         })),
@@ -50,7 +53,7 @@ export default async (req) => {
       const body = await req.json();
 
       if (body.action === "creer-lot") {
-        const { productId, label, quantity, orderDate, lignes } = body;
+        const { productId, label, quantity, orderDate, lignes, supplier, invoiceFile } = body;
         const qte = Math.round(Number(quantity));
         if (!productId || !label || !Number.isFinite(qte) || qte <= 0 || !orderDate || !Array.isArray(lignes) || lignes.length === 0) {
           return Response.json({ error: "champs manquants ou invalides" }, { status: 400 });
@@ -81,8 +84,8 @@ export default async (req) => {
         await sql()`update products set stock = stock + ${qte} where id = ${productId}`;
 
         const [batch] = await sql()`
-          insert into cost_batches (product_id, label, quantity, order_date, product_cost_id, stock_movement_id)
-          values (${productId}, ${label}, ${qte}, ${orderDate}::date, ${cost.id}, ${mouvement.id})
+          insert into cost_batches (product_id, label, quantity, order_date, product_cost_id, stock_movement_id, supplier, invoice_file)
+          values (${productId}, ${label}, ${qte}, ${orderDate}::date, ${cost.id}, ${mouvement.id}, ${supplier || null}, ${invoiceFile || null})
           returning id
         `;
         for (const l of lignes) {

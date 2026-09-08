@@ -6,7 +6,7 @@ const LIGNES_DEFAUT = ["Fabrication", "Transport 1", "Transport 2", "Carton", "A
 
 export default function CostBatchPanel({ produits }) {
   const [batches, setBatches] = useState(null);
-  const [form, setForm] = useState({ productId: "", label: "", quantity: "", orderDate: "" });
+  const [form, setForm] = useState({ productId: "", label: "", quantity: "", orderDate: "", supplier: "", invoiceFile: "" });
   const [lignes, setLignes] = useState(LIGNES_DEFAUT.map((label) => ({ label, amount: "" })));
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState("");
@@ -39,6 +39,25 @@ export default function CostBatchPanel({ produits }) {
   const totalCents = lignes.reduce((s, l) => s + Math.round((Number(l.amount) || 0) * 100), 0);
   const unitCostCents = form.quantity && Number(form.quantity) > 0 ? Math.round(totalCents / Number(form.quantity)) : 0;
 
+  // Écart de coût unitaire vs le lot précédent du même produit (trié par date de commande).
+  function ecartsVsLotPrecedent(liste) {
+    const parProduit = {};
+    for (const b of liste || []) (parProduit[b.productId] ||= []).push(b);
+    const ecarts = {};
+    for (const lotsProduit of Object.values(parProduit)) {
+      const tries = [...lotsProduit].sort((a, c) => new Date(a.orderDate) - new Date(c.orderDate));
+      for (let i = 1; i < tries.length; i++) {
+        const precedent = tries[i - 1];
+        const coutPrecedent = precedent.quantity > 0 ? precedent.totalCents / precedent.quantity : 0;
+        const coutActuel = tries[i].quantity > 0 ? tries[i].totalCents / tries[i].quantity : 0;
+        if (coutPrecedent > 0) ecarts[tries[i].id] = ((coutActuel - coutPrecedent) / coutPrecedent) * 100;
+      }
+    }
+    return ecarts;
+  }
+
+  const ecartsLots = ecartsVsLotPrecedent(batches);
+
   async function creerLot(e) {
     e.preventDefault();
     setErreur("");
@@ -58,6 +77,8 @@ export default function CostBatchPanel({ produits }) {
           label: form.label,
           quantity: Number(form.quantity),
           orderDate: form.orderDate,
+          supplier: form.supplier,
+          invoiceFile: form.invoiceFile,
           lignes: lignesValides.map((l) => ({ label: l.label, amountCents: Math.round(Number(l.amount) * 100) })),
         }),
       });
@@ -66,7 +87,7 @@ export default function CostBatchPanel({ produits }) {
         setErreur(json.error);
         return;
       }
-      setForm({ productId: form.productId, label: "", quantity: "", orderDate: "" });
+      setForm({ productId: form.productId, label: "", quantity: "", orderDate: "", supplier: "", invoiceFile: "" });
       setLignes(LIGNES_DEFAUT.map((label) => ({ label, amount: "" })));
       invalidateCache("/api/cost-batches");
       await load();
@@ -136,6 +157,24 @@ export default function CostBatchPanel({ produits }) {
               className="mt-1 block rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none [color-scheme:dark] focus:border-acid"
             />
           </label>
+          <label className="text-xs text-zinc-500">
+            Fournisseur
+            <input
+              placeholder="Nom du fournisseur"
+              value={form.supplier}
+              onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))}
+              className="mt-1 block w-40 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-acid"
+            />
+          </label>
+          <label className="text-xs text-zinc-500">
+            Facture
+            <input
+              placeholder="nom du fichier dans Factures-recues/"
+              value={form.invoiceFile}
+              onChange={(e) => setForm((f) => ({ ...f, invoiceFile: e.target.value }))}
+              className="mt-1 block w-56 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-acid"
+            />
+          </label>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -182,31 +221,45 @@ export default function CostBatchPanel({ produits }) {
         {!batches?.length ? (
           <p className="text-sm text-zinc-500">Aucun lot enregistré.</p>
         ) : (
-          batches.map((b) => (
-            <div key={b.id} className="rounded-xl border border-white/10 bg-ink p-3 text-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-white">{b.label}</span>
-                  <span className="ml-2 text-zinc-500">{b.productName}</span>
-                  <span className="ml-2 text-zinc-500">· {b.quantity} unités</span>
-                  <span className="ml-2 text-zinc-500">· {new Date(b.orderDate).toLocaleDateString("fr-FR")}</span>
+          batches.map((b) => {
+            const ecart = ecartsLots[b.id];
+            const hausseSignificative = typeof ecart === "number" && ecart > 5;
+            return (
+              <div key={b.id} className="rounded-xl border border-white/10 bg-ink p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-white">{b.label}</span>
+                    <span className="ml-2 text-zinc-500">{b.productName}</span>
+                    <span className="ml-2 text-zinc-500">· {b.quantity} unités</span>
+                    <span className="ml-2 text-zinc-500">· {new Date(b.orderDate).toLocaleDateString("fr-FR")}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {typeof ecart === "number" && (
+                      <span className={`chiffre text-xs font-semibold ${hausseSignificative ? "text-red-400" : ecart < 0 ? "text-emerald-400" : "text-zinc-500"}`}>
+                        {ecart >= 0 ? "+" : ""}
+                        {ecart.toFixed(1)}% vs lot précédent
+                      </span>
+                    )}
+                    <span className="chiffre font-display font-bold text-white">{formatPrice(b.unitCostCents)} / unité</span>
+                    <button onClick={() => supprimerLot(b.id)} className="text-xs text-zinc-500 hover:text-red-400">
+                      Supprimer
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="chiffre font-display font-bold text-white">{formatPrice(b.unitCostCents)} / unité</span>
-                  <button onClick={() => supprimerLot(b.id)} className="text-xs text-zinc-500 hover:text-red-400">
-                    Supprimer
-                  </button>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                  {b.supplier && <span>Fournisseur : {b.supplier}</span>}
+                  {b.invoiceFile && <span>Facture : {b.invoiceFile}</span>}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                  {b.lignes.map((l) => (
+                    <span key={l.id}>
+                      {l.label} : <span className="chiffre">{formatPrice(l.amountCents)}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-                {b.lignes.map((l) => (
-                  <span key={l.id}>
-                    {l.label} : <span className="chiffre">{formatPrice(l.amountCents)}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
