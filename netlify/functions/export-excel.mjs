@@ -213,6 +213,31 @@ async function chargerDonnees(from, to) {
 
   const promoCodes = await sql()`select code, type, value, used_count, active from promo_codes order by code`;
 
+  // Liste complète des commandes de la période (tous statuts, pas seulement
+  // payées) avec coût d'expédition réel et infos de suivi, pour l'onglet
+  // "Commandes" — usage comptable/opérationnel (rapprochement, litiges SAV).
+  const toutesCommandes = await sql()`
+    select o.order_number, o.created_at, o.email, o.status, o.total_cents, o.shipping_cost_cents,
+           o.tracking_carrier, o.tracking_number, c.first_name, c.last_name
+    from orders o
+    left join customers c on c.id = o.customer_id
+    where o.created_at >= ${from}::date and o.created_at < ${toExcl}::date
+    order by o.created_at desc
+  `;
+
+  // Base clients complète (pas limitée à la période) avec agrégats calculés
+  // en SQL plutôt qu'en JS : nombre de commandes et total dépensé, en
+  // excluant les commandes annulées du total.
+  const clients = await sql()`
+    select c.id, c.first_name, c.last_name, c.email, c.created_at,
+           count(o.id) filter (where o.status != 'annulee') as nb_commandes,
+           coalesce(sum(o.total_cents) filter (where o.status != 'annulee'), 0) as total_depense_cents
+    from customers c
+    left join orders o on o.customer_id = c.id
+    group by c.id, c.first_name, c.last_name, c.email, c.created_at
+    order by total_depense_cents desc
+  `;
+
   // Coût de revient détaillé par lot (fabrication, transport, carton,
   // audit...), saisi dans l'onglet Finance — chaque lot correspond à une
   // commande fournisseur réelle (ex : « Commande n°1 »).
@@ -390,6 +415,8 @@ async function chargerDonnees(from, to) {
     parCategorieEtMois,
     moisTries,
     promoCodes,
+    toutesCommandes,
+    clients,
     stockLedger,
     produitsStock,
     coutsRevient,
@@ -857,6 +884,98 @@ function feuilleVentes(wb, d) {
   produits.columns = [{ width: 30 }, { width: 16 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 10 }];
 }
 
+// Liste comptable/opérationnelle des commandes de la période, tous statuts
+// confondus : numéro, date, client, statut, montant, coût d'expédition réel
+// (vide tant que non saisi — voir shipping_cost_cents dans schema.ts),
+// transporteur et n° de suivi.
+function feuilleCommandes(wb, d) {
+  const s = wb.addWorksheet("Commandes", { properties: { tabColor: { argb: NAVY } } });
+  const debut = bandeau(s, "Commandes", { cols: 8 });
+  const rows = d.toutesCommandes.map((o) => {
+    const nomClient = [o.first_name, o.last_name].filter(Boolean).join(" ").trim();
+    return [
+      o.order_number,
+      new Date(o.created_at).toISOString().slice(0, 10),
+      nomClient || o.email,
+      o.status,
+      euros(o.total_cents),
+      o.shipping_cost_cents != null ? euros(o.shipping_cost_cents) : null,
+      o.tracking_carrier,
+      o.tracking_number,
+    ];
+  });
+  s.addTable({
+    name: "ListeCommandes",
+    ref: `A${debut}`,
+    headerRow: true,
+    totalsRow: rows.length > 0,
+    style: { theme: TABLE_THEME, showRowStripes: true },
+    columns: [
+      { name: "N° commande", filterButton: true },
+      { name: "Date", filterButton: true },
+      { name: "Client", filterButton: true },
+      { name: "Statut", filterButton: true },
+      { name: "Total (€)", totalsRowFunction: "sum", filterButton: false },
+      { name: "Coût expédition réel (€)", totalsRowFunction: "sum", filterButton: false },
+      { name: "Transporteur", filterButton: true },
+      { name: "N° de suivi", filterButton: false },
+    ],
+    rows: rows.length ? rows : [["—", "", "", "", 0, null, "", ""]],
+  });
+  for (let i = 0; i <= rows.length; i++) {
+    s.getCell(debut + 1 + i, 5).numFmt = EUR;
+    s.getCell(debut + 1 + i, 6).numFmt = EUR;
+  }
+  s.columns = [
+    { width: 14 },
+    { width: 12 },
+    { width: 26 },
+    { width: 16 },
+    { width: 12 },
+    { width: 18 },
+    { width: 16 },
+    { width: 20 },
+  ];
+  s.views = [{ state: "frozen", ySplit: debut }];
+}
+
+// Base clients complète : nom, email, ancienneté du compte, nombre de
+// commandes et total dépensé (agrégats calculés en SQL dans chargerDonnees,
+// commandes annulées exclues du total).
+function feuilleClients(wb, d) {
+  const s = wb.addWorksheet("Clients", { properties: { tabColor: { argb: ACCENT } } });
+  const debut = bandeau(s, "Clients", { cols: 5 });
+  const rows = d.clients.map((c) => {
+    const nom = [c.first_name, c.last_name].filter(Boolean).join(" ").trim();
+    return [
+      nom || "—",
+      c.email,
+      new Date(c.created_at).toISOString().slice(0, 10),
+      Number(c.nb_commandes),
+      euros(c.total_depense_cents),
+    ];
+  });
+  s.addTable({
+    name: "ListeClients",
+    ref: `A${debut}`,
+    headerRow: true,
+    totalsRow: rows.length > 0,
+    style: { theme: TABLE_THEME, showRowStripes: true },
+    columns: [
+      { name: "Nom", filterButton: true },
+      { name: "Email", filterButton: true },
+      { name: "Créé le", filterButton: true },
+      { name: "Nb commandes", totalsRowFunction: "sum" },
+      { name: "Total dépensé (€)", totalsRowFunction: "sum" },
+    ],
+    rows: rows.length ? rows : [["—", "", "", 0, 0]],
+  });
+  for (let i = 0; i <= rows.length; i++) s.getCell(debut + 1 + i, 5).numFmt = EUR;
+  if (rows.length) barreDonnees(s, `E${debut + 1}:E${debut + rows.length}`, GREEN);
+  s.columns = [{ width: 26 }, { width: 28 }, { width: 12 }, { width: 14 }, { width: 16 }];
+  s.views = [{ state: "frozen", ySplit: debut }];
+}
+
 function feuilleMarketing(wb, d) {
   const s = wb.addWorksheet("Marketing", { properties: { tabColor: { argb: GREEN } } });
   let r = bandeau(s, "Marketing & trafic", { cols: 3 });
@@ -957,6 +1076,8 @@ export default async (req) => {
     feuilleCoutRevient(wb, d);
     feuilleStock(wb, d);
     feuilleVentes(wb, d);
+    feuilleCommandes(wb, d);
+    feuilleClients(wb, d);
     feuilleMarketing(wb, d);
 
     const buffer = await wb.xlsx.writeBuffer();
