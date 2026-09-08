@@ -193,12 +193,22 @@ export default function AssistantPanel() {
               Installer Ollama depuis <span className="text-zinc-300">ollama.com</span>, puis télécharger le
               modèle : <code className="rounded bg-black/40 px-1 text-acid">ollama pull {MODELE_LOCAL}</code>
             </li>
-            <li>
-              Autoriser ce site à joindre Ollama, sinon le navigateur bloque la requête :{" "}
-              <code className="rounded bg-black/40 px-1 text-acid">
-                OLLAMA_ORIGINS={window.location.origin} ollama serve
-              </code>
-            </li>
+            {window.location.hostname === "localhost" ? (
+              <li>
+                Rien d'autre à faire : Ollama autorise déjà les adresses locales. Il doit simplement
+                être lancé.
+              </li>
+            ) : (
+              <li>
+                Autoriser ce site à joindre Ollama, sinon le navigateur bloque la requête. Sur Mac, une
+                fois pour toutes :{" "}
+                <code className="rounded bg-black/40 px-1 text-acid">
+                  launchctl setenv OLLAMA_ORIGINS "{window.location.origin}"
+                </code>{" "}
+                puis quitter Ollama (icône dans la barre de menu) et le relancer. Sans ce redémarrage,
+                le réglage n'est pas pris en compte.
+              </li>
+            )}
           </ol>
           <p className="mt-2 text-zinc-500">
             Le modèle tourne alors sur votre machine : aucun coût, aucune donnée envoyée à un service
