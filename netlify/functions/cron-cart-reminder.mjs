@@ -1,13 +1,15 @@
 import { sql } from "./lib/_db.mjs";
 import { sendEmail, cartReminderEmail, emailConfigured } from "./lib/_email.mjs";
+import { executerTache } from "./lib/_taches.mjs";
 
 // Relance envoyée si le panier n'a pas bougé depuis 2h et n'a pas abouti à
 // une commande, une seule fois par panier. On ignore les paniers trop vieux
 // (plus de 7 jours) pour éviter de relancer une intention obsolète.
-export default async () => {
+export default async () =>
+  executerTache("cart-reminder", async () => {
   if (!emailConfigured()) {
     console.log("[cron-cart-reminder] BREVO_API_KEY absente, rien à faire");
-    return new Response("skipped");
+    return "ignorée : BREVO_API_KEY absente";
   }
 
   const carts = await sql()`
@@ -33,7 +35,7 @@ export default async () => {
     }
   }
 
-  return new Response(`${carts.length} email(s) traité(s)`);
-};
+  return `${carts.length} email(s) traité(s)`;
+  });
 
 export const config = { schedule: "0 * * * *" };

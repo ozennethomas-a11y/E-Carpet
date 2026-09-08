@@ -20,6 +20,7 @@ import SocialPanel from "./SocialPanel";
 import MailingPanel from "./MailingPanel";
 import MailAlertsPanel from "./MailAlertsPanel";
 import OverviewDashboard from "./OverviewDashboard";
+import TachesPanel from "./TachesPanel";
 import AdminAccessPanel from "./AdminAccessPanel";
 import AssistantPanel from "./AssistantPanel";
 import FaceIdSettings from "./FaceIdSettings";
@@ -33,6 +34,7 @@ function urlsAPrecharger(isOwner) {
   const urls = [
     "/api/overview",
     "/api/mail-alerts",
+    "/api/taches",
     "/api/stats?days=30",
     "/api/orders",
     "/api/customers",
@@ -547,6 +549,7 @@ export default function DashboardPage() {
       {section === "accueil" && (
         <>
           <OverviewDashboard />
+          <TachesPanel />
           <MailAlertsPanel limit={5} />
         </>
       )}

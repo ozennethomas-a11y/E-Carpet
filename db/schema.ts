@@ -441,3 +441,16 @@ export const influencerContacts = pgTable('influencer_contacts', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
+
+// Journal d'exécution des tâches planifiées (crons Netlify). Sans lui, une
+// tâche qui meurt ne se signale nulle part : ses erreurs partent dans les logs
+// de la fonction et personne ne les lit. Permet à l'admin de voir la dernière
+// exécution, son résultat et sa durée, et de repérer une tâche silencieuse.
+export const cronRuns = pgTable('cron_runs', {
+  id: serial('id').primaryKey(),
+  task: text('task').notNull(),
+  status: text('status').notNull(), // 'ok' | 'erreur' | 'ignore'
+  detail: text('detail'),
+  durationMs: integer('duration_ms'),
+  startedAt: timestamp('started_at').notNull().defaultNow(),
+})

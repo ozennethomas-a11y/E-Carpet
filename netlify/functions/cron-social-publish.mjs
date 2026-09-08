@@ -1,5 +1,6 @@
 import { sql } from "./lib/_db.mjs";
 import { publierSurReseaux } from "./lib/_socialPublish.mjs";
+import { executerTache } from "./lib/_taches.mjs";
 
 // Publie les posts programmés dont l'heure est passée. Vérifié toutes les
 // heures : largement suffisant pour une programmation de réseaux sociaux (pas
@@ -7,7 +8,8 @@ import { publierSurReseaux } from "./lib/_socialPublish.mjs";
 // réveil de la base toutes les 15 minutes, 24h/24, empêchait la mise en veille
 // automatique de Netlify DB et consommait à lui seul la quasi-totalité des
 // crédits de calcul du mois (533 crédits sur 537 pour la base de données).
-export default async () => {
+export default async () =>
+  executerTache("social-publish", async () => {
   const dus = await sql()`
     select * from scheduled_posts
     where status = 'pending' and scheduled_for <= now()
@@ -39,7 +41,7 @@ export default async () => {
     }
   }
 
-  return new Response(`${dus.length} post(s) traité(s)`);
-};
+  return `${dus.length} post(s) traité(s)`;
+  });
 
 export const config = { schedule: "0 * * * *" };

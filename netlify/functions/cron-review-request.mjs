@@ -1,11 +1,13 @@
 import { sql } from "./lib/_db.mjs";
 import { sendEmail, reviewRequestEmail, emailConfigured } from "./lib/_email.mjs";
+import { executerTache } from "./lib/_taches.mjs";
 
 // Demande d'avis envoyée 7 jours après expédition, une seule fois par commande.
-export default async () => {
+export default async () =>
+  executerTache("review-request", async () => {
   if (!emailConfigured()) {
     console.log("[cron-review-request] BREVO_API_KEY absente, rien à faire");
-    return new Response("skipped");
+    return "ignorée : BREVO_API_KEY absente";
   }
 
   const orders = await sql()`
@@ -33,7 +35,7 @@ export default async () => {
     }
   }
 
-  return new Response(`${orders.length} email(s) traité(s)`);
-};
+  return `${orders.length} email(s) traité(s)`;
+  });
 
 export const config = { schedule: "0 9 * * *" };
