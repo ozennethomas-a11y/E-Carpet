@@ -85,7 +85,8 @@ async function repondreEnLocal(historique, onOutil) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name: nom, input: appel.function?.arguments || {} }),
       }).then((r) => r.json());
-      messages.push({ role: "tool", content: JSON.stringify(resultat) });
+      // tool_call_id : renseigné quand Ollama le fournit, ignoré sinon.
+      messages.push({ role: "tool", tool_call_id: appel.id, content: JSON.stringify(resultat) });
     }
   }
   return { reply: "Trop d'allers-retours, reformulez la question plus précisément.", outils: [] };
