@@ -122,6 +122,25 @@ async function tendanceStock(productId) {
   });
 }
 
+const JOURS_VELOCITE = 30;
+
+// Estimation du nombre de jours de stock restant, basée sur la vélocité de
+// vente récente (sorties des JOURS_VELOCITE derniers jours / JOURS_VELOCITE).
+// Retourne null si pas assez de données pour un calcul fiable (aucune sortie
+// récente), plutôt qu'une estimation trompeuse (ex: division par zéro → infini).
+async function joursDeStockRestant(productId, stock) {
+  const depuis = new Date(Date.now() - JOURS_VELOCITE * DAY_MS).toISOString();
+  const [row] = await sql()`
+    select coalesce(sum(quantity), 0) as total from stock_movements
+    where product_id = ${productId} and type = 'sortie' and movement_date >= ${depuis}
+  `;
+  const totalSorties = Number(row?.total || 0);
+  if (!totalSorties) return null;
+  const velociteParJour = totalSorties / JOURS_VELOCITE;
+  if (!velociteParJour) return null;
+  return Math.round(stock / velociteParJour);
+}
+
 async function marketplacesActifs(token) {
   const json = await amz(token, "/sellers/v1/marketplaceParticipations");
   return (json.payload || []).filter((p) => p.participation?.isParticipating).map((p) => p.marketplace.id);
@@ -207,19 +226,23 @@ export default async (req) => {
 
   try {
     if (req.method === "GET") {
-      const produits = await sql()`select id, sku, name, stock from products order by name`;
+      const produits = await sql()`select id, sku, name, stock, reorder_threshold from products order by name`;
       const produitsAvecValeur = await Promise.all(
         produits.map(async (p) => {
-          const [coutUnitaireCents, coutMoyenPondereCents, tendance] = await Promise.all([
+          const [coutUnitaireCents, coutMoyenPondereCents, tendance, joursStockRestant] = await Promise.all([
             dernierCoutUnitaire(p.id),
             coutMoyenPondere(p.id),
             tendanceStock(p.id),
+            joursDeStockRestant(p.id, p.stock),
           ]);
           return {
             id: p.id,
             sku: p.sku,
             name: p.name,
             stock: p.stock,
+            reorderThreshold: p.reorder_threshold,
+            enAlerte: p.reorder_threshold != null && p.stock <= p.reorder_threshold,
+            joursStockRestant,
             coutUnitaireCents,
             coutMoyenPondereCents,
             // Valorisée au coût moyen pondéré (CUMP) plutôt qu'au dernier coût
@@ -272,6 +295,22 @@ export default async (req) => {
           insert into stock_movements (product_id, type, quantity, source, movement_date, note)
           values (${body.productId}, 'initial', ${quantity}, 'initial', ${body.date || new Date().toISOString()}, ${body.note || `Stock défini manuellement (ancien : ${produit.stock})`})
         `;
+        return Response.json({ ok: true });
+      }
+
+      if (body.action === "definir-seuil-reappro") {
+        if (!body.productId) return Response.json({ error: "produit manquant" }, { status: 400 });
+        let seuil = null;
+        if (body.threshold !== null && body.threshold !== undefined && body.threshold !== "") {
+          seuil = Math.round(Number(body.threshold));
+          if (!Number.isFinite(seuil) || seuil < 0) {
+            return Response.json({ error: "seuil invalide" }, { status: 400 });
+          }
+        }
+        const [produit] = await sql()`select id from products where id = ${body.productId}`;
+        if (!produit) return Response.json({ error: "produit introuvable" }, { status: 404 });
+
+        await sql()`update products set reorder_threshold = ${seuil} where id = ${body.productId}`;
         return Response.json({ ok: true });
       }
 

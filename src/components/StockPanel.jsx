@@ -18,6 +18,10 @@ export default function StockPanel() {
   const [envoi, setEnvoi] = useState(false);
   const [syncMsg, setSyncMsg] = useState(null);
   const [voirTout, setVoirTout] = useState(false);
+  const [seuilForm, setSeuilForm] = useState({});
+  const [filtreProduit, setFiltreProduit] = useState("");
+  const [filtreType, setFiltreType] = useState("");
+  const [filtreRecherche, setFiltreRecherche] = useState("");
 
   const load = useCallback(async () => {
     setState("loading");
@@ -59,6 +63,16 @@ export default function StockPanel() {
     } finally {
       setEnvoi(false);
     }
+  }
+
+  async function definirSeuilReappro(productId, valeur) {
+    await fetch("/api/stock", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "definir-seuil-reappro", productId, threshold: valeur === "" ? null : valeur }),
+    });
+    invalidateCache("/api/stock");
+    load();
   }
 
   async function supprimerMouvement(id) {
@@ -115,10 +129,23 @@ export default function StockPanel() {
         <>
           <div className="flex flex-col gap-4">
             {data.produits.map((p) => (
-              <div key={p.id} className="rounded-2xl border border-white/10 bg-slate-deep p-5">
-                <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Stock actuel</div>
-                <div className="mt-2">
+              <div
+                key={p.id}
+                className={`rounded-2xl border p-5 ${p.enAlerte ? "border-red-500/40 bg-red-950/10" : "border-white/10 bg-slate-deep"}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">{p.name}</div>
+                  {p.enAlerte && (
+                    <span className="rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-bold text-red-400">
+                      Réassort nécessaire
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 flex items-baseline gap-3">
                   <span className="chiffre font-display text-3xl font-bold text-white sm:text-4xl">{p.stock} unité(s)</span>
+                  {p.joursStockRestant != null && (
+                    <span className="chiffre text-xs text-zinc-500">≈ {p.joursStockRestant} j de stock restant</span>
+                  )}
                 </div>
                 <div className="chiffre mt-1 text-xs text-zinc-500">
                   {p.valeurStockCents != null ? `Valeur : ${formatPrice(p.valeurStockCents)}` : "Coût unitaire non renseigné"}
@@ -128,6 +155,20 @@ export default function StockPanel() {
                     ? `Coût moyen pondéré : ${formatPrice(p.coutMoyenPondereCents)} / unité`
                     : "Coût moyen non calculable"}
                 </div>
+                <label className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
+                  Seuil de réassort
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="—"
+                    value={seuilForm[p.id] ?? p.reorderThreshold ?? ""}
+                    onChange={(e) => setSeuilForm((f) => ({ ...f, [p.id]: e.target.value }))}
+                    onBlur={(e) => definirSeuilReappro(p.id, e.target.value)}
+                    className="w-20 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-acid"
+                  />
+                  unité(s)
+                </label>
                 {p.tendance && <Sparkline values={p.tendance} />}
               </div>
             ))}
@@ -146,11 +187,66 @@ export default function StockPanel() {
               </button>
             </div>
             {syncMsg && <p className="mt-2 text-xs text-zinc-400">{syncMsg}</p>}
+            <div className="mt-4 flex flex-wrap items-end gap-3">
+              <select
+                value={filtreProduit}
+                onChange={(e) => {
+                  setFiltreProduit(e.target.value);
+                  setVoirTout(false);
+                }}
+                className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-acid"
+              >
+                <option value="" className="bg-ink">Tous les produits</option>
+                {data.produits.map((p) => (
+                  <option key={p.id} value={p.id} className="bg-ink">
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filtreType}
+                onChange={(e) => {
+                  setFiltreType(e.target.value);
+                  setVoirTout(false);
+                }}
+                className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-acid"
+              >
+                <option value="" className="bg-ink">Tous les types</option>
+                <option value="entree" className="bg-ink">Entrées</option>
+                <option value="sortie" className="bg-ink">Sorties</option>
+              </select>
+              <input
+                value={filtreRecherche}
+                onChange={(e) => {
+                  setFiltreRecherche(e.target.value);
+                  setVoirTout(false);
+                }}
+                placeholder="Rechercher dans le libellé…"
+                className="min-w-[12rem] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-acid"
+              />
+            </div>
             <div className="mt-4 flex flex-col gap-2">
-              {data.mouvements.length === 0 ? (
-                <p className="text-sm text-zinc-500">Aucun mouvement enregistré.</p>
-              ) : (
-                (voirTout ? data.mouvements : data.mouvements.slice(0, 5)).map((m) => (
+              {(() => {
+                const recherche = filtreRecherche.trim().toLowerCase();
+                const mouvementsFiltres = data.mouvements.filter((m) => {
+                  if (filtreProduit && String(m.productId) !== String(filtreProduit)) return false;
+                  if (filtreType && m.type !== filtreType) return false;
+                  if (recherche) {
+                    const libelle = `${m.productName} ${m.note || ""} ${SOURCE_LABEL[m.source] || m.source}`.toLowerCase();
+                    if (!libelle.includes(recherche)) return false;
+                  }
+                  return true;
+                });
+                if (mouvementsFiltres.length === 0) {
+                  return (
+                    <p className="text-sm text-zinc-500">
+                      {data.mouvements.length === 0 ? "Aucun mouvement enregistré." : "Aucun mouvement ne correspond aux filtres."}
+                    </p>
+                  );
+                }
+                return (
+                  <>
+                    {(voirTout ? mouvementsFiltres : mouvementsFiltres.slice(0, 5)).map((m) => (
                   <div key={m.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-ink p-3 text-sm">
                     <div>
                       <span className="font-semibold text-white">{m.productName}</span>
@@ -170,16 +266,18 @@ export default function StockPanel() {
                       ) : null}
                     </div>
                   </div>
-                ))
-              )}
-              {!voirTout && data.mouvements.length > 5 && (
-                <button
-                  onClick={() => setVoirTout(true)}
-                  className="mt-1 text-center text-xs text-zinc-500 underline hover:text-white"
-                >
-                  Voir plus ({data.mouvements.length - 5} de plus)
-                </button>
-              )}
+                    ))}
+                    {!voirTout && mouvementsFiltres.length > 5 && (
+                      <button
+                        onClick={() => setVoirTout(true)}
+                        className="mt-1 text-center text-xs text-zinc-500 underline hover:text-white"
+                      >
+                        Voir plus ({mouvementsFiltres.length - 5} de plus)
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 
