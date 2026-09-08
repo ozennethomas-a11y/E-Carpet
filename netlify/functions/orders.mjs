@@ -3,11 +3,38 @@ import { sendEmail, orderShippedEmail, emailConfigured } from "./lib/_email.mjs"
 import { getAdminFromRequest } from "./lib/_adminAuth.mjs";
 import { marquerCommandePayee } from "./lib/_orderPaid.mjs";
 
+// Marque une commande comme expédiée et envoie l'email de suivi. Réutilisé
+// à la fois par l'action "expedier" (ligne par ligne) et par l'import CSV en
+// masse "expedier-lot".
+async function expedierCommande({ orderId, trackingNumber, trackingCarrier }) {
+  const [order] = await sql()`
+    update orders
+    set status = 'expediee', tracking_number = ${trackingNumber}, tracking_carrier = ${trackingCarrier || null}, shipped_at = now()
+    where id = ${orderId}
+    returning id, order_number, email, shipping_address
+  `;
+  if (!order) return { ok: false };
+
+  if (emailConfigured()) {
+    const { subject, html } = orderShippedEmail({
+      orderId: order.order_number,
+      trackingNumber,
+      trackingCarrier,
+      deliveryMode: order.shipping_address?.deliveryMode,
+      pickupPoint: order.shipping_address?.pickupPoint,
+      address: order.shipping_address,
+    });
+    await sendEmail({ to: order.email, subject, html }).catch((e) => console.error("[orders] email expédition:", e.message));
+  }
+
+  return { ok: true };
+}
+
 async function listOrders() {
   const orders = await sql()`
     select o.id, o.order_number, o.email, o.status, o.total_cents, o.currency, o.shipping_address,
            o.tracking_number, o.tracking_carrier, o.shipped_at, o.review_request_sent_at, o.created_at,
-           o.discount_cents, o.packlink_draft_reference, p.code as promo_code
+           o.discount_cents, o.packlink_draft_reference, o.shipping_cost_cents, p.code as promo_code
     from orders o
     left join promo_codes p on p.id = o.promo_code_id
     order by o.id desc
@@ -29,6 +56,7 @@ async function listOrders() {
     trackingNumber: o.tracking_number,
     trackingCarrier: o.tracking_carrier,
     packlinkDraftReference: o.packlink_draft_reference,
+    shippingCostCents: o.shipping_cost_cents,
     shippedAt: o.shipped_at,
     reviewRequestSentAt: o.review_request_sent_at,
     discountCents: o.discount_cents,
@@ -60,27 +88,56 @@ export default async (req) => {
         const { orderId, trackingNumber, trackingCarrier } = body;
         if (!orderId || !trackingNumber) return Response.json({ error: "numéro de suivi manquant" }, { status: 400 });
 
-        const [order] = await sql()`
-          update orders
-          set status = 'expediee', tracking_number = ${trackingNumber}, tracking_carrier = ${trackingCarrier || null}, shipped_at = now()
-          where id = ${orderId}
-          returning id, order_number, email, shipping_address
-        `;
-        if (!order) return Response.json({ error: "commande introuvable" }, { status: 404 });
+        const result = await expedierCommande({ orderId, trackingNumber, trackingCarrier });
+        if (!result.ok) return Response.json({ error: "commande introuvable" }, { status: 404 });
+        return Response.json({ ok: true });
+      }
 
-        if (emailConfigured()) {
-          const { subject, html } = orderShippedEmail({
-            orderId: order.order_number,
-            trackingNumber,
-            trackingCarrier,
-            deliveryMode: order.shipping_address?.deliveryMode,
-            pickupPoint: order.shipping_address?.pickupPoint,
-            address: order.shipping_address,
-          });
-          await sendEmail({ to: order.email, subject, html }).catch((e) => console.error("[orders] email expédition:", e.message));
+      // Enregistre le coût réel de l'étiquette d'expédition (Packlink ne
+      // fournit pas le prix par API — le tarif moyen estimé est utilisé
+      // ailleurs tant que ce champ est nul).
+      if (body.action === "definir-cout-expedition") {
+        const { orderId, shippingCostCents } = body;
+        if (!orderId) return Response.json({ error: "commande manquante" }, { status: 400 });
+        if (!Number.isFinite(shippingCostCents) || shippingCostCents < 0) {
+          return Response.json({ error: "coût d'expédition invalide" }, { status: 400 });
         }
 
+        const [order] = await sql()`
+          update orders set shipping_cost_cents = ${shippingCostCents} where id = ${orderId}
+          returning id
+        `;
+        if (!order) return Response.json({ error: "commande introuvable" }, { status: 404 });
         return Response.json({ ok: true });
+      }
+
+      // Import CSV en masse des numéros de suivi. Applique "expedier" ligne
+      // par ligne côté serveur et rapporte les succès/échecs à la fin.
+      if (body.action === "expedier-lot") {
+        const { lignes } = body;
+        if (!Array.isArray(lignes) || lignes.length === 0) {
+          return Response.json({ error: "aucune ligne à importer" }, { status: 400 });
+        }
+
+        let succes = 0;
+        const introuvables = [];
+        for (const ligne of lignes) {
+          const { orderNumber, trackingCarrier, trackingNumber } = ligne;
+          if (!orderNumber || !trackingNumber) {
+            introuvables.push(orderNumber || "?");
+            continue;
+          }
+          const [order] = await sql()`select id from orders where order_number = ${orderNumber}`;
+          if (!order) {
+            introuvables.push(orderNumber);
+            continue;
+          }
+          const result = await expedierCommande({ orderId: order.id, trackingNumber, trackingCarrier });
+          if (result.ok) succes++;
+          else introuvables.push(orderNumber);
+        }
+
+        return Response.json({ ok: true, succes, introuvables });
       }
 
       // Rattrapage manuel : marque une commande comme payée sans passer par

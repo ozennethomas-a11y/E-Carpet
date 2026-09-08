@@ -27,6 +27,8 @@ export default function OrdersPanel() {
   const [orders, setOrders] = useState(null);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("toutes");
+  const [recherche, setRecherche] = useState("");
+  const [importOuvert, setImportOuvert] = useState(false);
 
   const load = useCallback(async () => {
     setError("");
@@ -43,10 +45,26 @@ export default function OrdersPanel() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setRecherche(q);
+  }, []);
+
   if (error) return <p className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-sm text-red-400">{error}</p>;
   if (!orders) return <p className="text-sm text-zinc-500">Chargement…</p>;
 
-  const filtered = filter === "toutes" ? orders : orders.filter((o) => o.status === filter);
+  const parFiltre = filter === "toutes" ? orders : orders.filter((o) => o.status === filter);
+  const termeRecherche = recherche.trim().toLowerCase();
+  const filtered = !termeRecherche
+    ? parFiltre
+    : parFiltre.filter((o) => {
+        const addr = o.shippingAddress || {};
+        const haystack = [o.orderNumber, o.email, addr.firstName, addr.lastName]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(termeRecherche);
+      });
   const aExpedier = orders.filter((o) => o.status === "payee").length;
 
   return (
@@ -66,13 +84,123 @@ export default function OrdersPanel() {
         ))}
       </div>
 
-      {filtered.length === 0 && <p className="text-sm text-zinc-500">Aucune commande dans cette catégorie.</p>}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input
+          value={recherche}
+          onChange={(e) => setRecherche(e.target.value)}
+          placeholder="Rechercher (nom, email, n° de commande)…"
+          className="min-w-[260px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-acid"
+        />
+        <button
+          onClick={() => setImportOuvert((v) => !v)}
+          className="rounded-full border border-white/15 px-4 py-2 text-xs text-zinc-300 transition-colors hover:text-white"
+        >
+          {importOuvert ? "Fermer l'import CSV" : "Importer des numéros de suivi (CSV)"}
+        </button>
+      </div>
+
+      {importOuvert && <ImportSuiviCSV onImported={load} />}
+
+      {filtered.length === 0 && <p className="text-sm text-zinc-500">Aucune commande ne correspond.</p>}
 
       <div className="space-y-3">
         {filtered.map((o) => (
           <OrderRow key={o.id} order={o} onUpdated={load} />
         ))}
       </div>
+    </div>
+  );
+}
+
+// Import en masse : colle un CSV (numéro de commande, transporteur, numéro
+// de suivi) et applique "expedier" ligne par ligne côté serveur.
+function ImportSuiviCSV({ onImported }) {
+  const [texte, setTexte] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  const [resultat, setResultat] = useState(null);
+  const [erreur, setErreur] = useState("");
+
+  function parserCSV(brut) {
+    return brut
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((ligne) => {
+        const [orderNumber, trackingCarrier, trackingNumber] = ligne.split(/[,;\t]/).map((c) => (c || "").trim());
+        return { orderNumber, trackingCarrier, trackingNumber };
+      })
+      .filter((l) => l.orderNumber && l.trackingNumber);
+  }
+
+  async function importer() {
+    setErreur("");
+    setResultat(null);
+    const lignes = parserCSV(texte);
+    if (lignes.length === 0) return setErreur("Aucune ligne valide (attendu : n° commande, transporteur, n° de suivi).");
+    setEnvoi(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "expedier-lot", lignes }),
+      });
+      const data = await res.json();
+      if (data.error) return setErreur(data.error);
+      setResultat(data);
+      invalidateCache("/api/orders");
+      onImported();
+    } catch {
+      setErreur("Échec de l'import.");
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  function importerFichier(e) {
+    const fichier = e.target.files?.[0];
+    if (!fichier) return;
+    const reader = new FileReader();
+    reader.onload = () => setTexte(String(reader.result || ""));
+    reader.readAsText(fichier);
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl border border-white/10 bg-ink p-4">
+      <p className="mb-2 text-xs text-zinc-500">
+        Une ligne par commande, colonnes séparées par virgule/point-virgule/tabulation : numéro de commande,
+        transporteur, numéro de suivi.
+      </p>
+      <textarea
+        value={texte}
+        onChange={(e) => setTexte(e.target.value)}
+        rows={5}
+        placeholder={"123456,Mondial Relay,ABC123\n789012,Colissimo,DEF456"}
+        className="mb-2 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 font-mono text-xs text-white outline-none focus:border-acid"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="file" accept=".csv,text/csv,text/plain" onChange={importerFichier} className="text-xs text-zinc-400" />
+        <button
+          onClick={importer}
+          disabled={envoi}
+          className="rounded-full bg-acid px-5 py-2 font-display text-sm font-bold text-white disabled:opacity-60"
+        >
+          {envoi ? "…" : "Importer"}
+        </button>
+      </div>
+      {erreur && <p className="mt-2 text-xs text-red-400">{erreur}</p>}
+      {resultat && (
+        <p className="mt-2 text-xs text-emerald-400">
+          <span className="chiffre">{resultat.succes}</span> commande{resultat.succes > 1 ? "s" : ""} mise
+          {resultat.succes > 1 ? "s" : ""} à jour
+          {resultat.introuvables?.length > 0 && (
+            <>
+              , <span className="chiffre">{resultat.introuvables.length}</span> numéro
+              {resultat.introuvables.length > 1 ? "s" : ""} introuvable{resultat.introuvables.length > 1 ? "s" : ""} :{" "}
+              {resultat.introuvables.join(", ")}
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }
@@ -252,7 +380,10 @@ function OrderRow({ order, onUpdated }) {
 
           {order.status === "expediee" || order.status === "livree" ? (
             <div className="rounded-xl bg-emerald-500/10 px-4 py-3 text-emerald-400">
-              Expédiée{order.trackingCarrier ? ` via ${order.trackingCarrier}` : ""} — suivi {order.trackingNumber}
+              <div>
+                Expédiée{order.trackingCarrier ? ` via ${order.trackingCarrier}` : ""} — suivi {order.trackingNumber}
+              </div>
+              <CoutExpedition order={order} onUpdated={onUpdated} />
             </div>
           ) : order.status === "payee" ? (
             <form onSubmit={expedier} className="flex flex-wrap items-end gap-2">
@@ -343,6 +474,77 @@ function OrderRow({ order, onUpdated }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Coût réel de l'étiquette (Packlink ne fournit pas le prix par API — voir
+// netlify/functions/shipping.mjs). Tant qu'il n'est pas renseigné, rien ne
+// s'affiche pour éviter un "0 €" trompeur.
+function CoutExpedition({ order, onUpdated }) {
+  const [edition, setEdition] = useState(false);
+  const [valeur, setValeur] = useState(order.shippingCostCents != null ? String(order.shippingCostCents / 100) : "");
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+
+  async function enregistrer() {
+    setErreur("");
+    const montant = Number(String(valeur).replace(",", "."));
+    if (!Number.isFinite(montant) || montant < 0) return setErreur("Montant invalide.");
+    setEnvoi(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "definir-cout-expedition", orderId: order.id, shippingCostCents: Math.round(montant * 100) }),
+      });
+      const data = await res.json();
+      if (data.error) return setErreur(data.error);
+      invalidateCache("/api/orders");
+      onUpdated();
+      setEdition(false);
+    } catch {
+      setErreur("Échec de l'enregistrement.");
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
+  if (!edition) {
+    return (
+      <div className="mt-1 flex items-center gap-2 text-xs text-emerald-300/80">
+        {order.shippingCostCents != null ? (
+          <span>Coût d'expédition réel : <span className="chiffre">{formatPrice(order.shippingCostCents, order.currency)}</span></span>
+        ) : (
+          <span className="text-zinc-500">Coût d'expédition réel non renseigné</span>
+        )}
+        <button onClick={() => setEdition(true)} className="text-zinc-400 underline decoration-dotted hover:text-white">
+          {order.shippingCostCents != null ? "modifier" : "renseigner"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2">
+      <input
+        value={valeur}
+        onChange={(e) => setValeur(e.target.value)}
+        placeholder="Ex. 4,90"
+        className="w-24 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs text-white outline-none focus:border-acid"
+      />
+      <span className="text-xs text-zinc-500">€</span>
+      <button
+        onClick={enregistrer}
+        disabled={envoi}
+        className="rounded-full bg-acid px-3 py-1 text-xs font-bold text-white disabled:opacity-60"
+      >
+        {envoi ? "…" : "Enregistrer"}
+      </button>
+      <button onClick={() => setEdition(false)} className="text-xs text-zinc-400 hover:text-white">
+        Annuler
+      </button>
+      {erreur && <p className="w-full text-xs text-red-400">{erreur}</p>}
     </div>
   );
 }
