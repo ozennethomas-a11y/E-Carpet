@@ -8,8 +8,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@netlify/blobs": "^10.7.12",
+    "@anthropic-ai/sdk": "^0.124.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@netlify/blobs": "^10.7.12",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.3",
     "@tailwindcss/vite": "^4.3.0",

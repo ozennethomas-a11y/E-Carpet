@@ -21,6 +21,7 @@ import MailingPanel from "./MailingPanel";
 import MailAlertsPanel from "./MailAlertsPanel";
 import OverviewDashboard from "./OverviewDashboard";
 import AdminAccessPanel from "./AdminAccessPanel";
+import AssistantPanel from "./AssistantPanel";
 import FaceIdSettings from "./FaceIdSettings";
 import PushNotifications from "./PushNotifications";
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -65,6 +66,9 @@ function urlsAPrecharger(isOwner) {
 
 const SECTIONS = [
   { id: "accueil", label: "Accueil" },
+  // Placé en deuxième : l'assistant répond souvent plus vite qu'en naviguant
+  // d'onglet en onglet, il sert donc de porte d'entrée au reste.
+  { id: "assistant", label: "Assistant" },
   {
     id: "site",
     label: "Site",
@@ -547,6 +551,7 @@ export default function DashboardPage() {
         </>
       )}
 
+      {section === "assistant" && <AssistantPanel />}
       {section === "finance" && <FinancePanel periode={periodeFinance} onPeriodeChange={setPeriodeFinance} />}
       {section === "pilotage" && <PilotagePanel />}
       {section === "expedition" && <ShippingPanel />}
