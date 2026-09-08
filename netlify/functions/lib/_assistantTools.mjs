@@ -12,6 +12,19 @@ import { sql } from "./_db.mjs";
 
 const MOIS_MAX = 36;
 
+// Angles morts connus des données, attachés au résultat des outils concernés
+// plutôt qu'aux seules consignes générales : un modèle — surtout un petit
+// modèle local — signale beaucoup plus fiablement une limite qu'il a sous les
+// yeux au moment de rédiger que celle lue dans un préambule lointain.
+const LIMITE_CANAUX =
+  "Ces chiffres ne couvrent QUE les ventes du site. Les ventes Amazon, PayPal et B2B (MF-World) ne sont pas dans le système : le total réel est supérieur. À signaler dans la réponse.";
+const LIMITE_STATUTS =
+  "Les commandes annulées et en attente de paiement sont exclues de ces totaux. À signaler s'il en existe sur la période.";
+const LIMITE_STOCK =
+  "Le stock est décrémenté par les ventes du site et la synchronisation Amazon, mais pas par les ventes B2B directes : une prévision de rupture calculée ici est donc optimiste. À signaler dans la réponse.";
+const LIMITE_ACHATS =
+  "Tous les achats fournisseur ne sont pas saisis dans le système : une marge ou un coût calculé à partir de ces données peut être optimiste. À signaler dans la réponse.";
+
 /** Bornes de dates sûres : format ISO strict, période plafonnée. */
 function bornes(params) {
   const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ""));
@@ -36,8 +49,8 @@ export const OUTILS = {
     schema: {
       type: "object",
       properties: {
-        from: { type: "string", description: "Date de début, format AAAA-MM-JJ" },
-        to: { type: "string", description: "Date de fin incluse, format AAAA-MM-JJ" },
+        from: { type: "string", description: "Date de début, format AAAA-MM-JJ. Omettre pour les 30 derniers jours." },
+        to: { type: "string", description: "Date de fin incluse, format AAAA-MM-JJ. Omettre pour aujourd'hui." },
       },
     },
     async run(params) {
@@ -53,10 +66,20 @@ export const OUTILS = {
         where created_at >= ${from}::date and created_at < (${to}::date + interval '1 day')
           and status not in ('annulee', 'en_attente_paiement')
       `;
+      // Comptées à part pour pouvoir dire combien de commandes sont exclues,
+      // plutôt que de laisser croire que le total couvre tout.
+      const [exclues] = await sql()`
+        select count(*)::int as nb
+        from orders
+        where created_at >= ${from}::date and created_at < (${to}::date + interval '1 day')
+          and status in ('annulee', 'en_attente_paiement')
+      `;
       return {
         periode: { from, to },
         ...r,
         panier_moyen_cents: r.nb_commandes ? Math.round(r.ca_cents / r.nb_commandes) : 0,
+        commandes_exclues: exclues.nb,
+        limites: [LIMITE_CANAUX, LIMITE_STATUTS],
       };
     },
   },
@@ -67,8 +90,8 @@ export const OUTILS = {
     schema: {
       type: "object",
       properties: {
-        from: { type: "string", description: "Date de début, format AAAA-MM-JJ" },
-        to: { type: "string", description: "Date de fin incluse, format AAAA-MM-JJ" },
+        from: { type: "string", description: "Date de début, format AAAA-MM-JJ. Omettre pour les 30 derniers jours." },
+        to: { type: "string", description: "Date de fin incluse, format AAAA-MM-JJ. Omettre pour aujourd'hui." },
       },
     },
     async run(params) {
@@ -82,7 +105,7 @@ export const OUTILS = {
           and status not in ('annulee', 'en_attente_paiement')
         group by 1 order by 1
       `;
-      return { periode: { from, to }, mois: rows };
+      return { periode: { from, to }, mois: rows, limites: [LIMITE_CANAUX, LIMITE_STATUTS] };
     },
   },
 
@@ -137,7 +160,7 @@ export const OUTILS = {
         from stock_movements m join products p on p.id = m.product_id
         order by m.movement_date desc limit ${n}
       `;
-      return { produits, mouvements_recents: mouvements };
+      return { produits, mouvements_recents: mouvements, limites: [LIMITE_STOCK] };
     },
   },
 
@@ -147,8 +170,8 @@ export const OUTILS = {
     schema: {
       type: "object",
       properties: {
-        from: { type: "string", description: "Date de début, format AAAA-MM-JJ" },
-        to: { type: "string", description: "Date de fin incluse, format AAAA-MM-JJ" },
+        from: { type: "string", description: "Date de début, format AAAA-MM-JJ. Omettre pour les 30 derniers jours." },
+        to: { type: "string", description: "Date de fin incluse, format AAAA-MM-JJ. Omettre pour aujourd'hui." },
       },
     },
     async run(params) {
@@ -164,7 +187,12 @@ export const OUTILS = {
         from expenses
         where expense_date >= ${from}::date and expense_date < (${to}::date + interval '1 day')
       `;
-      return { periode: { from, to }, par_categorie: rows, total_cents: total.total_cents };
+      return {
+        periode: { from, to },
+        par_categorie: rows,
+        total_cents: total.total_cents,
+        limites: ["Ces dépenses n'incluent PAS les achats de stock fournisseur (voir l'outil lots_couts)."],
+      };
     },
   },
 
@@ -182,7 +210,7 @@ export const OUTILS = {
         left join product_costs pc on pc.id = b.product_cost_id
         order by b.order_date desc
       `;
-      return { lots };
+      return { lots, limites: [LIMITE_ACHATS] };
     },
   },
 
@@ -205,7 +233,7 @@ export const OUTILS = {
         order by total_depense_cents desc
         limit ${n}
       `;
-      return { clients: rows };
+      return { clients: rows, limites: [LIMITE_CANAUX] };
     },
   },
 

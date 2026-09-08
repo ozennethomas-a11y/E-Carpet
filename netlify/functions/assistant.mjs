@@ -35,6 +35,7 @@ Règles de fond :
 - Tu ne réponds JAMAIS de mémoire sur un chiffre : tu appelles les outils pour lire les données réelles, puis tu réponds à partir de ce qu'ils renvoient.
 - Tous les montants renvoyés par les outils sont en CENTIMES. Convertis-les en euros dans ta réponse (ex : 3499 → 34,99 €).
 - Si un outil ne renvoie rien ou échoue, dis-le clairement. Ne comble jamais un trou par une estimation présentée comme un fait.
+- RÈGLE ABSOLUE : si un résultat d'outil contient un champ "limites", tu DOIS reprendre ces limites dans ta réponse, en une ou deux lignes à la fin. Ce n'est pas optionnel : ces chiffres seraient trompeurs sans elles. Même chose si "commandes_exclues" est supérieur à 0 : dis combien de commandes ne sont pas comptées.
 - Quand un chiffre mérite une nuance, donne-la brièvement plutôt que de laisser croire à une précision qu'il n'a pas.
 
 Limites connues des données, à signaler quand elles rendent une réponse partielle :
@@ -42,9 +43,21 @@ Limites connues des données, à signaler quand elles rendent une réponse parti
 - Le coût d'expédition réel n'est renseigné que sur une partie des commandes ; le reste est estimé ailleurs dans le back-office à un tarif moyen.
 - Les achats de stock fournisseur ne sont pas tous saisis, donc une marge calculée ici peut être optimiste.
 
+Dates : tu ne connais pas la date du jour par toi-même, elle t'est donnée ci-dessous. Pour une question du type "ce mois-ci", "les 30 derniers jours", "cette année", calcule les bornes à partir de CETTE date, jamais d'une date supposée. En cas de doute, n'envoie pas de dates du tout : les outils utilisent alors les 30 derniers jours par défaut. Vérifie toujours le champ "periode" que l'outil te renvoie : s'il ne correspond pas à ce que demandait la question, refais l'appel avec les bonnes bornes plutôt que de commenter le mauvais résultat.
+
 Style : pas de préambule, pas de reformulation de la question. Tu vas droit au chiffre et à ce qu'il implique.
 
 Format : texte brut uniquement. N'utilise NI markdown (pas de **gras**, pas de #, pas de \`code\`), NI tableau — la réponse est affichée telle quelle, les symboles de mise en forme apparaîtraient en clair. Pour une liste, une simple ligne commençant par un tiret suffit.`;
+
+// La date du jour doit être injectée à chaque appel : aucun modèle ne la
+// connaît, et sans elle un "les 30 derniers jours" est interprété au hasard
+// (constaté en test : un modèle local a calculé sur mars 2023 et annoncé 0 €
+// avec assurance). Effet de bord assumé : le préfixe change chaque jour, donc
+// la mise en cache ne peut porter que sur une journée — la justesse prime.
+function systeme() {
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  return `${SYSTEME}\n\nDate du jour : ${aujourdhui}.`;
+}
 
 function clefApi() {
   return process.env.ANTHROPIC_API_KEY || null;
@@ -63,7 +76,7 @@ export default async (req) => {
   // La base de données n'est jamais exposée au navigateur, seulement le
   // résultat d'un outil nommé — mêmes garanties qu'en mode cloud.
   if (req.method === "GET" && action === "outils") {
-    return Response.json({ outils: definitionsOutils(), systeme: SYSTEME });
+    return Response.json({ outils: definitionsOutils(), systeme: systeme() });
   }
 
   if (req.method === "POST" && action === "outil") {
@@ -115,7 +128,7 @@ export default async (req) => {
         // jetons) restant sous le minimum cachable du modèle. On la laisse en
         // place car elle prendra effet si les consignes ou les outils
         // grossissent. Coût constaté sans cache : ~0,5 centime par question.
-        system: [{ type: "text", text: SYSTEME, cache_control: { type: "ephemeral" } }],
+        system: [{ type: "text", text: systeme(), cache_control: { type: "ephemeral" } }],
         tools: definitionsOutils(),
         messages,
       });
