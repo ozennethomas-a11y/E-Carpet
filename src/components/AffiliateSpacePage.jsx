@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../navigation";
 import { formatPrice } from "../cart";
 import { ArrowIcon } from "./ui";
-import { StatTile, LineChart } from "./charts";
+import { StatTile, LineChart, frMois } from "./charts";
+import { URL_CONDITIONS } from "../../netlify/functions/lib/_conditionsPartenaire.mjs";
 
 const COMMISSION_LABELS = { due: "En attente", annulee: "Annulée", payee: "Versée" };
 
@@ -82,27 +83,35 @@ export default function AffiliateSpacePage() {
   const params = new URLSearchParams(window.location.search);
   const erreur = params.get("erreur");
 
-  // Série des 30 derniers jours (commandes non annulées) construite côté
+  // Série des 12 derniers mois (commandes non annulées), construite côté
   // client à partir de l'historique déjà chargé — pas d'appel API en plus.
+  //
+  // Par mois et non par jour : un partenaire fait quelques ventes par mois,
+  // pas plusieurs par jour. Une série journalière affichait une ligne plate à
+  // zéro avec un pic isolé, illisible et décourageante, là où l'échelle
+  // mensuelle montre une progression.
   const ordersSeries = useMemo(() => {
     if (!data?.commissions) return [];
-    const DAY_MS = 86400000;
-    const parJour = new Map();
+    const parMois = new Map();
     for (const c of data.commissions) {
       if (c.status === "annulee") continue;
-      const jour = new Date(c.createdAt).toISOString().slice(0, 10);
-      const entry = parJour.get(jour) || { orders: 0, revenueCents: 0 };
+      const mois = new Date(c.createdAt).toISOString().slice(0, 7);
+      const entry = parMois.get(mois) || { orders: 0, revenueCents: 0 };
       entry.orders += 1;
       entry.revenueCents += c.totalCents;
-      parJour.set(jour, entry);
+      parMois.set(mois, entry);
     }
-    const jours = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(Date.now() - i * DAY_MS).toISOString().slice(0, 10);
-      const entry = parJour.get(date) || { orders: 0, revenueCents: 0 };
-      jours.push({ date, ...entry });
+    const mois = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      // Construit en UTC : passer par des dates locales ferait sauter un mois
+      // aux alentours des changements d'heure.
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+      const cle = d.toISOString().slice(0, 7);
+      const entry = parMois.get(cle) || { orders: 0, revenueCents: 0 };
+      mois.push({ date: `${cle}-01`, ...entry });
     }
-    return jours;
+    return mois;
   }, [data?.commissions]);
 
   const affiliateLink = useMemo(() => {
@@ -187,51 +196,44 @@ export default function AffiliateSpacePage() {
             <button onClick={logout} className="text-sm text-zinc-500 hover:text-white">Se déconnecter</button>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-acid/30 bg-acid/5 p-5">
-            <div className="text-xs uppercase tracking-wider text-zinc-500">Votre code promo</div>
-            <div className="mt-1 font-display text-2xl font-bold text-acid">{data.affiliate.promoCode}</div>
-            <div className="mt-1 text-xs text-zinc-500">{data.affiliate.commissionPercent}% de commission sur chaque commande</div>
-          </div>
-
-          {affiliateLink && (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-              <div className="text-xs uppercase tracking-wider text-zinc-500">Votre lien personnel</div>
-              <p className="mt-1 text-xs text-zinc-500">
-                Pratique pour suivre l'origine de vos visites. C'est votre code {data.affiliate.promoCode} qui doit être
-                saisi à la commande pour déclencher votre commission.
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <div className="flex-1 truncate rounded-full border border-white/15 bg-transparent px-4 py-2 text-sm text-zinc-300">
-                  {affiliateLink}
-                </div>
-                <button
-                  onClick={copierLien}
-                  className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white hover:bg-white/20"
-                >
-                  {lienCopie ? "Copié !" : "Copier"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <StatTile label="Clics sur votre lien" value={data.kpi.clicksCount.toLocaleString("fr-FR")} />
-            <StatTile label="Commandes générées" value={data.kpi.ordersCount.toLocaleString("fr-FR")} />
-            <StatTile label="Chiffre d'affaires généré" value={formatPrice(data.kpi.revenueCents)} />
-            <StatTile label="Commission due" value={formatPrice(data.kpi.dueCents)} />
-            <StatTile label="Commission versée" value={formatPrice(data.kpi.paidCents)} />
-          </div>
-
-          <div className="mt-4">
+          <div className="mt-6">
             <LineChart
               data={ordersSeries}
-              title="Commandes générées par jour (30 derniers jours)"
+              title="Commandes générées par mois (12 derniers mois)"
+              formatDate={frMois}
               value={(d) => d.orders}
               sub={(d) => d.revenueCents}
               tableHeaders={["Commandes", "CA"]}
               formatSub={(n) => formatPrice(n)}
               tooltip={(d) => `${d.orders} commande${d.orders > 1 ? "s" : ""} · ${formatPrice(d.revenueCents)}`}
             />
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <StatTile label="Clics sur votre lien" value={data.kpi.clicksCount.toLocaleString("fr-FR")} />
+            <StatTile label="Commandes générées" value={data.kpi.ordersCount.toLocaleString("fr-FR")} />
+            <StatTile label="Chiffre d'affaires total généré" value={formatPrice(data.kpi.revenueCents)} />
+            {/* Les deux commissions dans une même tuile, coupée en deux : ce
+                sont deux états d'un même montant — ce qui vous revient, ce qui
+                vous a déjà été versé — et non deux indicateurs distincts. Les
+                séparer laissait d'ailleurs la cinquième tuile orpheline sur sa
+                ligne. */}
+            <div className="rounded-2xl border border-white/10 bg-slate-deep p-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Commission due</div>
+                  <div className="chiffre mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+                    {formatPrice(data.kpi.dueCents)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Déjà versée</div>
+                  <div className="chiffre mt-2 font-display text-3xl font-bold text-zinc-400 sm:text-4xl">
+                    {formatPrice(data.kpi.paidCents)}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -306,6 +308,51 @@ export default function AffiliateSpacePage() {
               </div>
             </>
           )}
+
+          {/* Côte à côte : le code et le lien sont les deux choses
+              qu'un partenaire vient copier, autant les avoir sous les yeux
+              en même temps. Empilés seulement sur téléphone, où la colonne
+              serait trop étroite pour afficher le lien. */}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col justify-center rounded-2xl border border-acid/30 bg-acid/5 p-5">
+              <div className="text-xs uppercase tracking-wider text-zinc-500">Votre code promo</div>
+              <div className="mt-1 font-display text-2xl font-bold text-acid">{data.affiliate.promoCode}</div>
+              <div className="mt-1 text-xs text-zinc-500">{data.affiliate.commissionPercent}% de commission sur chaque commande</div>
+            </div>
+
+            {affiliateLink && (
+              <div className="h-full rounded-2xl border border-white/10 bg-white/5 p-5">
+                <div className="text-xs uppercase tracking-wider text-zinc-500">Votre lien personnel</div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Suit l'origine de vos visites. Seul votre code {data.affiliate.promoCode} déclenche la commission.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 truncate rounded-full border border-white/15 bg-transparent px-4 py-2 text-sm text-zinc-300">
+                    {affiliateLink}
+                  </div>
+                  <button
+                    onClick={copierLien}
+                    className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white hover:bg-white/20"
+                  >
+                    {lienCopie ? "Copié !" : "Copier"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Les conditions restent accessibles après l'inscription : le
+              partenaire les a acceptées d'un clic sans forcément les lire, et
+              l'article 10 prévoit qu'elles puissent évoluer. Sans ce lien, il
+              n'aurait aucun moyen de retrouver ce qui l'engage. */}
+          <p className="mt-8 text-center text-xs text-zinc-500">
+            <a
+              href={URL_CONDITIONS}
+              className="underline underline-offset-2 transition-colors hover:text-zinc-300"
+            >
+              Conditions du programme partenaire
+            </a>
+          </p>
         </div>
       )}
     </main>

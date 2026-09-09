@@ -63,6 +63,11 @@ function frDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
+/** Libellé d'un point mensuel : « sept. 26 » plutôt que « 1 sept. ». */
+export function frMois(iso) {
+  return new Date(iso).toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+}
+
 // data: [{ date, value, sub? }]. Par défaut lit visitors/views (compat historique) ;
 // value/label/format permettent de réutiliser le graphique pour d'autres métriques
 // (chiffre d'affaires, commandes…) sans dupliquer le composant.
@@ -75,6 +80,10 @@ export function ColumnChart({
   formatValue = (n) => n,
   formatSub = (n) => n,
   tooltip,
+  // Format des libellés d'axe et du tableau. Par défaut une date au jour ;
+  // passer frMois pour une série mensuelle, sinon un point du 1er septembre
+  // s'afficherait « 1 sept. » et laisserait croire à une valeur journalière.
+  formatDate = frDate,
 }) {
   const [hover, setHover] = useState(null);
   const [showTable, setShowTable] = useState(false);
@@ -182,6 +191,10 @@ export function LineChart({
   formatValue = (n) => n,
   formatSub = (n) => n,
   tooltip,
+  // Format des libellés d'axe et du tableau. Par défaut une date au jour ;
+  // passer frMois pour une série mensuelle, sinon un point du 1er septembre
+  // s'afficherait « 1 sept. » et laisserait croire à une valeur journalière.
+  formatDate = frDate,
 }) {
   const [hover, setHover] = useState(null);
   const [showTable, setShowTable] = useState(false);
@@ -222,7 +235,7 @@ export function LineChart({
             <tbody className="text-zinc-300">
               {data.map((d) => (
                 <tr key={d.date} className="border-t border-white/5">
-                  <td className="py-1.5">{frDate(d.date)}</td>
+                  <td className="py-1.5">{formatDate(d.date)}</td>
                   <td className="chiffre py-1.5 text-right tabular-nums">{formatValue(value(d))}</td>
                   <td className="chiffre py-1.5 text-right tabular-nums">{formatSub(sub(d))}</td>
                 </tr>
@@ -254,7 +267,7 @@ export function LineChart({
               >
                 {hover === i && (
                   <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-ink px-3 py-2 text-xs shadow-xl">
-                    <div className="font-semibold text-white">{frDate(d.date)}</div>
+                    <div className="font-semibold text-white">{formatDate(d.date)}</div>
                     <div className="chiffre mt-0.5 text-zinc-400">
                       {tooltip ? tooltip(d) : `${formatValue(vals[i])} · ${formatSub(sub(d))}`}
                     </div>
@@ -267,7 +280,7 @@ export function LineChart({
           <div className="mt-2 flex gap-[2px] text-[10px] text-zinc-600">
             {data.map((d, i) => (
               <div key={d.date} className="flex-1 text-center">
-                {labelled.has(i) ? frDate(d.date) : ""}
+                {labelled.has(i) ? formatDate(d.date) : ""}
               </div>
             ))}
           </div>
