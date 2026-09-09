@@ -71,7 +71,12 @@ const AVANTAGES = [
     // valeurs ne puisse dériver de l'autre.
     montant: { valeur: eurosPrecis(GAIN_PAR_VENTE), unite: "par tapis vendu" },
     accroche: "Plus vous publiez, plus vous gagnez.",
-    texte: "Et vous publiez quand vous voulez, à votre rythme : aucun quota, aucune exclusivité.",
+    // Le « Et » enchaînait cette phrase sur l'accroche et faisait dire à la
+    // carte une chose puis son contraire : publiez plus, mais ce n'est pas
+    // grave si vous ne publiez pas. La liberté n'est pas un contrepoint à
+    // l'accroche, c'est une condition de l'offre — d'où une phrase autonome
+    // et brève, qui rassure sans se retourner contre ce qui précède.
+    texte: "Sans quota imposé : vous publiez à votre rythme.",
   },
   {
     id: "audience",
