@@ -40,13 +40,11 @@ const AVANTAGES = [
       { chiffre: "10 %", label: "Pour votre communauté" },
     ],
     titre: "Vous gagnez, votre communauté aussi",
-    // La seconde phrase n'est pas du remplissage : les codes affiliés sont
-    // créés sans date d'expiration ni plafond d'utilisation (voir
-    // createAffiliatePromoCode dans affiliates.mjs), donc une vidéo publiée
-    // il y a six mois continue de rapporter. C'est l'argument que les deux
-    // colonnes ne peuvent pas montrer.
-    texte:
-      "Vous ne leur vendez rien : vous leur faites une faveur. Et votre code n'expire pas, il continue de rapporter sur vos vidéos déjà en ligne.",
+    // Les codes affiliés sont créés sans date d'expiration ni plafond
+    // d'utilisation (createAffiliatePromoCode dans affiliates.mjs) : une
+    // vidéo publiée il y a six mois rapporte encore. C'est la seule chose
+    // que les deux colonnes ne peuvent pas montrer, d'où cette unique ligne.
+    texte: "Votre code n'expire pas, il continue de vous rapporter sur vos vidéos déjà en ligne.",
   },
   {
     chiffre: "Dès 20 €",
