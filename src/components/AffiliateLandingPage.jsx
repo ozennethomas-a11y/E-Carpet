@@ -84,7 +84,7 @@ const AVANTAGES = [
     // AffiliateSpacePage : les nommer vaut mieux qu'un « dashboard complet »
     // que le partenaire ne peut pas vérifier avant de s'inscrire.
     chiffre: "Un dashboard de suivi accessible",
-    titre:
+    texte:
       "Clics, commandes générées, chiffre d'affaires et commissions dues, vous suivez tout d'un clic. Commande par commande.",
   },
 ];
@@ -410,24 +410,30 @@ export default function AffiliateLandingPage() {
               >
                 {a.duo ? (
                   <>
-                    {/* Deux tuiles plutôt que deux colonnes de texte : sans
-                        support, les chiffres flottaient dans le vide et la
-                        carte paraissait inachevée. Le fond sombre les détache
-                        de la carte, qui est elle-même claire sur fond noir.
+                    {/* Un seul bloc partagé, et non deux tuiles séparées : le
+                        code promo ne donne pas deux avantages distincts, il
+                        partage une même valeur en deux. Une surface commune le
+                        dit ; deux boîtes côte à côte laissaient croire à deux
+                        choses sans rapport.
 
-                        Elles restent strictement identiques : c'est l'égalité
-                        du partage qui est l'argument, la moindre asymétrie
-                        laisserait croire que l'un des deux reçoit plus. */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {a.duo.map((d) => (
+                        Le libellé passe AU-DESSUS du chiffre, en petites
+                        capitales grises : on lit « pour vous, 10 % » dans
+                        l'ordre naturel de la phrase, et le libellé cesse de
+                        concurrencer le chiffre qu'il est censé qualifier. */}
+                    <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-white/5 bg-ink/60">
+                      {a.duo.map((d, i) => (
                         <div
                           key={d.label}
-                          className="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-ink/60 px-3 py-5 text-center"
+                          className={`flex flex-col items-center justify-center px-3 py-6 text-center ${
+                            i === 1 ? "border-l border-white/5" : ""
+                          }`}
                         >
-                          <div className="chiffre font-display text-4xl font-bold leading-none text-acid sm:text-5xl">
+                          <div className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                            {d.label}
+                          </div>
+                          <div className="chiffre mt-2 font-display text-4xl font-bold leading-none text-acid sm:text-5xl">
                             {d.chiffre}
                           </div>
-                          <h3 className="mt-2.5 font-display text-sm font-bold leading-snug text-white">{d.label}</h3>
                         </div>
                       ))}
                     </div>
@@ -453,8 +459,14 @@ export default function AffiliateLandingPage() {
                 ) : (
                   <>
                     <div className="chiffre font-display text-3xl font-bold leading-tight text-acid">{a.chiffre}</div>
-                    <h3 className="mt-3 font-display text-base font-bold leading-relaxed text-white">{a.titre}</h3>
-                    {a.texte && <p className="mt-2 text-sm leading-relaxed text-zinc-400">{a.texte}</p>}
+                    {a.titre && (
+                      <h3 className="mt-3 font-display text-base font-bold text-white">{a.titre}</h3>
+                    )}
+                    {a.texte && (
+                      <p className={`text-sm leading-relaxed text-zinc-400 ${a.titre ? "mt-2" : "mt-3"}`}>
+                        {a.texte}
+                      </p>
+                    )}
                   </>
                 )}
               </div>
