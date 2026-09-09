@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { navigate } from "../navigation";
 import { ArrowIcon } from "./ui";
 import { INFLUENCERS } from "../data/influencers";
@@ -176,6 +176,30 @@ function contexteDuLien() {
 
 export default function AffiliateLandingPage() {
   const [lien] = useState(contexteDuLien);
+  // La barre collante ne doit apparaître que lorsque le bouton du hero est
+  // sorti de l'écran. Sans ça, les deux se chevauchent au premier coup d'œil
+  // sur mobile — deux fois le même appel à l'action à deux centimètres l'un
+  // de l'autre, ce qui ressemble à un défaut d'affichage.
+  //
+  // L'état initial est « bouton du hero absent », donc barre VISIBLE, et
+  // l'observateur la masque dès qu'il constate le contraire. Le sens du repli
+  // est délibéré : si l'observateur ne s'exécutait jamais, on retrouverait le
+  // comportement d'avant — barre toujours visible, un peu redondante — plutôt
+  // qu'une page sans aucun appel à l'action sur mobile.
+  const boutonHero = useRef(null);
+  const [heroVisible, setHeroVisible] = useState(false);
+
+  useEffect(() => {
+    const cible = boutonHero.current;
+    if (!cible || typeof IntersectionObserver === "undefined") return;
+    const observateur = new IntersectionObserver(
+      ([entree]) => setHeroVisible(entree.isIntersecting),
+      { rootMargin: "-8px" },
+    );
+    observateur.observe(cible);
+    return () => observateur.disconnect();
+  }, []);
+
   const versInscription = () => navigate(`/influenceurs/inscription${lien.requete}`);
 
   return (
@@ -235,6 +259,7 @@ export default function AffiliateLandingPage() {
               rapporte une commission.
             </p>
             <button
+              ref={boutonHero}
               onClick={versInscription}
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-acid px-8 py-4 font-display text-base font-bold text-white transition-transform hover:scale-[1.03] cursor-pointer"
             >
@@ -365,7 +390,12 @@ export default function AffiliateLandingPage() {
 
       {/* Sur mobile, le CTA du hero disparaît dès les premiers scrolls : cette
           barre garde l'action à portée de pouce tout au long de la page. */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/90 p-3 backdrop-blur-xl sm:hidden">
+      <div
+        aria-hidden={heroVisible}
+        className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/90 p-3 backdrop-blur-xl transition-all duration-200 sm:hidden ${
+          heroVisible ? "pointer-events-none translate-y-full opacity-0" : "translate-y-0 opacity-100"
+        }`}
+      >
         <button
           onClick={versInscription}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-acid px-6 py-3.5 font-display text-sm font-bold text-white cursor-pointer"
