@@ -51,8 +51,13 @@ const AVANTAGES = [
     id: "virement",
     chiffre: "Dès 20 €",
     titre: "Payé quand vous le décidez",
+    // La mention de Stripe n'est pas décorative : les virements passent par des
+    // comptes Stripe Connect Express (voir affiliate-stripe.mjs), et les
+    // coordonnées bancaires sont saisies sur la page d'inscription hébergée par
+    // Stripe. La table affiliates ne contient aucune colonne IBAN — vérifié
+    // avant d'écrire cette phrase, qui engage sur un point sensible.
     texte:
-      "Vous déclenchez votre virement vous-même depuis votre espace. Pas de validation à attendre, pas de relance à faire.",
+      "Vous déclenchez votre virement vous-même depuis votre espace, sans validation à attendre. Les paiements passent par Stripe : vos coordonnées bancaires restent chez eux, nous n'y avons jamais accès.",
   },
   {
     id: "montant",
@@ -116,7 +121,7 @@ const FAQ = [
   },
   {
     q: "Quand suis-je payé, et comment ?",
-    r: "Chaque commande payée crée une commission dans votre espace. Dès que votre solde atteint 20 €, vous demandez le virement vous-même, sur l'IBAN que vous renseignez. Une commande remboursée annule la commission correspondante.",
+    r: "Chaque commande payée crée une commission dans votre espace. Dès que votre solde atteint 20 €, vous demandez le virement vous-même. Le paiement passe par Stripe, chez qui vous renseignez vos coordonnées bancaires une seule fois : elles ne nous sont jamais transmises. Une commande remboursée annule la commission correspondante.",
   },
   {
     q: "Dois-je m'engager sur un nombre de publications ?",
