@@ -1,14 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { cachedFetch, invalidateCache } from "../lib/adminCache";
-
-const STATUT_LABEL = {
-  en_attente_paiement: "En attente de paiement",
-  payee: "Payée",
-  expediee: "Expédiée",
-  livree: "Livrée",
-  annulee: "Annulée",
-  remboursee: "Remboursée",
-};
+import { STATUT_LABEL } from "../../netlify/functions/lib/_statuts.mjs";
 
 const STATUT_COULEUR = {
   en_attente_paiement: "text-zinc-500",

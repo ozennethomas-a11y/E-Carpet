@@ -8,18 +8,8 @@
 // qu'aucun brouillon ne peut partir tout seul : rien ici n'envoie d'email.
 
 import { trackingUrl } from "./_email.mjs";
+import { STATUT_LABEL } from "./_statuts.mjs";
 
-// Libellés repris de src/components/OrdersPanel.jsx. Le projet n'a pas encore
-// de module de statuts partagé entre le front et les fonctions ; on duplique
-// donc la table ici plutôt que d'importer du JSX dans une fonction Netlify.
-const STATUT_LABEL = {
-  en_attente_paiement: "En attente de paiement",
-  payee: "Payée",
-  expediee: "Expédiée",
-  livree: "Livrée",
-  annulee: "Annulée",
-  remboursee: "Remboursée",
-};
 
 const SIGNATURE = "Bien cordialement,\nThomas\nE-Carpet · service-client@e-carpet.shop";
 

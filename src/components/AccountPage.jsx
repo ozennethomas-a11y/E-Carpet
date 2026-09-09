@@ -2,15 +2,7 @@ import { useEffect, useState } from "react";
 import { navigate } from "../navigation";
 import { formatPrice } from "../cart";
 import { ArrowIcon } from "./ui";
-
-const STATUS_LABELS = {
-  en_attente_paiement: "En attente de paiement",
-  payee: "Payée",
-  expediee: "Expédiée",
-  livree: "Livrée",
-  annulee: "Annulée",
-  remboursee: "Remboursée",
-};
+import { STATUT_LABEL as STATUS_LABELS } from "../../netlify/functions/lib/_statuts.mjs";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
