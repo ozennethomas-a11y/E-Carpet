@@ -1,5 +1,6 @@
 import { sql } from "./_db.mjs";
 import { STATUTS_PAYES } from "./_statuts.mjs";
+import { stripeSecretKey, stripeRequest } from "./_stripe.mjs";
 
 // Détection d'anomalies : ce qui cloche et que personne ne regarde.
 //
@@ -27,7 +28,8 @@ const JOUR = 86400000;
 /** Seuils, regroupés ici pour être ajustables sans relire la logique. */
 export const SEUILS = {
   expeditionJours: 3, // commande payée non expédiée
-  paiementBloqueHeures: 2, // paiement engagé jamais confirmé
+  paiementBloqueHeures: 6, // avant de suspecter un webhook défaillant
+  paiementBloqueMaxJours: 30, // au-delà, la session Stripe a expiré : rien à vérifier
   stockImmobileJours: 30, // aucune sortie de stock
   depenseAnormaleFacteur: 2.5, // × la moyenne de sa catégorie
   depenseHistoriqueMin: 4, // dépenses minimales avant de juger « inhabituel »
@@ -86,25 +88,69 @@ async function commandesNonExpediees() {
   ];
 }
 
-// Le cas s'est déjà produit : un webhook Stripe mal configuré laisse des
-// commandes payées bloquées en « attente de paiement ». L'argent est encaissé,
-// le client attend, et rien ne le signale.
+// Paiement réellement encaissé, mais commande restée « en attente ».
+//
+// Deux pièges, tous deux rencontrés en construisant ce détecteur :
+//
+//  1. Une session Stripe est créée dès que le client ARRIVE sur la page de
+//     paiement, pas quand il paie. S'appuyer sur sa seule présence revient à
+//     alerter sur chaque panier abandonné — un bruit permanent qui masque le
+//     signal. Cas réel : un client a laissé trois commandes en quatre minutes
+//     le 21/08/2026, dont deux abandons parfaitement normaux.
+//
+//  2. stripe_payment_intent_id ne peut pas servir de filtre : il n'est écrit
+//     que par marquerCommandePayee(), au moment même où le statut passe à
+//     « payée ». Une commande en attente n'en a donc jamais, et s'en servir
+//     rendrait ce détecteur incapable de se déclencher.
+//
+// Seul Stripe détient la réponse : on interroge le statut réel de la session.
+// L'appel est borné (MAX_VERIFICATIONS) et précédé d'un filtre gratuit — on
+// écarte d'abord les tentatives suivies d'un achat réussi par le même client,
+// qui sont le schéma classique du client qui s'y reprend à plusieurs fois.
+const MAX_VERIFICATIONS = 20;
+
 async function paiementsBloques() {
-  const rows = await sql()`
-    select order_number, created_at
-    from orders
-    where status = 'en_attente_paiement'
-      and stripe_session_id is not null
-      and created_at < ${ilYaHeures(SEUILS.paiementBloqueHeures)}
-    order by created_at
+  const candidates = await sql()`
+    select o.order_number, o.email, o.created_at, o.total_cents, o.stripe_session_id
+    from orders o
+    where o.status = 'en_attente_paiement'
+      and o.stripe_session_id is not null
+      and o.created_at < ${ilYaHeures(SEUILS.paiementBloqueHeures)}
+      and o.created_at > ${ilYaJours(SEUILS.paiementBloqueMaxJours)}
+      and not exists (
+        select 1 from orders p
+        where p.email = o.email
+          and p.status = any(${STATUTS_PAYES})
+          and p.created_at between o.created_at and o.created_at + interval '2 hours'
+      )
+    order by o.created_at desc
+    limit ${MAX_VERIFICATIONS}
   `;
-  if (!rows.length) return [];
+  if (!candidates.length) return [];
+
+  const key = stripeSecretKey();
+  if (!key) return []; // sans clé, on ne devine pas : on se tait
+
+  const encaissees = [];
+  for (const o of candidates) {
+    try {
+      const session = await stripeRequest(`/checkout/sessions/${o.stripe_session_id}`, null, key, { method: "GET" });
+      if (session.payment_status === "paid") encaissees.push(o);
+    } catch {
+      // Session expirée ou introuvable : ce n'est pas une anomalie, c'est un
+      // abandon ancien. On n'alerte que sur ce qu'on a pu confirmer.
+    }
+  }
+  if (!encaissees.length) return [];
+
+  const total = encaissees.reduce((s, o) => s + o.total_cents, 0);
   return [
     critique(
       "paiement_bloque",
-      `${rows.length} paiement${rows.length > 1 ? "s" : ""} engagé${rows.length > 1 ? "s" : ""} jamais confirmé${rows.length > 1 ? "s" : ""}`,
-      `Commande${rows.length > 1 ? "s" : ""} ${rows.map((r) => `n°${r.order_number}`).join(", ")} : le paiement Stripe a été lancé mais le statut n'a jamais basculé. ` +
-        `Vérifiez côté Stripe si l'argent a été encaissé — si oui, le webhook n'a pas abouti et la commande doit être marquée payée à la main.`,
+      `${encaissees.length} paiement${encaissees.length > 1 ? "s" : ""} encaissé${encaissees.length > 1 ? "s" : ""} sans commande validée`,
+      `${euros(total)} confirmé${encaissees.length > 1 ? "s" : ""} par Stripe sur ${encaissees.map((o) => `n°${o.order_number}`).join(", ")}, ` +
+        `alors que la commande est restée « en attente de paiement ». Le webhook n'a pas abouti : ` +
+        `le client a payé et attend, marquez la commande payée depuis l'écran Commandes.`,
       OU.commandes,
     ),
   ];

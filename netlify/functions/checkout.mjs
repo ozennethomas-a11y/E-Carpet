@@ -68,19 +68,64 @@ export default async (req) => {
 
     const customer = await findOrCreateCustomer(email);
 
-    // Numéro à 6 chiffres montré au client, distinct de l'id interne : quelques
-    // essais suffisent largement vu la taille de l'espace (900 000 valeurs).
+    // Reprise de la commande en attente plutôt que création d'une nouvelle.
+    //
+    // Chaque appel créait auparavant une commande définitive AVANT tout
+    // paiement. Un client qui revient de Stripe sans payer retombe sur
+    // /commande (cancel_url) : s'il réessaie, une deuxième commande naissait,
+    // puis une troisième. Cas réellement observé le 21/08/2026 — un même
+    // client a laissé trois commandes en quatre minutes pour un seul achat,
+    // dont deux fantômes restées « en attente de paiement » indéfiniment.
+    //
+    // Ces fantômes polluaient la liste des commandes, faussaient les taux de
+    // conversion et déclenchaient de fausses alertes. La reprise rend le
+    // parcours idempotent : réessayer met à jour la commande existante au lieu
+    // d'en empiler une nouvelle.
+    //
+    // Bornée à FENETRE_REPRISE : au-delà, l'intention d'achat est considérée
+    // comme éteinte et une nouvelle commande est légitime. Restreinte au
+    // statut 'en_attente_paiement', donc jamais une commande payée.
+    const FENETRE_REPRISE_HEURES = 6;
+    const depuis = new Date(Date.now() - FENETRE_REPRISE_HEURES * 3600000).toISOString();
+
     let order;
-    for (let attempt = 0; attempt < 5 && !order; attempt++) {
-      const orderNumber = 100000 + Math.floor(Math.random() * 900000);
-      try {
-        [order] = await sql()`
-          insert into orders (order_number, customer_id, email, status, total_cents, currency, shipping_address, promo_code_id, discount_cents)
-          values (${orderNumber}, ${customer.id}, ${email}, 'en_attente_paiement', ${totalCents}, ${currency}, ${JSON.stringify(address)}::jsonb, ${promo?.id ?? null}, ${discountCents})
-          returning id, order_number
-        `;
-      } catch (e) {
-        if (!String(e.message || e).toLowerCase().includes("unique") || attempt === 4) throw e;
+    const [reprise] = await sql()`
+      select id, order_number from orders
+      where email = ${email}
+        and status = 'en_attente_paiement'
+        and created_at >= ${depuis}
+      order by created_at desc
+      limit 1
+    `;
+
+    if (reprise) {
+      // Le panier, l'adresse ou le code promo ont pu changer entre-temps :
+      // on réaligne entièrement la commande sur la tentative en cours.
+      await sql()`
+        update orders
+        set total_cents = ${totalCents}, currency = ${currency},
+            shipping_address = ${JSON.stringify(address)}::jsonb,
+            promo_code_id = ${promo?.id ?? null}, discount_cents = ${discountCents},
+            customer_id = ${customer.id}, created_at = now()
+        where id = ${reprise.id}
+      `;
+      await sql()`delete from order_items where order_id = ${reprise.id}`;
+      order = reprise;
+    } else {
+      // Numéro à 6 chiffres montré au client, distinct de l'id interne :
+      // quelques essais suffisent largement vu la taille de l'espace
+      // (900 000 valeurs).
+      for (let attempt = 0; attempt < 5 && !order; attempt++) {
+        const orderNumber = 100000 + Math.floor(Math.random() * 900000);
+        try {
+          [order] = await sql()`
+            insert into orders (order_number, customer_id, email, status, total_cents, currency, shipping_address, promo_code_id, discount_cents)
+            values (${orderNumber}, ${customer.id}, ${email}, 'en_attente_paiement', ${totalCents}, ${currency}, ${JSON.stringify(address)}::jsonb, ${promo?.id ?? null}, ${discountCents})
+            returning id, order_number
+          `;
+        } catch (e) {
+          if (!String(e.message || e).toLowerCase().includes("unique") || attempt === 4) throw e;
+        }
       }
     }
 
