@@ -79,25 +79,21 @@ const AVANTAGES = [
     texte: "Sans quota imposé : vous publiez à votre rythme.",
   },
   {
-    id: "tableau-de-bord",
-    // Un seul titre plutôt qu'une accroche au-dessus d'un intitulé : « En
-    // direct » puis « Votre tableau de bord » disaient deux fois la même
-    // chose en deux temps. Réunis, ils forment la promesse complète.
+    id: "espace",
+    // « Un espace partenaire à vous » dit l'appartenance ; la ligne blanche
+    // dessous dit ce qu'on y trouve. Elle est en blanc et non en gris parce
+    // qu'elle porte encore de l'argument : ce sont les indicateurs que le
+    // créateur veut voir, pas une précision de second plan.
     //
-    // « en direct » reste en orange : c'est le point d'accroche que le
-    // chiffre donne aux autres cartes, et celle-ci n'en a pas.
-    //
-    // Les quatre indicateurs cités sont ceux réellement affichés par
-    // AffiliateSpacePage. Les nommer vaut mieux que promettre un « tableau de
-    // bord complet » que le partenaire ne peut pas vérifier avant de
-    // s'inscrire.
+    // Les quatre nommés sont ceux réellement affichés par AffiliateSpacePage.
+    // Les citer vaut mieux qu'un « tableau de bord complet » invérifiable
+    // avant inscription.
     phrase: (
       <>
-        Votre tableau de bord, <span className="text-acid">en direct</span>
+        Un espace partenaire <span className="text-acid">à vous</span>
       </>
     ),
-    texte:
-      "Clics, commandes générées, chiffre d'affaires et commission due : vous suivez tout depuis votre espace, commande par commande.",
+    sousPhrase: "Vos clics, vos commandes, votre chiffre d'affaires et votre commission, en direct.",
   },
 ];
 
@@ -457,7 +453,7 @@ export default function AffiliateLandingPage() {
                         ce qui lui donne le poids des autres cartes malgré
                         l'absence de nombre. */}
                     <h3 className="font-display text-lg font-bold leading-snug text-white">{a.phrase}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                    <p className="mt-3 text-sm leading-relaxed text-white">{a.sousPhrase}</p>
                   </>
                 ) : (
                   <>
