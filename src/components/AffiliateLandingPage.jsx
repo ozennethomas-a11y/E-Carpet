@@ -80,14 +80,12 @@ const AVANTAGES = [
   },
   {
     id: "espace",
-    // Même structure que les autres cartes : accroche orange, intitulé blanc,
-    // détail gris. Les quatre indicateurs cités sont ceux réellement affichés
-    // par AffiliateSpacePage — les nommer vaut mieux qu'un « tableau de bord
-    // complet » que le partenaire ne peut pas vérifier avant de s'inscrire.
-    chiffre: "Un espace partenaire",
-    titre: "Un dashboard de suivi accessible",
-    texte:
-      "Clics, commandes générées, chiffre d'affaires et commission due : vous suivez tout en direct, commande par commande.",
+    // Les indicateurs cités sont ceux réellement affichés par
+    // AffiliateSpacePage : les nommer vaut mieux qu'un « dashboard complet »
+    // que le partenaire ne peut pas vérifier avant de s'inscrire.
+    chiffre: "Un dashboard de suivi accessible",
+    titre:
+      "Clics, commandes générées, chiffre d'affaires et commissions dues, vous suivez tout d'un clic. Commande par commande.",
   },
 ];
 
@@ -455,8 +453,8 @@ export default function AffiliateLandingPage() {
                 ) : (
                   <>
                     <div className="chiffre font-display text-3xl font-bold leading-tight text-acid">{a.chiffre}</div>
-                    <h3 className="mt-3 font-display text-base font-bold text-white">{a.titre}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                    <h3 className="mt-3 font-display text-base font-bold leading-relaxed text-white">{a.titre}</h3>
+                    {a.texte && <p className="mt-2 text-sm leading-relaxed text-zinc-400">{a.texte}</p>}
                   </>
                 )}
               </div>
