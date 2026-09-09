@@ -449,6 +449,43 @@ export const influencerContacts = pgTable('influencer_contacts', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
+// Lignes du relevé bancaire, importées depuis un export CSV de la banque.
+//
+// Pourquoi : le rapprochement était intégralement manuel — les mouvements
+// étaient recopiés un par un dans un classeur Excel puis rattachés aux
+// factures à la main. C'est la tâche la plus chronophage du dossier
+// comptable, et la plus mécanisable.
+//
+// amountCents est SIGNÉ : négatif pour un débit, positif pour un crédit.
+// Stocker le signe plutôt que deux colonnes évite d'avoir à se souvenir du
+// sens à chaque requête.
+//
+// fingerprint est l'antidote au doublon : réimporter le même relevé, ou deux
+// relevés qui se chevauchent, ne doit jamais créer deux fois la même ligne.
+// Il combine date, montant, libellé et rang de la ligne dans la journée —
+// ce dernier étant nécessaire car deux prélèvements identiques le même jour
+// sont parfaitement possibles.
+//
+// statut : a_traiter | rapproche | ignore
+// 'ignore' sert aux lignes qui ne sont pas des dépenses d'exploitation
+// (virements internes, encaissements Stripe déjà comptés dans le CA).
+export const bankTransactions = pgTable('bank_transactions', {
+  id: serial('id').primaryKey(),
+  valueDate: timestamp('value_date').notNull(),
+  label: text('label').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  fingerprint: text('fingerprint').notNull().unique(),
+  status: text('status').notNull().default('a_traiter'),
+  // Dépense à laquelle la ligne a été rattachée, si elle en a une.
+  expenseId: integer('expense_id').references(() => expenses.id),
+  // Catégorie proposée automatiquement à partir du libellé (règles
+  // déterministes, voir lib/_banque.mjs) — une suggestion, jamais une
+  // écriture : c'est l'admin qui tranche.
+  suggestedCategory: text('suggested_category'),
+  note: text('note'),
+  importedAt: timestamp('imported_at').notNull().defaultNow(),
+})
+
 // Journal d'exécution des tâches planifiées (crons Netlify). Sans lui, une
 // tâche qui meurt ne se signale nulle part : ses erreurs partent dans les logs
 // de la fonction et personne ne les lit. Permet à l'admin de voir la dernière

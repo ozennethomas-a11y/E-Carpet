@@ -4,6 +4,7 @@ import PeriodPicker from "./PeriodPicker";
 import FinanceComparison from "./FinanceComparison";
 import { formatPrice } from "../cart";
 import { cachedFetchWithStatus, invalidateCache } from "../lib/adminCache";
+import BanquePanel from "./BanquePanel";
 
 const CATEGORIES = ["Publicité", "Abonnements", "Conformité/REP", "Transport", "Autre"];
 
@@ -226,6 +227,8 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
               )}
             </div>
           </div>
+
+          <BanquePanel />
 
           {/* Dépenses */}
           <div className="rounded-2xl border border-white/10 bg-slate-deep p-5">
