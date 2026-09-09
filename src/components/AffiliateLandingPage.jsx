@@ -79,11 +79,16 @@ const AVANTAGES = [
     texte: "Sans quota imposé : vous publiez à votre rythme.",
   },
   {
-    id: "audience",
-    chiffre: "0",
-    titre: "Minimum d'abonnés",
+    id: "tableau-de-bord",
+    // Les quatre indicateurs cités sont ceux réellement affichés par
+    // AffiliateSpacePage : clics, commandes générées, chiffre d'affaires
+    // généré, commission due. Les nommer vaut mieux que promettre un
+    // « tableau de bord complet » que le partenaire ne peut pas vérifier
+    // avant de s'inscrire.
+    chiffre: "En direct",
+    titre: "Votre tableau de bord",
     texte:
-      "Micro-créateur ou grande communauté : chaque inscription est lue à la main. Ce qui compte, c'est que votre audience roule.",
+      "Clics, commandes générées, chiffre d'affaires et commission due : vous suivez tout depuis votre espace, commande par commande.",
   },
 ];
 
