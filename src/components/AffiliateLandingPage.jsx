@@ -56,8 +56,12 @@ const AVANTAGES = [
     // coordonnées bancaires sont saisies sur la page d'inscription hébergée par
     // Stripe. La table affiliates ne contient aucune colonne IBAN — vérifié
     // avant d'écrire cette phrase, qui engage sur un point sensible.
+    // « Sécurisé par Stripe » et non « partenaire de Stripe » : E-Carpet est
+    // client de Stripe Connect, pas membre de son programme de partenariat.
+    // La nuance paraît mince, mais c'est une allégation vérifiable sur une
+    // page qui engage vis-à-vis de partenaires.
     texte:
-      "Vous déclenchez votre virement vous-même depuis votre espace, sans validation à attendre. Les paiements passent par Stripe : vos coordonnées bancaires restent chez eux, nous n'y avons jamais accès.",
+      "Vous déclenchez votre virement vous-même depuis votre espace. Sécurisé par Stripe : vos coordonnées bancaires ne nous sont jamais transmises.",
   },
   {
     id: "montant",
