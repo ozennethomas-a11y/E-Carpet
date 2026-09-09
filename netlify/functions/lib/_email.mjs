@@ -92,7 +92,7 @@ const CARRIER_TRACKING_URL = {
 // On ne connaît le format de suivi que pour les transporteurs qu'on reconnaît ;
 // pour un nom saisi librement en admin et non reconnu, pas de lien plutôt qu'un
 // lien qui ne mènerait nulle part.
-function trackingUrl(carrier, number) {
+export function trackingUrl(carrier, number) {
   if (!carrier || !number) return null;
   const key = Object.keys(CARRIER_TRACKING_URL).find((k) => carrier.toLowerCase().includes(k));
   return key ? CARRIER_TRACKING_URL[key](encodeURIComponent(number)) : null;
