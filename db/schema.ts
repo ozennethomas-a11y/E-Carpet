@@ -198,6 +198,12 @@ export const affiliates = pgTable('affiliates', {
   // quelle relance ou quel message a réellement converti — on ne saurait que
   // compter les inscriptions, pas les attribuer.
   source: text('source'),
+  // Trace du consentement aux conditions du programme partenaire : la date et
+  // la version acceptées. Sans la version, on saurait qu'un partenaire a
+  // accepté sans pouvoir dire à quoi — ce qui vide la trace de sa valeur dès
+  // la première modification du texte.
+  termsAcceptedAt: timestamp('terms_accepted_at'),
+  termsVersion: text('terms_version'),
   status: text('status').notNull().default('en_attente'),
   commissionPercent: integer('commission_percent').notNull().default(10),
   promoCodeId: integer('promo_code_id').references(() => promoCodes.id).unique(),

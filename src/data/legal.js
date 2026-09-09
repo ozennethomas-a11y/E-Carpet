@@ -1,3 +1,5 @@
+import { VERSION_CONDITIONS } from "../../netlify/functions/lib/_conditionsPartenaire.mjs";
+
 // Legal pages content (French — legal docs are jurisdiction-specific).
 // Footer links map by index to these slugs (see Footer.jsx).
 
@@ -29,6 +31,70 @@ export const LEGAL = {
       { type: "p", text: "E-Carpet ne saurait être tenue responsable des dommages directs ou indirects causés au matériel de l'utilisateur lors de l'accès au site. E-Carpet s'efforce d'assurer l'exactitude des informations diffusées mais ne peut en garantir l'exhaustivité." },
       { type: "h2", text: "Liens externes" },
       { type: "p", text: "Le site peut contenir des liens vers des sites tiers (notamment Amazon). E-Carpet n'exerce aucun contrôle sur ces sites et décline toute responsabilité quant à leur contenu." },
+    ],
+  },
+
+  // Conditions du programme partenaire, acceptées par case à cocher à
+  // l'inscription (voir AffiliateApplyPage.jsx et affiliate-auth.mjs).
+  //
+  // Un contrat signé aurait contredit la promesse « inscription en 2 minutes,
+  // sans contrat » de la page influenceurs, pour une commission de quelques
+  // euros. Des conditions acceptées d'un clic ont la même valeur d'engagement
+  // sans la friction.
+  //
+  // La version est datée : elle est enregistrée avec chaque acceptation
+  // (affiliates.terms_version), sans quoi on ne pourrait pas prouver à quoi un
+  // partenaire a consenti le jour où le texte évolue.
+  "programme-partenaire": {
+    title: "Conditions du programme partenaire",
+    updated: VERSION_CONDITIONS,
+    version: VERSION_CONDITIONS,
+    blocks: [
+      { type: "p", text: `Les présentes conditions régissent le programme partenaire d'E-Carpet, édité par ${COMPANY.legalName}, ${COMPANY.address}, SIREN ${COMPANY.siren}. Elles sont acceptées lors de l'inscription et s'appliquent à compter de l'activation du code promo.` },
+
+      { type: "h2", text: "1. Objet et absence de lien de subordination" },
+      { type: "p", text: "Le programme permet à un créateur de contenu (« le Partenaire ») de recevoir un code promotionnel personnel. Ce code donne une remise à ses abonnés et lui ouvre droit à une commission sur les commandes passées avec lui." },
+      { type: "p", text: "Le Partenaire agit en toute indépendance. Les présentes conditions ne créent ni contrat de travail, ni mandat, ni société, ni exclusivité, ni obligation de publication. Le Partenaire reste libre de son rythme, de sa ligne éditoriale et de ses autres partenariats." },
+
+      { type: "h2", text: "2. Inscription et activation" },
+      { type: "p", text: "L'inscription est gratuite et suppose l'acceptation des présentes conditions. Le Partenaire garantit l'exactitude des informations fournies, notamment ses comptes et son audience, et être titulaire des comptes déclarés." },
+      { type: "p", text: "E-Carpet examine chaque inscription et peut la refuser sans avoir à motiver sa décision, notamment lorsque les informations paraissent inexactes, lorsque le code demandé est déjà réservé, ou lorsque le contenu du candidat est incompatible avec l'image de la marque." },
+
+      { type: "h2", text: "3. Commission" },
+      { type: "p", text: "La commission est de 10 % du montant réellement payé par le client, remise déduite, hors frais de livraison. Elle est due pour toute commande payée mentionnant le code du Partenaire, sans plafond de montant ni limite de durée." },
+      { type: "p", text: "La commission naît à l'encaissement du paiement. Elle est annulée si la commande est remboursée, annulée, ou si le paiement échoue après coup. Une commission déjà versée sur une commande ultérieurement remboursée peut être déduite des commissions suivantes." },
+      { type: "p", text: "Aucune commission n'est due sur les commandes passées par le Partenaire lui-même, ni sur celles issues d'une utilisation frauduleuse du code, notamment sa diffusion sur des sites de bons de réduction, son achat publicitaire sur la marque E-Carpet, ou toute méthode visant à capter des commandes que le Partenaire n'a pas générées." },
+
+      { type: "h2", text: "4. Versement" },
+      { type: "p", text: "Le Partenaire déclenche lui-même son virement depuis son espace, dès que son solde atteint 20 €. Les paiements sont exécutés par Stripe, auprès de qui le Partenaire renseigne directement ses coordonnées bancaires et son identité : E-Carpet n'y a pas accès et ne les conserve pas. L'ouverture du compte Stripe et sa validation conditionnent le versement." },
+      { type: "p", text: "Les commissions constituent un revenu. Il appartient au Partenaire de les déclarer et de s'acquitter des obligations fiscales et sociales correspondant à sa situation. E-Carpet ne fournit aucun conseil sur ce point et n'effectue aucune retenue." },
+
+      { type: "h2", text: "5. Engagements du Partenaire" },
+      { type: "p", text: "Le Partenaire s'engage à présenter E-Carpet de façon loyale, sans affirmation trompeuse sur le produit, son prix ou ses caractéristiques, et à ne pas se présenter comme salarié, mandataire ou porte-parole d'E-Carpet." },
+      { type: "p", text: "Conformément à la réglementation applicable aux influenceurs, le Partenaire indique de manière claire et visible le caractère commercial de ses publications lorsqu'il partage son code." },
+      { type: "p", text: "Le Partenaire s'interdit tout contenu illicite, haineux, discriminatoire, diffamatoire, pornographique, ou incitant à des comportements dangereux, notamment routiers. Il s'interdit également d'associer E-Carpet à de tels contenus." },
+
+      { type: "h2", text: "6. Marque et contenus" },
+      { type: "p", text: "E-Carpet concède au Partenaire, pour la durée de sa participation, un droit non exclusif et non cessible d'utiliser son nom, son logo et ses visuels aux seules fins de promouvoir le produit. Toute autre utilisation, notamment le dépôt d'un nom de domaine ou d'un compte reprenant la marque, est interdite." },
+      { type: "p", text: "Le Partenaire autorise E-Carpet à citer son nom, son pseudonyme, son audience et à reprendre les publications qu'il a consacrées au produit, sur son site et ses réseaux, pendant sa participation. Cette autorisation cesse sur simple demande écrite du Partenaire." },
+
+      { type: "h2", text: "7. Suspension et fin de participation" },
+      { type: "p", text: "Le Partenaire peut quitter le programme à tout moment, par simple demande écrite. Son code est alors désactivé. Les commissions déjà acquises lui restent dues et lui sont versées selon les modalités de l'article 4." },
+      { type: "p", text: `E-Carpet peut suspendre ou désactiver un code, sans préavis, en cas de manquement aux articles 3, 5 ou 6, de fraude, ou de contenu portant atteinte à la marque. La suspension est notifiée par email à l'adresse déclarée. Les commissions acquises avant la suspension restent dues, à l'exception de celles issues des commandes frauduleuses.` },
+      { type: "p", text: "E-Carpet peut mettre fin au programme dans son ensemble, moyennant un préavis de trente jours annoncé par email aux partenaires actifs. Les commissions acquises pendant cette période restent dues et sont versées, y compris si le solde n'atteint pas 20 €." },
+
+      { type: "h2", text: "8. Données personnelles" },
+      { type: "p", text: "Les données transmises lors de l'inscription (nom, email, comptes sociaux, audience) sont traitées pour la gestion du programme, sur la base de l'exécution des présentes conditions. Elles sont conservées pendant la participation, puis trois ans, et dix ans pour les pièces comptables. Le Partenaire dispose des droits d'accès, de rectification, d'effacement et d'opposition prévus par le RGPD, exerçables à " + COMPANY.email + "." },
+
+      { type: "h2", text: "9. Responsabilité" },
+      { type: "p", text: "E-Carpet met en œuvre les moyens nécessaires au bon fonctionnement du suivi des commandes et des commissions, sans garantir l'absence d'interruption. Aucun revenu n'est garanti : les estimations présentées sur le site sont des exemples de calcul, en aucun cas une promesse de gain." },
+      { type: "p", text: "Le Partenaire est seul responsable de ses publications et des conséquences qui en découlent, notamment vis-à-vis de son audience et des plateformes qu'il utilise." },
+
+      { type: "h2", text: "10. Modification des conditions" },
+      { type: "p", text: "E-Carpet peut modifier les présentes conditions. Les partenaires actifs en sont informés par email au moins quinze jours avant leur entrée en vigueur. La poursuite de la participation vaut acceptation ; à défaut, le Partenaire peut quitter le programme dans les conditions de l'article 7." },
+
+      { type: "h2", text: "11. Droit applicable" },
+      { type: "p", text: "Les présentes conditions sont soumises au droit français. En cas de différend, les parties rechercheront une solution amiable avant toute action contentieuse. À défaut, les tribunaux français seront compétents." },
     ],
   },
 
@@ -97,4 +163,4 @@ export const LEGAL = {
 };
 
 // Order matches Footer links: Mentions légales, CGV, Confidentialité, Cookies
-export const LEGAL_SLUGS = ["mentions-legales", "cgv", "confidentialite", "cookies"];
+export const LEGAL_SLUGS = ["mentions-legales", "cgv", "confidentialite", "cookies", "programme-partenaire"];

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { navigate } from "../navigation";
+import { URL_CONDITIONS } from "../../netlify/functions/lib/_conditionsPartenaire.mjs";
 import { ArrowIcon } from "./ui";
 
 const RESEAUX = ["TikTok", "Instagram", "Facebook", "YouTube"];
@@ -39,6 +40,7 @@ export default function AffiliateApplyPage() {
   // Un réseau peut être sélectionné sans être encore rempli (lien/abonnés
   // vides) : { platform: { link, followers } }.
   const [reseaux, setReseaux] = useState(depart.reseaux);
+  const [conditions, setConditions] = useState(false);
   const [state, setState] = useState("idle"); // idle | envoi | envoye | erreur
   const [erreur, setErreur] = useState("");
 
@@ -73,12 +75,17 @@ export default function AffiliateApplyPage() {
       return;
     }
 
+    if (!conditions) {
+      setErreur("Vous devez accepter les conditions du programme partenaire.");
+      return;
+    }
+
     setState("envoi");
     try {
       const res = await fetch("/api/affiliate-auth?action=apply", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...form, networks, source: depart.source }),
+        body: JSON.stringify({ ...form, networks, source: depart.source, acceptsTerms: conditions }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -211,6 +218,30 @@ export default function AffiliateApplyPage() {
             </div>
 
             {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+
+                        {/* Consentement explicite, non pré-coché : une case déjà cochée
+                ne vaut pas acceptation. La version acceptée est enregistrée
+                avec la date (voir affiliate-auth.mjs). */}
+            <label className="mb-5 flex cursor-pointer items-start gap-3 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={conditions}
+                onChange={(e) => setConditions(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-acid"
+              />
+              <span>
+                J'accepte les{" "}
+                <a
+                  href={URL_CONDITIONS}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-acid underline underline-offset-2 hover:text-white"
+                >
+                  conditions du programme partenaire
+                </a>
+                .
+              </span>
+            </label>
 
             <button
               type="submit"

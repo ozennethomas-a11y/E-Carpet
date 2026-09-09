@@ -10,6 +10,7 @@ import {
   getAffiliateFromRequest,
 } from "./lib/_affiliateAuth.mjs";
 import { checkAndRecord } from "./lib/_rateLimit.mjs";
+import { VERSION_CONDITIONS } from "./lib/_conditionsPartenaire.mjs";
 
 const TOKEN_MINUTES = 15;
 const clean = (v, max) => String(v ?? "").trim().slice(0, max);
@@ -89,9 +90,22 @@ export default async (req, context) => {
     // produites — et donc sans pouvoir refaire ce qui marche.
     const source = clean(body.source, 40) || null;
 
+    // Consentement vérifié côté serveur : la case du formulaire est une
+    // commodité pour le candidat, pas une garantie — une requête forgée la
+    // contournerait. La version enregistrée est celle du serveur et non celle
+    // annoncée par le client, sans quoi la trace pourrait être falsifiée.
+    if (body.acceptsTerms !== true) {
+      return Response.json(
+        { error: "les conditions du programme partenaire doivent être acceptées" },
+        { status: 400 },
+      );
+    }
+
     await sql()`
-      insert into affiliates (email, name, social, audience, networks, message, requested_promo_code, source)
-      values (${email}, ${name}, ${platformsLabel}, ${followersLabel}, ${JSON.stringify(networks)}::jsonb, ${clean(body.message, 1000)}, ${promoCode}, ${source})
+      insert into affiliates (email, name, social, audience, networks, message, requested_promo_code, source,
+                              terms_accepted_at, terms_version)
+      values (${email}, ${name}, ${platformsLabel}, ${followersLabel}, ${JSON.stringify(networks)}::jsonb, ${clean(body.message, 1000)}, ${promoCode}, ${source},
+              now(), ${VERSION_CONDITIONS})
     `;
 
     // Fait apparaître la candidature dans le tableau de suivi influenceurs
