@@ -71,3 +71,12 @@ h1, h2, h3, h4 {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Chevron des questions fréquentes (page influenceurs).
+   Écrit à la main : la variante Tailwind `group-open:` et l'équivalent
+   `[[open]_&]:` ne produisaient aucune règle appliquée sur cet élément — le
+   chevron restait figé, ce qui laissait croire que la question ne s'ouvrait
+   pas. Deux lignes de CSS explicite valent mieux qu'une variante qui échoue
+   en silence. */
+.chevron-faq { transition: rotate 0.2s ease; }
+details[open] > summary .chevron-faq { rotate: 90deg; }

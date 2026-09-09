@@ -331,7 +331,7 @@ export default function AffiliateLandingPage() {
               >
                 <summary className="flex cursor-pointer items-center justify-between gap-4 font-display text-base font-bold text-white marker:content-['']">
                   {item.q}
-                  <span className="shrink-0 text-acid transition-transform group-open:rotate-90">
+                  <span aria-hidden="true" className="chevron-faq shrink-0 text-acid">
                     <ArrowIcon className="h-4 w-4" />
                   </span>
                 </summary>
