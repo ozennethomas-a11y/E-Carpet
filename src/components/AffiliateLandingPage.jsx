@@ -80,20 +80,14 @@ const AVANTAGES = [
   },
   {
     id: "espace",
-    // « Un espace partenaire à vous » dit l'appartenance ; la ligne blanche
-    // dessous dit ce qu'on y trouve. Elle est en blanc et non en gris parce
-    // qu'elle porte encore de l'argument : ce sont les indicateurs que le
-    // créateur veut voir, pas une précision de second plan.
-    //
-    // Les quatre nommés sont ceux réellement affichés par AffiliateSpacePage.
-    // Les citer vaut mieux qu'un « tableau de bord complet » invérifiable
-    // avant inscription.
-    phrase: (
-      <>
-        Un espace partenaire <span className="text-acid">à vous</span>
-      </>
-    ),
-    sousPhrase: "Vos clics, vos commandes, votre chiffre d'affaires et votre commission, en direct.",
+    // Même structure que les autres cartes : accroche orange, intitulé blanc,
+    // détail gris. Les quatre indicateurs cités sont ceux réellement affichés
+    // par AffiliateSpacePage — les nommer vaut mieux qu'un « tableau de bord
+    // complet » que le partenaire ne peut pas vérifier avant de s'inscrire.
+    chiffre: "Un espace partenaire",
+    titre: "Un dashboard de suivi accessible",
+    texte:
+      "Clics, commandes générées, chiffre d'affaires et commission due : vous suivez tout en direct, commande par commande.",
   },
 ];
 
@@ -413,7 +407,7 @@ export default function AffiliateLandingPage() {
               <div
                 key={a.id}
                 className={`flex flex-col rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07] ${
-                  a.montant || a.phrase ? "justify-center" : ""
+                  a.montant ? "justify-center" : ""
                 }`}
               >
                 {a.duo ? (
@@ -447,17 +441,9 @@ export default function AffiliateLandingPage() {
                     </div>
                     <p className="mt-4 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
-                ) : a.phrase ? (
-                  <>
-                    {/* La phrase occupe la place du chiffre ET du titre : c'est
-                        ce qui lui donne le poids des autres cartes malgré
-                        l'absence de nombre. */}
-                    <h3 className="font-display text-lg font-bold leading-snug text-white">{a.phrase}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-white">{a.sousPhrase}</p>
-                  </>
                 ) : (
                   <>
-                    <div className="chiffre font-display text-3xl font-bold leading-none text-acid">{a.chiffre}</div>
+                    <div className="chiffre font-display text-3xl font-bold leading-tight text-acid">{a.chiffre}</div>
                     <h3 className="mt-3 font-display text-base font-bold text-white">{a.titre}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
