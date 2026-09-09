@@ -55,10 +55,11 @@ const AVANTAGES = [
       "Vous déclenchez votre virement vous-même depuis votre espace. Pas de validation à attendre, pas de relance à faire.",
   },
   {
-    chiffre: "0",
-    titre: "Contrat, quota, exclusivité",
-    texte:
-      "Vous restez libre de vos partenariats et de votre ligne éditoriale. Vous publiez quand vous voulez, ou pas du tout.",
+    // Sans chiffre ni intitulé : ici la phrase EST l'argument. « 0 » suivi de
+    // « Contrat, quota, exclusivité » demandait de reconstituer mentalement
+    // « zéro contrat, zéro quota » ; la liberté se dit mieux directement.
+    phrase: "Vous restez libre de vos partenariats et de votre ligne éditoriale.",
+    texte: "Vous publiez quand vous voulez, ou pas du tout.",
   },
   {
     chiffre: "0",
@@ -382,7 +383,7 @@ export default function AffiliateLandingPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {AVANTAGES.map((a) => (
               <div
-                key={a.titre}
+                key={a.titre || a.phrase}
                 className="rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07]"
               >
                 {a.duo ? (
@@ -398,6 +399,14 @@ export default function AffiliateLandingPage() {
                       ))}
                     </div>
                     <p className="mt-4 text-center text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                  </>
+                ) : a.phrase ? (
+                  <>
+                    {/* La phrase prend la place du chiffre et du titre : elle
+                        porte l'argument à elle seule, et occuper les deux
+                        emplacements lui donne le poids des autres cartes. */}
+                    <h3 className="font-display text-lg font-bold leading-snug text-white">{a.phrase}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
                 ) : (
                   <>
