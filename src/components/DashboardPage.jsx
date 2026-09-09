@@ -27,6 +27,7 @@ import FaceIdSettings from "./FaceIdSettings";
 import PushNotifications from "./PushNotifications";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { cachedFetchWithStatus, prefetch, clearCache, setUnauthorizedHandler } from "../lib/adminCache";
+import AnomaliesPanel from "./AnomaliesPanel";
 
 // Vue par défaut de chaque onglet, téléchargée en une fois à la connexion
 // pour qu'ensuite changer d'onglet n'attende plus aucune requête réseau.
@@ -164,6 +165,20 @@ export default function DashboardPage() {
   function selectTab(tabId) {
     setTab(tabId);
     majUrl(section, tabId);
+  }
+
+  // Navigation déclenchée depuis une anomalie : elle porte sa destination
+  // ({ section, tab }), pour qu'un signalement mène directement à l'écran où
+  // on le traite plutôt qu'à une recherche dans le menu.
+  function allerA({ section: cible, tab: tabCible }) {
+    const s = SECTIONS.find((x) => x.id === cible);
+    if (!s) return;
+    setSection(s.id);
+    setVisited((v) => (v.has(s.id) ? v : new Set(v).add(s.id)));
+    const tabRetenu = s.tabs?.some((t) => t.id === tabCible) ? tabCible : s.tabs?.[0]?.id;
+    if (tabRetenu) setTab(tabRetenu);
+    majUrl(s.id, tabRetenu);
+    window.scrollTo({ top: 0 });
   }
   // La période ne concerne que l'onglet Analyse : soit un nombre de jours
   // glissants, soit deux dates choisies au calendrier.
@@ -548,6 +563,7 @@ export default function DashboardPage() {
 
       {section === "accueil" && (
         <>
+          <AnomaliesPanel onNaviguer={allerA} />
           <OverviewDashboard />
           <TachesPanel />
           <MailAlertsPanel limit={5} />
