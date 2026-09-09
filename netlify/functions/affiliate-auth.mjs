@@ -84,9 +84,14 @@ export default async (req, context) => {
     `;
     if (codeDejaDemande) return Response.json({ error: "ce code promo est déjà réservé par une autre candidature, choisissez-en un autre" }, { status: 400 });
 
+    // Provenance de la candidature (utm_source du lien suivi). Sans elle, on
+    // compte les inscriptions sans jamais savoir quelle relance les a
+    // produites — et donc sans pouvoir refaire ce qui marche.
+    const source = clean(body.source, 40) || null;
+
     await sql()`
-      insert into affiliates (email, name, social, audience, networks, message, requested_promo_code)
-      values (${email}, ${name}, ${platformsLabel}, ${followersLabel}, ${JSON.stringify(networks)}::jsonb, ${clean(body.message, 1000)}, ${promoCode})
+      insert into affiliates (email, name, social, audience, networks, message, requested_promo_code, source)
+      values (${email}, ${name}, ${platformsLabel}, ${followersLabel}, ${JSON.stringify(networks)}::jsonb, ${clean(body.message, 1000)}, ${promoCode}, ${source})
     `;
 
     // Fait apparaître la candidature dans le tableau de suivi influenceurs
@@ -94,7 +99,9 @@ export default async (req, context) => {
     // démarchage manuel, pour une vue unique de tout ce qui est en cours —
     // par email plutôt que par nom, pour retrouver la même personne si elle
     // recandidate ou était déjà suivie manuellement sous un autre nom.
-    const prochaineAction = "Étudier la candidature au programme d'affiliation";
+    const prochaineAction = source
+      ? `Étudier la candidature au programme d'affiliation (venue de : ${source})`
+      : "Étudier la candidature au programme d'affiliation";
     const [dejaSuivi] = await sql()`select id from influencer_contacts where contact = ${email}`;
     if (dejaSuivi) {
       await sql()`

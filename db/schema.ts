@@ -193,6 +193,11 @@ export const affiliates = pgTable('affiliates', {
   // AffiliateApplyPage.jsx) — utilisé tel quel à l'approbation au lieu d'un
   // code généré automatiquement à partir de son nom.
   requestedPromoCode: text('requested_promo_code'),
+  // D'où vient la candidature : valeur d'`utm_source` du lien suivi par le
+  // candidat (voir links.mjs et track.mjs). Sans elle, impossible de savoir
+  // quelle relance ou quel message a réellement converti — on ne saurait que
+  // compter les inscriptions, pas les attribuer.
+  source: text('source'),
   status: text('status').notNull().default('en_attente'),
   commissionPercent: integer('commission_percent').notNull().default(10),
   promoCodeId: integer('promo_code_id').references(() => promoCodes.id).unique(),

@@ -82,6 +82,7 @@ function toJson(a) {
     requestedPromoCode: a.requested_promo_code,
     status: a.status,
     commissionPercent: a.commission_percent,
+    source: a.source,
     promoCode: a.promo_code || null,
     campaignSlug: a.campaign_slug,
     stripeAccountId: a.stripe_account_id,

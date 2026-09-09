@@ -16,3 +16,10 @@ dist
 
 # Fichier d'icône de dossier créé par le Finder
 Icon?
+
+# Scripts ponctuels de production (temporaires, ne pas versionner)
+completer-294189.mjs
+etat-commandes-prod.mjs
+
+# Worktrees temporaires des agents de fond
+.claude/worktrees/
