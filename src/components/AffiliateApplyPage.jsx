@@ -114,7 +114,7 @@ export default function AffiliateApplyPage() {
 
         {state === "envoye" ? (
           <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-            <p className="font-display text-lg font-bold text-white">Candidature envoyée.</p>
+            <p className="font-display text-lg font-bold text-white">Inscription envoyée.</p>
             <p className="mt-2 text-sm leading-relaxed text-zinc-400">
               Nous l'étudions et revenons vers vous par email sous peu. Pas besoin de relancer, on vous
               tient au courant.
@@ -217,7 +217,7 @@ export default function AffiliateApplyPage() {
               disabled={state === "envoi"}
               className="mt-2 rounded-full bg-acid px-6 py-3 font-display text-sm font-bold text-white disabled:opacity-60"
             >
-              {state === "envoi" ? "Envoi…" : "Envoyer ma candidature"}
+              {state === "envoi" ? "Envoi…" : "Envoyer mon inscription"}
             </button>
           </form>
         )}

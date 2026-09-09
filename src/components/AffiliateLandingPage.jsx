@@ -41,18 +41,18 @@ const AVANTAGES = [
   {
     titre: "Pas de minimum d'audience",
     texte:
-      "Micro-créateur ou grande communauté : chaque candidature est lue à la main. Ce qui compte, c'est que votre audience roule.",
+      "Micro-créateur ou grande communauté : chaque inscription est lue à la main. Ce qui compte, c'est que votre audience roule.",
   },
 ];
 
 const ETAPES = [
   {
-    titre: "Vous postulez",
+    titre: "Vous vous inscrivez",
     texte: "Deux minutes : vos réseaux, votre audience, et le code promo que vous voulez porter.",
   },
   {
     titre: "On lit votre profil",
-    texte: "Chaque candidature est examinée à la main, jamais par un filtre automatique. Réponse par email.",
+    texte: "Chaque inscription est lue à la main, jamais filtrée automatiquement. Réponse par email.",
   },
   {
     titre: "Vous partagez, vous gagnez",
@@ -312,19 +312,12 @@ export default function AffiliateLandingPage() {
             <p className="mt-4 text-xs text-zinc-400">
               {lien.nom
                 ? "Gratuit · Sans exclusivité · Il ne reste que 2 champs à remplir"
-                : "Gratuit · Sans exclusivité · Candidature en 2 minutes"}
+                : "Gratuit · Sans exclusivité · Inscription en 2 minutes"}
             </p>
           </div>
         </div>
 
-        <section className="mx-auto mt-4 max-w-3xl px-4" aria-labelledby="simulateur-titre">
-          <h2 id="simulateur-titre" className="sr-only">
-            Simulateur de gains
-          </h2>
-          <Simulateur audience={lien.audience} />
-        </section>
-
-        <section className="mx-auto mt-16 max-w-4xl px-4" aria-labelledby="avantages-titre">
+        <section className="mx-auto mt-4 max-w-4xl px-4" aria-labelledby="avantages-titre">
           <h2 id="avantages-titre" className="text-center font-display text-2xl font-bold text-white">
             Pourquoi c'est simple à porter
           </h2>
@@ -336,6 +329,13 @@ export default function AffiliateLandingPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mx-auto mt-16 max-w-3xl px-4" aria-labelledby="simulateur-titre">
+          <h2 id="simulateur-titre" className="sr-only">
+            Simulateur de gains
+          </h2>
+          <Simulateur audience={lien.audience} />
         </section>
 
         <section className="mx-auto mt-16 max-w-3xl px-4" aria-labelledby="etapes-titre">
