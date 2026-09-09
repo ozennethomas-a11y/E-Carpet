@@ -55,21 +55,14 @@ const AVANTAGES = [
       "Vous déclenchez votre virement vous-même depuis votre espace. Pas de validation à attendre, pas de relance à faire.",
   },
   {
-    id: "liberte",
-    // Sans chiffre ni intitulé : ici la phrase EST l'argument. « 0 » suivi de
-    // « Contrat, quota, exclusivité » demandait de reconstituer mentalement
-    // « zéro contrat, zéro quota » ; la liberté se dit mieux directement.
-    //
-    // Le mot clé passe en orange : les trois autres cartes s'ancrent sur un
-    // chiffre de cette couleur, celle-ci n'en a pas. Colorer le mot qui porte
-    // l'argument lui rend ce point d'accroche sans ajouter d'étiquette.
-    phrase: (
-      <>
-        Vous restez <span className="text-acid">libre</span> de vos partenariats et de votre ligne
-        éditoriale.
-      </>
-    ),
-    texte: "Vous publiez quand vous voulez, ou pas du tout.",
+    id: "montant",
+    // Le montant en euros plutôt qu'un pourcentage de plus : la première
+    // carte dit déjà le partage 10/10, celle-ci dit ce que ça vaut. Dérivé de
+    // GAIN_PAR_VENTE, comme le sous-titre du hero, pour qu'aucune des deux
+    // valeurs ne puisse dériver de l'autre.
+    montant: { valeur: eurosPrecis(GAIN_PAR_VENTE), unite: "par tapis vendu" },
+    accroche: "Plus vous publiez, plus vous gagnez.",
+    texte: "Et vous publiez quand vous voulez, à votre rythme : aucun quota, aucune exclusivité.",
   },
   {
     id: "audience",
@@ -396,7 +389,7 @@ export default function AffiliateLandingPage() {
               <div
                 key={a.id}
                 className={`flex flex-col rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07] ${
-                  a.phrase ? "justify-center" : ""
+                  a.montant ? "justify-center" : ""
                 }`}
               >
                 {a.duo ? (
@@ -413,13 +406,22 @@ export default function AffiliateLandingPage() {
                     </div>
                     <p className="mt-4 text-center text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
-                ) : a.phrase ? (
+                ) : a.montant ? (
                   <>
-                    {/* La phrase prend la place du chiffre et du titre : elle
-                        porte l'argument à elle seule, et occuper les deux
-                        emplacements lui donne le poids des autres cartes. */}
-                    <h3 className="font-display text-lg font-bold leading-snug text-white">{a.phrase}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                    {/* Le montant et son accroche côte à côte : le chiffre
+                        donne la valeur d'une vente, la phrase dit ce qui se
+                        passe quand il y en a plusieurs. L'un sans l'autre ne
+                        dit que la moitié de l'argument. */}
+                    <div className="flex items-center gap-5">
+                      <div>
+                        <div className="chiffre whitespace-nowrap font-display text-3xl font-bold leading-none text-acid">
+                          {a.montant.valeur}
+                        </div>
+                        <div className="mt-1.5 text-xs text-zinc-500">{a.montant.unite}</div>
+                      </div>
+                      <h3 className="font-display text-base font-bold leading-snug text-white">{a.accroche}</h3>
+                    </div>
+                    <p className="mt-4 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
                 ) : (
                   <>
