@@ -118,7 +118,7 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
 
       {data && (
         <>
-          {(data.produitsSansCout.length > 0 || data.ordersWithoutStripeFee > 0) && (
+          {(data.produitsSansCout.length > 0 || data.ordersWithoutStripeFee > 0 || data.expeditionSite?.estimeCount > 0) && (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-300">
               {data.produitsSansCout.length > 0 && (
                 <p>
@@ -129,6 +129,17 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
               {data.ordersWithoutStripeFee > 0 && (
                 <p className="mt-1">
                   {data.ordersWithoutStripeFee} commande(s) sans frais Stripe connu (antérieures au suivi automatique).
+                </p>
+              )}
+              {data.expeditionSite?.estimeCount > 0 && (
+                <p className="mt-1">
+                  Coût d'expédition estimé au forfait pour{" "}
+                  <strong className="chiffre">{data.expeditionSite.estimeCount}</strong> commande(s) sur{" "}
+                  <strong className="chiffre">
+                    {data.expeditionSite.estimeCount + data.expeditionSite.reel.count}
+                  </strong>{" "}
+                  expédiée(s) — la marge ci-dessous est donc en partie approchée. Saisissez le coût réel de
+                  l'étiquette depuis l'onglet Commandes pour la fiabiliser.
                 </p>
               )}
             </div>
@@ -157,7 +168,13 @@ export default function FinancePanel({ periode, onPeriodeChange }) {
             items={[
               { label: "Frais Stripe", value: Math.round(data.frais.stripe / 100) },
               { label: "Frais Amazon", value: Math.round(data.frais.amazon / 100) },
-              { label: "Expédition (site + Amazon, estimé)", value: Math.round(data.frais.expedition / 100) },
+              {
+                label:
+                  data.expeditionSite?.estimeCount > 0
+                    ? `Expédition (site + Amazon, ${data.expeditionSite.reel.count} réel(s) / ${data.expeditionSite.estimeCount} estimé(s))`
+                    : "Expédition (site + Amazon, coûts réels)",
+                value: Math.round(data.frais.expedition / 100),
+              },
               { label: "Publicité", value: Math.round(data.frais.publicite / 100) },
               { label: "Commissions affiliés", value: Math.round(data.frais.commissionsAffilies / 100) },
               { label: "Coût produit (site)", value: Math.round(data.coutProduit / 100) },

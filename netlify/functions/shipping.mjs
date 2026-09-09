@@ -59,8 +59,11 @@ export default async (req) => {
     coutAmazon(debut, fin),
   ]);
 
-  const totalCents =
-    site.domicile.coutCents + site.relais.coutCents + (amazon.indisponible ? 0 : amazon.coutCents);
+  // site.totalCents inclut les coûts réels saisis ET les commandes encore
+  // estimées au forfait. Additionner seulement domicile+relais, comme avant,
+  // reviendrait maintenant à oublier toutes les commandes dont le coût réel
+  // est renseigné — donc à sous-évaluer le total.
+  const totalCents = site.totalCents + (amazon.indisponible ? 0 : amazon.coutCents);
 
   return Response.json(
     {
@@ -68,6 +71,8 @@ export default async (req) => {
       tarifs: { domicileCents: TARIF_DOMICILE_CENTS, relaisCents: TARIF_RELAIS_CENTS },
       domicile: site.domicile,
       relais: site.relais,
+      reel: site.reel,
+      couverture: site.couverture,
       amazon,
       totalCents,
     },

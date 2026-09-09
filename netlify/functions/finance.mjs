@@ -194,7 +194,12 @@ export default async (req) => {
       // site, le coût réel des étiquettes Packlink n'est pas exposé par leur
       // API, donc même tarif estimé domicile appliqué aux commandes Amazon.
       const fraisExpeditionAmazonCents = amazonOrdersCount * TARIF_DOMICILE_CENTS;
-      const fraisExpeditionCents = expeditionSite.domicile.coutCents + expeditionSite.relais.coutCents + fraisExpeditionAmazonCents;
+      // expeditionSite.totalCents privilégie le coût réel saisi commande par
+      // commande et ne retombe sur le forfait que pour les autres. Jusqu'ici
+      // le calcul ignorait purement et simplement shipping_cost_cents : la
+      // colonne était saisissable depuis l'admin mais n'influençait aucune
+      // marge, contrairement à ce qu'annonçait le schéma.
+      const fraisExpeditionCents = expeditionSite.totalCents + fraisExpeditionAmazonCents;
 
       const ordersCount = site.ordersCount + amazonOrdersCount;
       const caTotalCents = caSite + caAmazon;
