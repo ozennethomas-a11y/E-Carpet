@@ -17,6 +17,16 @@ const PANIER_APRES_REMISE = 34.19;
 const GAIN_PAR_VENTE = (PANIER_APRES_REMISE * TAUX) / 100; // ≈ 3,42 €
 const SEUIL_VIREMENT = 20;
 
+// Bandeau « Ils roulent déjà avec nous », masqué pour l'instant.
+//
+// Les cinq créateurs affichés ont bien reçu le tapis et publié, mais aucun
+// n'a encore rejoint le programme partenaire : les montrer ICI reviendrait à
+// les présenter comme partenaires avant qu'ils aient accepté. Les invitations
+// partent d'abord, la section revient ensuite.
+//
+// Passer à true pour la réafficher — le code et les données sont intacts.
+const AFFICHER_PREUVE_SOCIALE = false;
+
 const euros = (n) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 const eurosPrecis = (n) =>
@@ -83,7 +93,10 @@ const AVANTAGES = [
     // Les indicateurs cités sont ceux réellement affichés par
     // AffiliateSpacePage : les nommer vaut mieux qu'un « dashboard complet »
     // que le partenaire ne peut pas vérifier avant de s'inscrire.
-    chiffre: "Un dashboard de suivi accessible",
+    // `accroche` et non `chiffre` : c'est une phrase, elle ne doit pas
+    // s'afficher à la taille d'un nombre. À text-3xl elle passait sur deux
+    // lignes et écrasait le reste de la grille.
+    accroche: "Un dashboard de suivi accessible",
     texte:
       "Clics, commandes générées, chiffre d'affaires et commissions dues, vous suivez tout d'un clic. Commande par commande.",
   },
@@ -96,8 +109,16 @@ const ETAPES = [
     texte: "Deux minutes : vos réseaux, votre audience, et le code promo que vous voulez porter.",
   },
   {
-    titre: "On lit votre profil",
-    texte: "Chaque inscription est lue à la main, jamais filtrée automatiquement. Réponse par email.",
+    titre: "On valide votre profil",
+    // Décrit ce que le créateur reçoit, pas notre procédure interne. La
+    // formulation précédente insistait sur la relecture manuelle — notre
+    // contrainte, pas son bénéfice — et se terminait sur « Réponse par
+    // email », qui laisse planer le doute d'un refus.
+    //
+    // L'email d'approbation existe bien et renvoie vers l'espace partenaire
+    // (affiliateApprovedEmail dans lib/_email.mjs), vérifié avant de
+    // l'annoncer.
+    texte: "On vérifie vos réseaux, puis votre code est activé. Vous recevez l'accès à votre espace par email.",
   },
   {
     titre: "Vous partagez, vous gagnez",
@@ -458,7 +479,11 @@ export default function AffiliateLandingPage() {
                   </>
                 ) : (
                   <>
-                    <div className="chiffre font-display text-3xl font-bold leading-tight text-acid">{a.chiffre}</div>
+                    {a.chiffre ? (
+                      <div className="chiffre font-display text-3xl font-bold leading-none text-acid">{a.chiffre}</div>
+                    ) : (
+                      <div className="font-display text-xl font-bold leading-snug text-acid">{a.accroche}</div>
+                    )}
                     {a.titre && (
                       <h3 className="mt-3 font-display text-base font-bold text-white">{a.titre}</h3>
                     )}
@@ -498,41 +523,43 @@ export default function AffiliateLandingPage() {
           </ol>
         </section>
 
-        <section className="mx-auto mt-20 max-w-4xl px-4" aria-labelledby="preuve-titre">
-          <h2 id="preuve-titre" className="text-center font-display text-2xl font-bold text-white">
-            Ils roulent déjà avec nous
-          </h2>
-          <p className="mx-auto mt-2 max-w-lg text-balance text-center text-sm text-zinc-400">
-            Plus de 500 000 abonnés cumulés parlent déjà d'E-Carpet. Cliquez sur un créateur pour voir
-            sa vidéo.
-          </p>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {INFLUENCERS.map((inf) => (
-              <a
-                key={inf.handle}
-                href={inf.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 cursor-pointer"
-              >
-                <img
-                  src={inf.image}
-                  alt={`${inf.name} avec son tapis E-Carpet`}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-3">
-                  <div className="truncate text-sm font-semibold text-white">{inf.name}</div>
-                  <div className="mt-0.5 flex items-baseline gap-1.5">
-                    <span className="chiffre text-xs font-bold text-acid">{inf.followers}</span>
-                    <span className="truncate text-[11px] text-zinc-400">{inf.handle}</span>
+        {AFFICHER_PREUVE_SOCIALE && (
+          <section className="mx-auto mt-20 max-w-4xl px-4" aria-labelledby="preuve-titre">
+            <h2 id="preuve-titre" className="text-center font-display text-2xl font-bold text-white">
+              Ils roulent déjà avec nous
+            </h2>
+            <p className="mx-auto mt-2 max-w-lg text-balance text-center text-sm text-zinc-400">
+              Plus de 500 000 abonnés cumulés parlent déjà d'E-Carpet. Cliquez sur un créateur pour voir
+              sa vidéo.
+            </p>
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {INFLUENCERS.map((inf) => (
+                <a
+                  key={inf.handle}
+                  href={inf.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 cursor-pointer"
+                >
+                  <img
+                    src={inf.image}
+                    alt={`${inf.name} avec son tapis E-Carpet`}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-3">
+                    <div className="truncate text-sm font-semibold text-white">{inf.name}</div>
+                    <div className="mt-0.5 flex items-baseline gap-1.5">
+                      <span className="chiffre text-xs font-bold text-acid">{inf.followers}</span>
+                      <span className="truncate text-[11px] text-zinc-400">{inf.handle}</span>
+                    </div>
                   </div>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mx-auto mt-20 max-w-2xl px-4" aria-labelledby="faq-titre">
           <h2 id="faq-titre" className="text-center font-display text-2xl font-bold text-white">
