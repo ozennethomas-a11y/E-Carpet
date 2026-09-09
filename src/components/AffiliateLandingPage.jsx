@@ -415,10 +415,14 @@ export default function AffiliateLandingPage() {
                     <div className="grid grid-cols-2 gap-4 text-center">
                       {a.duo.map((d, i) => (
                         <div key={d.label}>
-                          <div className="chiffre font-display text-3xl font-bold leading-none text-acid">
+                          {/* Plus grands que les accroches des autres cartes :
+                              c'est l'argument central de la page, et les deux
+                              chiffres jumeaux ne valent que s'ils se voient
+                              d'un coup d'œil. */}
+                          <div className="chiffre font-display text-4xl font-bold leading-none text-acid sm:text-5xl">
                             {d.chiffre}
                           </div>
-                          <h3 className="mt-2 font-display text-sm font-bold text-white">{d.label}</h3>
+                          <h3 className="mt-2.5 font-display text-base font-bold leading-snug text-white">{d.label}</h3>
                         </div>
                       ))}
                     </div>
