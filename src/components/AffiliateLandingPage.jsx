@@ -61,6 +61,25 @@ const ETAPES = [
   },
 ];
 
+// Pour un créateur déjà démarché, l'étape « on étudie votre profil » est un
+// contresens : il a reçu le produit, il a publié, il a fait ses preuves. Lui
+// resservir le parcours d'un inconnu le renverrait au point de départ.
+const ETAPES_CONNU = [
+  {
+    titre: "Vous choisissez votre code",
+    texte: "Votre formulaire est déjà rempli. Il ne reste que votre email et le code que vous voulez porter.",
+  },
+  {
+    titre: "On l'active",
+    texte: "Vous avez déjà collaboré avec nous : votre code est activé sans nouvel examen, et vous recevez le lien de votre espace.",
+  },
+  {
+    titre: "Vous partagez, vous gagnez",
+    texte:
+      "Chaque commande passée avec votre code vous rapporte 10%, suivie en direct dans votre espace. Vos abonnés, eux, paient 10% moins cher.",
+  },
+];
+
 const FAQ = [
   {
     q: "Combien ça me coûte ?",
@@ -135,8 +154,29 @@ function Simulateur() {
   );
 }
 
+// Le lien envoyé à un créateur déjà démarché porte son nom et ses réseaux
+// (voir AffiliateApplyPage). Deux conséquences ici :
+//
+//  1. Ces paramètres doivent SURVIVRE au clic vers le formulaire. Sans ça, le
+//     pré-remplissage serait perdu entre la page vitrine et l'inscription, et
+//     le créateur devrait tout retaper — exactement ce qu'on voulait éviter.
+//  2. Quelqu'un qui a déjà reçu le tapis et publié n'a pas à lire un
+//     argumentaire de prospection. La page le reconnaît et le dit.
+//
+// Le nom vient de l'URL, donc de nous : il n'est qu'affiché, jamais utilisé
+// pour décider de quoi que ce soit. Un lien bricolé ne donne accès à rien.
+function contexteDuLien() {
+  if (typeof window === "undefined") return { nom: null, requete: "" };
+  const p = new URLSearchParams(window.location.search);
+  return {
+    nom: (p.get("nom") || "").slice(0, 80) || null,
+    requete: p.toString() ? `?${p.toString()}` : "",
+  };
+}
+
 export default function AffiliateLandingPage() {
-  const versInscription = () => navigate("/influenceurs/inscription");
+  const [lien] = useState(contexteDuLien);
+  const versInscription = () => navigate(`/influenceurs/inscription${lien.requete}`);
 
   return (
     <>
@@ -178,6 +218,14 @@ export default function AffiliateLandingPage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-acid/40 bg-acid/10 px-4 py-1.5 text-xs font-semibold text-acid">
               Programme partenaire E-Carpet
             </span>
+
+            {lien.nom && (
+              <p className="mx-auto mt-5 max-w-lg text-balance rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-sm leading-relaxed text-zinc-200">
+                Bonjour <strong className="text-white">{lien.nom}</strong> — vous avez déjà présenté
+                E-Carpet à votre communauté. Pas de candidature à repasser&nbsp;: votre formulaire est
+                déjà rempli, il ne manque que votre email et le code que vous voulez porter.
+              </p>
+            )}
             <h1 className="mt-5 text-balance font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
               Votre communauté économise 10%. Vous en gagnez 10%.
             </h1>
@@ -190,11 +238,13 @@ export default function AffiliateLandingPage() {
               onClick={versInscription}
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-acid px-8 py-4 font-display text-base font-bold text-white transition-transform hover:scale-[1.03] cursor-pointer"
             >
-              Devenir partenaire
+              {lien.nom ? "Activer mon code" : "Devenir partenaire"}
               <ArrowIcon className="h-4 w-4" />
             </button>
             <p className="mt-4 text-xs text-zinc-400">
-              Gratuit · Sans exclusivité · Candidature en 2 minutes
+              {lien.nom
+                ? "Gratuit · Sans exclusivité · Il ne reste que 2 champs à remplir"
+                : "Gratuit · Sans exclusivité · Candidature en 2 minutes"}
             </p>
           </div>
         </div>
@@ -222,10 +272,10 @@ export default function AffiliateLandingPage() {
 
         <section className="mx-auto mt-16 max-w-3xl px-4" aria-labelledby="etapes-titre">
           <h2 id="etapes-titre" className="text-center font-display text-2xl font-bold text-white">
-            Comment ça marche
+            {lien.nom ? "Ce qu'il vous reste à faire" : "Comment ça marche"}
           </h2>
           <ol className="mt-8 grid gap-6 sm:grid-cols-3">
-            {ETAPES.map((e, i) => (
+            {(lien.nom ? ETAPES_CONNU : ETAPES).map((e, i) => (
               <li key={e.titre}>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-acid font-display text-sm font-bold text-white">
                   {i + 1}
@@ -303,7 +353,7 @@ export default function AffiliateLandingPage() {
               onClick={versInscription}
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-acid px-8 py-4 font-display text-base font-bold text-white transition-transform hover:scale-[1.03] cursor-pointer"
             >
-              Devenir partenaire
+              {lien.nom ? "Activer mon code" : "Devenir partenaire"}
               <ArrowIcon className="h-4 w-4" />
             </button>
             <p className="mt-4 text-xs text-zinc-400">
@@ -320,7 +370,7 @@ export default function AffiliateLandingPage() {
           onClick={versInscription}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-acid px-6 py-3.5 font-display text-sm font-bold text-white cursor-pointer"
         >
-          Devenir partenaire
+          {lien.nom ? "Activer mon code" : "Devenir partenaire"}
           <ArrowIcon className="h-4 w-4" />
         </button>
       </div>
