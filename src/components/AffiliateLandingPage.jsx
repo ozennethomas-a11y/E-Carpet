@@ -58,6 +58,21 @@ const AVANTAGES = [
     texte: "Votre code n'expire pas, il continue de vous rapporter sur vos vidéos déjà en ligne.",
   },
   {
+    id: "montant",
+    // Le montant en euros plutôt qu'un pourcentage de plus : la première
+    // carte dit déjà le partage 10/10, celle-ci dit ce que ça vaut. Dérivé de
+    // GAIN_PAR_VENTE, comme le sous-titre du hero, pour qu'aucune des deux
+    // valeurs ne puisse dériver de l'autre.
+    montant: { valeur: eurosPrecis(GAIN_PAR_VENTE), unite: "par tapis vendu" },
+    accroche: "Plus vous publiez, plus vous gagnez.",
+    // Le « Et » enchaînait cette phrase sur l'accroche et faisait dire à la
+    // carte une chose puis son contraire : publiez plus, mais ce n'est pas
+    // grave si vous ne publiez pas. La liberté n'est pas un contrepoint à
+    // l'accroche, c'est une condition de l'offre — d'où une phrase autonome
+    // et brève, qui rassure sans se retourner contre ce qui précède.
+    texte: "Sans quota imposé : vous publiez à votre rythme.",
+  },
+  {
     id: "virement",
     chiffre: "Dès 20 €",
     titre: "Payé quand vous le décidez",
@@ -72,21 +87,6 @@ const AVANTAGES = [
     // page qui engage vis-à-vis de partenaires.
     texte:
       "Vous déclenchez votre virement vous-même depuis votre espace. Sécurisé par Stripe : vos coordonnées bancaires ne nous sont jamais transmises.",
-  },
-  {
-    id: "montant",
-    // Le montant en euros plutôt qu'un pourcentage de plus : la première
-    // carte dit déjà le partage 10/10, celle-ci dit ce que ça vaut. Dérivé de
-    // GAIN_PAR_VENTE, comme le sous-titre du hero, pour qu'aucune des deux
-    // valeurs ne puisse dériver de l'autre.
-    montant: { valeur: eurosPrecis(GAIN_PAR_VENTE), unite: "par tapis vendu" },
-    accroche: "Plus vous publiez, plus vous gagnez.",
-    // Le « Et » enchaînait cette phrase sur l'accroche et faisait dire à la
-    // carte une chose puis son contraire : publiez plus, mais ce n'est pas
-    // grave si vous ne publiez pas. La liberté n'est pas un contrepoint à
-    // l'accroche, c'est une condition de l'offre — d'où une phrase autonome
-    // et brève, qui rassure sans se retourner contre ce qui précède.
-    texte: "Sans quota imposé : vous publiez à votre rythme.",
   },
   {
     id: "espace",
