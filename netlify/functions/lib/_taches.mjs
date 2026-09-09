@@ -21,6 +21,10 @@ export const TACHES = {
   "cart-reminder": { label: "Relance panier abandonné", cadenceMinutes: 60 },
   "review-request": { label: "Demande d'avis (J+7)", cadenceMinutes: 1440 },
   "social-publish": { label: "Publication réseaux sociaux", cadenceMinutes: 60 },
+  // Hebdomadaire : 7 × 1440 minutes. La tolérance de 2,5× ne la déclarera donc
+  // silencieuse qu'après plus de deux semaines sans exécution, ce qui est le
+  // bon ordre de grandeur — un lundi manqué n'est pas encore une panne.
+  "rapport-hebdo": { label: "Rapport hebdomadaire", cadenceMinutes: 10080 },
 };
 
 // Marge de tolérance avant de déclarer une tâche en retard : un cron peut être
