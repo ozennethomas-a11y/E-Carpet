@@ -35,6 +35,7 @@ const AVANTAGES = [
     // Deux colonnes identiques, deux fois le même chiffre — la réciprocité se
     // voit avant d'être lue, et c'est elle qui lève l'objection « je ne veux
     // pas vendre à ma communauté ».
+    id: "partage",
     duo: [
       { chiffre: "10 %", label: "Pour vous" },
       { chiffre: "10 %", label: "Pour votre communauté" },
@@ -47,19 +48,31 @@ const AVANTAGES = [
     texte: "Votre code n'expire pas, il continue de vous rapporter sur vos vidéos déjà en ligne.",
   },
   {
+    id: "virement",
     chiffre: "Dès 20 €",
     titre: "Payé quand vous le décidez",
     texte:
       "Vous déclenchez votre virement vous-même depuis votre espace. Pas de validation à attendre, pas de relance à faire.",
   },
   {
+    id: "liberte",
     // Sans chiffre ni intitulé : ici la phrase EST l'argument. « 0 » suivi de
     // « Contrat, quota, exclusivité » demandait de reconstituer mentalement
     // « zéro contrat, zéro quota » ; la liberté se dit mieux directement.
-    phrase: "Vous restez libre de vos partenariats et de votre ligne éditoriale.",
+    //
+    // Le mot clé passe en orange : les trois autres cartes s'ancrent sur un
+    // chiffre de cette couleur, celle-ci n'en a pas. Colorer le mot qui porte
+    // l'argument lui rend ce point d'accroche sans ajouter d'étiquette.
+    phrase: (
+      <>
+        Vous restez <span className="text-acid">libre</span> de vos partenariats et de votre ligne
+        éditoriale.
+      </>
+    ),
     texte: "Vous publiez quand vous voulez, ou pas du tout.",
   },
   {
+    id: "audience",
     chiffre: "0",
     titre: "Minimum d'abonnés",
     texte:
@@ -381,8 +394,10 @@ export default function AffiliateLandingPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {AVANTAGES.map((a) => (
               <div
-                key={a.titre || a.phrase}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07]"
+                key={a.id}
+                className={`flex flex-col rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07] ${
+                  a.phrase ? "justify-center" : ""
+                }`}
               >
                 {a.duo ? (
                   <>
