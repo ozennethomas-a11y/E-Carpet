@@ -22,28 +22,40 @@ const euros = (n) =>
 const eurosPrecis = (n) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
 
+// Chaque avantage porte un chiffre : c'est lui qui ouvre la carte, pas le
+// titre. Quatre paragraphes gris de même poids ne se lisent pas — un chiffre
+// se saisit d'un coup d'œil, et le texte ne sert plus qu'à le justifier.
+//
+// Les deux premiers disent ce que le partenaire gagne, les deux suivants ce
+// qu'on ne lui demande pas. D'où les deux zéros, qui donnent au bloc son
+// rythme au lieu de paraître pauvres.
 const AVANTAGES = [
   {
+    chiffre: "10 % + 10 %",
     titre: "Vous gagnez, votre communauté aussi",
     texte:
       "Votre code donne 10% de remise à vos abonnés et vous rapporte 10% sur chaque commande. Vous ne leur vendez rien : vous leur faites une faveur.",
   },
   {
+    chiffre: "Dès 20 €",
     titre: "Payé quand vous le décidez",
     texte:
-      "Dès 20 € de solde, vous déclenchez votre virement vous-même depuis votre espace. Pas de validation à attendre, pas de relance à faire.",
+      "Vous déclenchez votre virement vous-même depuis votre espace. Pas de validation à attendre, pas de relance à faire.",
   },
   {
-    titre: "Aucune exclusivité",
+    chiffre: "0",
+    titre: "Contrat, quota, exclusivité",
     texte:
-      "Vous restez libre de vos partenariats et de votre ligne éditoriale. Pas de contrat, pas de quota de publications, pas d'engagement de durée.",
+      "Vous restez libre de vos partenariats et de votre ligne éditoriale. Vous publiez quand vous voulez, ou pas du tout.",
   },
   {
-    titre: "Pas de minimum d'audience",
+    chiffre: "0",
+    titre: "Minimum d'abonnés",
     texte:
       "Micro-créateur ou grande communauté : chaque inscription est lue à la main. Ce qui compte, c'est que votre audience roule.",
   },
 ];
+
 
 const ETAPES = [
   {
@@ -357,8 +369,12 @@ export default function AffiliateLandingPage() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {AVANTAGES.map((a) => (
-              <div key={a.titre} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                <h3 className="font-display text-lg font-bold text-white">{a.titre}</h3>
+              <div
+                key={a.titre}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07]"
+              >
+                <div className="chiffre font-display text-3xl font-bold leading-none text-acid">{a.chiffre}</div>
+                <h3 className="mt-3 font-display text-base font-bold text-white">{a.titre}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
               </div>
             ))}
