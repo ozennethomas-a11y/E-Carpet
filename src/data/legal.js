@@ -50,7 +50,7 @@ export const LEGAL = {
     updated: VERSION_CONDITIONS,
     version: VERSION_CONDITIONS,
     blocks: [
-      { type: "p", text: `Les présentes conditions régissent le programme partenaire d'E-Carpet, édité par ${COMPANY.legalName}, ${COMPANY.address}, SIREN ${COMPANY.siren}. Elles sont acceptées lors de l'inscription et s'appliquent à compter de l'activation du code promo.` },
+      { type: "p", text: `Les présentes conditions régissent le programme partenaire d'E-Carpet, entreprise individuelle immatriculée sous le SIREN ${COMPANY.siren}, ${COMPANY.address}. Elles sont acceptées lors de l'inscription et s'appliquent à compter de l'activation du code promo.` },
 
       { type: "h2", text: "1. Objet et absence de lien de subordination" },
       { type: "p", text: "Le programme permet à un créateur de contenu (« le Partenaire ») de recevoir un code promotionnel personnel. Ce code donne une remise à ses abonnés et lui ouvre droit à une commission sur les commandes passées avec lui." },
