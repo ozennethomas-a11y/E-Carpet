@@ -80,13 +80,22 @@ const AVANTAGES = [
   },
   {
     id: "tableau-de-bord",
+    // Un seul titre plutôt qu'une accroche au-dessus d'un intitulé : « En
+    // direct » puis « Votre tableau de bord » disaient deux fois la même
+    // chose en deux temps. Réunis, ils forment la promesse complète.
+    //
+    // « en direct » reste en orange : c'est le point d'accroche que le
+    // chiffre donne aux autres cartes, et celle-ci n'en a pas.
+    //
     // Les quatre indicateurs cités sont ceux réellement affichés par
-    // AffiliateSpacePage : clics, commandes générées, chiffre d'affaires
-    // généré, commission due. Les nommer vaut mieux que promettre un
-    // « tableau de bord complet » que le partenaire ne peut pas vérifier
-    // avant de s'inscrire.
-    chiffre: "En direct",
-    titre: "Votre tableau de bord",
+    // AffiliateSpacePage. Les nommer vaut mieux que promettre un « tableau de
+    // bord complet » que le partenaire ne peut pas vérifier avant de
+    // s'inscrire.
+    phrase: (
+      <>
+        Votre tableau de bord, <span className="text-acid">en direct</span>
+      </>
+    ),
     texte:
       "Clics, commandes générées, chiffre d'affaires et commission due : vous suivez tout depuis votre espace, commande par commande.",
   },
@@ -408,7 +417,7 @@ export default function AffiliateLandingPage() {
               <div
                 key={a.id}
                 className={`flex flex-col rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07] ${
-                  a.montant ? "justify-center" : ""
+                  a.montant || a.phrase ? "justify-center" : ""
                 }`}
               >
                 {a.duo ? (
@@ -441,6 +450,14 @@ export default function AffiliateLandingPage() {
                       <h3 className="font-display text-base font-bold leading-snug text-white">{a.accroche}</h3>
                     </div>
                     <p className="mt-4 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                  </>
+                ) : a.phrase ? (
+                  <>
+                    {/* La phrase occupe la place du chiffre ET du titre : c'est
+                        ce qui lui donne le poids des autres cartes malgré
+                        l'absence de nombre. */}
+                    <h3 className="font-display text-lg font-bold leading-snug text-white">{a.phrase}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
                 ) : (
                   <>
