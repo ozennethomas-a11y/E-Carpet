@@ -36,8 +36,8 @@ const AVANTAGES = [
     // voit avant d'être lue, et c'est elle qui lève l'objection « je ne veux
     // pas vendre à ma communauté ».
     duo: [
-      { chiffre: "10 %", label: "Vous gagnez" },
-      { chiffre: "10 %", label: "Votre communauté aussi" },
+      { chiffre: "10 %", label: "Pour vous" },
+      { chiffre: "10 %", label: "Pour votre communauté" },
     ],
     titre: "Vous gagnez, votre communauté aussi",
     texte: "Vous ne leur vendez rien : vous leur faites une faveur.",
@@ -383,7 +383,7 @@ export default function AffiliateLandingPage() {
                   <>
                     <div className="grid grid-cols-2 gap-4 text-center">
                       {a.duo.map((d, i) => (
-                        <div key={d.label} className={i === 1 ? "border-l border-white/10 pl-4" : "pr-4"}>
+                        <div key={d.label}>
                           <div className="chiffre font-display text-3xl font-bold leading-none text-acid">
                             {d.chiffre}
                           </div>
