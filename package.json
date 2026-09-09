@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "node scripts/apply-migrations.mjs && node scripts/generate-sitemap.mjs && vite build",
     "preview": "vite preview",
-    "test": "node scripts/test-banque.mjs"
+    "test": "node scripts/test-banque.mjs && node scripts/test-rapport.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

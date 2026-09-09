@@ -28,6 +28,7 @@ import PushNotifications from "./PushNotifications";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { cachedFetchWithStatus, prefetch, clearCache, setUnauthorizedHandler } from "../lib/adminCache";
 import AnomaliesPanel from "./AnomaliesPanel";
+import RapportPanel from "./RapportPanel";
 
 // Vue par défaut de chaque onglet, téléchargée en une fois à la connexion
 // pour qu'ensuite changer d'onglet n'attende plus aucune requête réseau.
@@ -36,6 +37,7 @@ function urlsAPrecharger(isOwner) {
     "/api/overview",
     "/api/mail-alerts",
     "/api/taches",
+    "/api/rapport",
     "/api/stats?days=30",
     "/api/orders",
     "/api/customers",
@@ -564,6 +566,7 @@ export default function DashboardPage() {
       {section === "accueil" && (
         <>
           <AnomaliesPanel onNaviguer={allerA} />
+          <RapportPanel />
           <OverviewDashboard />
           <TachesPanel />
           <MailAlertsPanel limit={5} />
