@@ -348,10 +348,14 @@ export default function AffiliateLandingPage() {
         </div>
 
         <section className="mx-auto mt-4 max-w-4xl px-4" aria-labelledby="avantages-titre">
-          <h2 id="avantages-titre" className="text-center font-display text-2xl font-bold text-white">
+          {/* Titre retiré de l'affichage mais conservé pour les lecteurs
+              d'écran : les quatre cartes se suffisent visuellement, alors
+              qu'une section sans intitulé perdrait son repère à la navigation
+              par titres. Même procédé que la section du simulateur. */}
+          <h2 id="avantages-titre" className="sr-only">
             Pourquoi c'est simple à porter
           </h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {AVANTAGES.map((a) => (
               <div key={a.titre} className="rounded-2xl border border-white/10 bg-white/5 p-6">
                 <h3 className="font-display text-lg font-bold text-white">{a.titre}</h3>
