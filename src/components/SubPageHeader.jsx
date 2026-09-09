@@ -2,8 +2,26 @@ import { useLang } from "../i18n/LanguageContext";
 import { LANGUAGES } from "../i18n/translations";
 import { navigate } from "../navigation";
 
-export default function SubPageHeader() {
+/**
+ * @param {boolean} retourArriere — le bouton revient à la page précédente au
+ *   lieu de l'accueil. Utilisé par les pages consultées EN COURS de parcours,
+ *   comme les conditions du programme ouvertes depuis le formulaire : y
+ *   renvoyer vers l'accueil ferait perdre au visiteur ce qu'il était en train
+ *   de faire.
+ */
+export default function SubPageHeader({ retourArriere = false }) {
   const { t, lang, setLang } = useLang();
+
+  // Un onglet ouvert par un lien target="_blank" n'a pas d'historique : son
+  // history.length vaut 1 et un retour arrière n'irait nulle part. Dans ce
+  // cas seulement, on retombe sur l'accueil.
+  const peutRevenir = retourArriere && typeof window !== "undefined" && window.history.length > 1;
+
+  function retour(e) {
+    e.preventDefault();
+    if (peutRevenir) window.history.back();
+    else navigate("/");
+  }
   return (
     <header className="fixed top-4 left-4 right-4 z-50">
       <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-white/10 bg-ink/80 px-5 py-3 backdrop-blur-xl shadow-2xl">
@@ -27,11 +45,11 @@ export default function SubPageHeader() {
           </div>
           <a
             href="/"
-            onClick={(e) => { e.preventDefault(); navigate("/"); }}
+            onClick={retour}
             className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300 transition-colors hover:text-white cursor-pointer"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
-            {t.reviewForm.back}
+            {peutRevenir ? "Retour" : t.reviewForm.back}
           </a>
         </div>
       </nav>

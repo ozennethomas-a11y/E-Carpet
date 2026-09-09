@@ -8,17 +8,23 @@ export default function LegalPage({ slug }) {
   const { t } = useLang();
   const doc = LEGAL[slug];
 
+  // Même règle que dans SubPageHeader : un onglet ouvert par un lien
+  // target="_blank" n'a pas d'historique, un retour arrière n'irait nulle
+  // part. Le libellé suit la destination réelle plutôt que de promettre un
+  // retour que le bouton ne fera pas.
+  const peutRevenir = typeof window !== "undefined" && window.history.length > 1;
+
   return (
     <>
-      <SubPageHeader />
+      <SubPageHeader retourArriere />
       <main className="px-4 pt-32 pb-20">
         <div className="mx-auto max-w-2xl">
           <button
-            onClick={() => (window.history.length > 1 ? window.history.back() : navigate("/"))}
+            onClick={() => (peutRevenir ? window.history.back() : navigate("/"))}
             className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-acid/40 hover:text-white cursor-pointer"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
-            {t.reviewForm.back}
+            {peutRevenir ? "Retour" : t.reviewForm.back}
           </button>
 
           {!doc ? (
