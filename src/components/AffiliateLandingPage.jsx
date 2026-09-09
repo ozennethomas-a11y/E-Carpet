@@ -47,8 +47,8 @@ const AVANTAGES = [
     // pas vendre à ma communauté ».
     id: "partage",
     duo: [
-      { chiffre: "10 %", label: "Pour vous" },
-      { chiffre: "10 %", label: "Pour votre communauté" },
+      { chiffre: "10 %", label: "pour vous" },
+      { chiffre: "10 %", label: "pour votre communauté" },
     ],
     titre: "Vous gagnez, votre communauté aussi",
     // Les codes affiliés sont créés sans date d'expiration ni plafond
@@ -431,34 +431,28 @@ export default function AffiliateLandingPage() {
               >
                 {a.duo ? (
                   <>
-                    {/* Un seul bloc partagé, et non deux tuiles séparées : le
-                        code promo ne donne pas deux avantages distincts, il
-                        partage une même valeur en deux. Une surface commune le
-                        dit ; deux boîtes côte à côte laissaient croire à deux
-                        choses sans rapport.
+                    {/* Deux lignes empilées, alignées à gauche, sans boîte
+                        interne : les trois autres cartes posent leur chiffre
+                        en haut à gauche puis descendent vers le texte. Le bloc
+                        centré et encadré était le seul à ne pas parler cette
+                        langue, et c'est ce qui le rendait étranger à
+                        l'ensemble plus que sa forme propre.
 
-                        Le libellé passe AU-DESSUS du chiffre, en petites
-                        capitales grises : on lit « pour vous, 10 % » dans
-                        l'ordre naturel de la phrase, et le libellé cesse de
-                        concurrencer le chiffre qu'il est censé qualifier. */}
-                    <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-white/5 bg-ink/60">
-                      {a.duo.map((d, i) => (
-                        <div
-                          key={d.label}
-                          className={`flex flex-col items-center justify-center px-3 py-6 text-center ${
-                            i === 1 ? "border-l border-white/5" : ""
-                          }`}
-                        >
-                          <div className="font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                            {d.label}
-                          </div>
-                          <div className="chiffre mt-2 font-display text-4xl font-bold leading-none text-acid sm:text-5xl">
+                        La colonne des chiffres a une largeur fixe pour que les
+                        libellés s'alignent : deux lignes qui commencent au
+                        même endroit se lisent comme une paire, pas comme deux
+                        éléments sans rapport. */}
+                    <div className="flex flex-col gap-2.5">
+                      {a.duo.map((d) => (
+                        <div key={d.label} className="flex items-baseline gap-3">
+                          <span className="chiffre w-[4.25rem] shrink-0 font-display text-3xl font-bold leading-none text-acid">
                             {d.chiffre}
-                          </div>
+                          </span>
+                          <span className="font-display text-sm font-bold leading-snug text-white">{d.label}</span>
                         </div>
                       ))}
                     </div>
-                    <p className="mt-4 text-center text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                    <p className="mt-4 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
                 ) : a.montant ? (
                   <>
