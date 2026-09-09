@@ -313,9 +313,12 @@ export default function AffiliateLandingPage() {
             </div>
 
             <p className="relative mx-auto mt-5 max-w-xl text-balance text-base leading-relaxed text-zinc-200">
-              Vous parlez mobilité urbaine à une audience qui roule en trottinette électrique ? Partagez
-              votre code E-Carpet : vos abonnés paient le tapis 10% moins cher, et chaque commande vous
-              rapporte une commission.
+              {/* Ne répète PAS les deux 10% du titre : le sous-titre sert à
+                  ajouter ce que le titre ne dit pas — le montant réel par
+                  vente. Le chiffre est dérivé de la même constante que le
+                  simulateur, pour qu'ils ne puissent jamais diverger. */}
+              Un code promo à votre nom, et {eurosPrecis(GAIN_PAR_VENTE)} pour chaque tapis vendu par
+              votre communauté.
             </p>
 
             {/* Placé APRÈS le titre, et volontairement court : au-dessus, il
