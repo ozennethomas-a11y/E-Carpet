@@ -412,17 +412,24 @@ export default function AffiliateLandingPage() {
               >
                 {a.duo ? (
                   <>
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      {a.duo.map((d, i) => (
-                        <div key={d.label}>
-                          {/* Plus grands que les accroches des autres cartes :
-                              c'est l'argument central de la page, et les deux
-                              chiffres jumeaux ne valent que s'ils se voient
-                              d'un coup d'œil. */}
+                    {/* Deux tuiles plutôt que deux colonnes de texte : sans
+                        support, les chiffres flottaient dans le vide et la
+                        carte paraissait inachevée. Le fond sombre les détache
+                        de la carte, qui est elle-même claire sur fond noir.
+
+                        Elles restent strictement identiques : c'est l'égalité
+                        du partage qui est l'argument, la moindre asymétrie
+                        laisserait croire que l'un des deux reçoit plus. */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {a.duo.map((d) => (
+                        <div
+                          key={d.label}
+                          className="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-ink/60 px-3 py-5 text-center"
+                        >
                           <div className="chiffre font-display text-4xl font-bold leading-none text-acid sm:text-5xl">
                             {d.chiffre}
                           </div>
-                          <h3 className="mt-2.5 font-display text-base font-bold leading-snug text-white">{d.label}</h3>
+                          <h3 className="mt-2.5 font-display text-sm font-bold leading-snug text-white">{d.label}</h3>
                         </div>
                       ))}
                     </div>
