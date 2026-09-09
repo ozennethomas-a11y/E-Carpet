@@ -373,33 +373,25 @@ export default function AffiliateLandingPage() {
           <h2 id="avantages-titre" className="sr-only">
             Pourquoi c'est simple à porter
           </h2>
-          {/* Trois colonnes en grand écran : la carte double occupe la
-              première ligne entière, les trois autres remplissent exactement
-              la seconde. En deux colonnes, la dernière restait orpheline. */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {AVANTAGES.map((a) => (
               <div
                 key={a.titre}
-                className={`rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07] ${
-                  a.duo ? "sm:col-span-2 lg:col-span-3" : ""
-                }`}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07]"
               >
                 {a.duo ? (
                   <>
-                    {/* Pleine largeur et coupé en deux : c'est l'argument
-                        principal de la page, il ne doit pas avoir le même
-                        poids qu'une carte parmi quatre. */}
                     <div className="grid grid-cols-2 gap-4 text-center">
                       {a.duo.map((d, i) => (
                         <div key={d.label} className={i === 1 ? "border-l border-white/10 pl-4" : "pr-4"}>
-                          <div className="chiffre font-display text-4xl font-bold leading-none text-acid sm:text-5xl">
+                          <div className="chiffre font-display text-3xl font-bold leading-none text-acid">
                             {d.chiffre}
                           </div>
-                          <h3 className="mt-3 font-display text-sm font-bold text-white sm:text-base">{d.label}</h3>
+                          <h3 className="mt-2 font-display text-sm font-bold text-white">{d.label}</h3>
                         </div>
                       ))}
                     </div>
-                    <p className="mt-5 text-center text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                    <p className="mt-4 text-center text-sm leading-relaxed text-zinc-400">{a.texte}</p>
                   </>
                 ) : (
                   <>
