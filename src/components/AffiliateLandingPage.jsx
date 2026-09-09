@@ -103,9 +103,29 @@ const FAQ = [
   },
 ];
 
-function Simulateur() {
-  const [ventes, setVentes] = useState(10);
+/**
+ * Borne haute du curseur.
+ *
+ * Sans audience connue, on garde une échelle générique. Quand le lien porte le
+ * nombre d'abonnés, le plafond suit : montrer 60 ventes maximum à quelqu'un
+ * qui touche 343 000 personnes dévalorise l'offre autant qu'un plafond
+ * démesuré la rendrait irréelle pour un compte de 600 abonnés.
+ *
+ * 2 % de l'audience comme borne haute n'est PAS une prévision de conversion :
+ * c'est une échelle de curseur. Le pourcentage affiché sous le résultat laisse
+ * chacun juger du réalisme de sa propre hypothèse.
+ */
+function bornes(audience) {
+  if (!audience) return { max: 60, defaut: 10 };
+  const max = Math.min(600, Math.max(30, Math.round((audience * 0.02) / 10) * 10));
+  return { max, defaut: Math.max(1, Math.round(max / 5)) };
+}
+
+function Simulateur({ audience }) {
+  const { max, defaut } = bornes(audience);
+  const [ventes, setVentes] = useState(defaut);
   const parMois = ventes * GAIN_PAR_VENTE;
+  const partAudience = audience ? (ventes / audience) * 100 : null;
 
   return (
     <div className="rounded-3xl border border-white/10 bg-slate-deep p-6 sm:p-8">
@@ -120,7 +140,7 @@ function Simulateur() {
         id="ventes"
         type="range"
         min="1"
-        max="60"
+        max={max}
         value={ventes}
         onChange={(e) => setVentes(Number(e.target.value))}
         className="mt-6 w-full cursor-pointer accent-acid"
@@ -131,8 +151,23 @@ function Simulateur() {
         <span className="font-semibold text-white">
           {ventes} vente{ventes > 1 ? "s" : ""} / mois
         </span>
-        <span>60 ventes</span>
+        <span>{max} ventes</span>
       </div>
+
+      {partAudience != null && (
+        <p className="mt-3 text-center text-xs text-zinc-500">
+          soit{" "}
+          <span className="chiffre">
+            {partAudience.toLocaleString("fr-FR", {
+              minimumFractionDigits: partAudience < 0.1 ? 2 : 1,
+              maximumFractionDigits: partAudience < 0.1 ? 2 : 1,
+            })}
+            {" %"}
+          </span>{" "}
+          de
+          vos <span className="chiffre">{audience.toLocaleString("fr-FR")}</span> abonnés
+        </p>
+      )}
 
       <div id="resultat-simulateur" aria-live="polite" className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-acid/30 bg-acid/10 p-5">
@@ -170,6 +205,9 @@ function contexteDuLien() {
   const p = new URLSearchParams(window.location.search);
   return {
     nom: (p.get("nom") || "").slice(0, 80) || null,
+    // Nombre d'abonnés transmis par le lien : sert uniquement à donner au
+    // simulateur une échelle qui a du sens pour cette personne.
+    audience: Math.max(0, parseInt(p.get("abonnes") || "", 10) || 0) || null,
     requete: p.toString() ? `?${p.toString()}` : "",
   };
 }
@@ -243,13 +281,7 @@ export default function AffiliateLandingPage() {
               Programme partenaire E-Carpet
             </span>
 
-            {lien.nom && (
-              <p className="mx-auto mt-5 max-w-lg text-balance rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-sm leading-relaxed text-zinc-200">
-                Bonjour <strong className="text-white">{lien.nom}</strong> — vous avez déjà présenté
-                E-Carpet à votre communauté. Pas de candidature à repasser&nbsp;: votre formulaire est
-                déjà rempli, il ne manque que votre email et le code que vous voulez porter.
-              </p>
-            )}
+
             <h1 className="mt-5 text-balance font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
               Votre communauté économise 10%. Vous en gagnez 10%.
             </h1>
@@ -258,6 +290,17 @@ export default function AffiliateLandingPage() {
               votre code E-Carpet : vos abonnés paient le tapis 10% moins cher, et chaque commande vous
               rapporte une commission.
             </p>
+
+            {/* Placé APRÈS le titre, et volontairement court : au-dessus, il
+                repoussait l'argument principal hors du premier écran sur
+                mobile — soit exactement là où arrivent les créateurs qui
+                ouvrent le lien depuis un message privé. */}
+            {lien.nom && (
+              <p className="mx-auto mt-4 max-w-md text-balance text-sm text-zinc-300">
+                Bonjour <strong className="text-white">{lien.nom}</strong> — votre formulaire est déjà
+                rempli, il ne manque que votre email.
+              </p>
+            )}
             <button
               ref={boutonHero}
               onClick={versInscription}
@@ -278,7 +321,7 @@ export default function AffiliateLandingPage() {
           <h2 id="simulateur-titre" className="sr-only">
             Simulateur de gains
           </h2>
-          <Simulateur />
+          <Simulateur audience={lien.audience} />
         </section>
 
         <section className="mx-auto mt-16 max-w-4xl px-4" aria-labelledby="avantages-titre">
@@ -317,9 +360,10 @@ export default function AffiliateLandingPage() {
             Ils roulent déjà avec nous
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-balance text-center text-sm text-zinc-400">
-            Des créateurs mobilité qui portent déjà leur code E-Carpet. Cliquez pour voir leur vidéo.
+            Plus de 500 000 abonnés cumulés parlent déjà d'E-Carpet. Cliquez sur un créateur pour voir
+            sa vidéo.
           </p>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {INFLUENCERS.map((inf) => (
               <a
                 key={inf.handle}
@@ -335,9 +379,12 @@ export default function AffiliateLandingPage() {
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-2.5">
-                  <div className="truncate text-xs font-semibold text-white">{inf.name}</div>
-                  <div className="truncate text-[11px] text-zinc-400">{inf.handle}</div>
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <div className="truncate text-sm font-semibold text-white">{inf.name}</div>
+                  <div className="mt-0.5 flex items-baseline gap-1.5">
+                    <span className="chiffre text-xs font-bold text-acid">{inf.followers}</span>
+                    <span className="truncate text-[11px] text-zinc-400">{inf.handle}</span>
+                  </div>
                 </div>
               </a>
             ))}
