@@ -269,13 +269,30 @@ export default function AffiliateLandingPage() {
 
       <main className="pb-28 sm:pb-20">
         <div className="relative overflow-hidden pt-32">
+          {/* Fond du hero : les cartons E-Carpet et le tapis, même visuel que
+              le dernier appel à l'action de la page d'accueil. Un créateur qui
+              arrive ici voit tout de suite le produit et la marque, ce qu'une
+              photo de ville ne montrait pas.
+
+              Volontairement plus clair que sur l'accueil (voile à 45 % contre
+              70 %) : ici l'image EST l'argument, elle doit se voir. */}
           <img
-            src="/images/Photo_trottinette_sur_tapis_.webp"
+            src="/images/new/boxes-scooter.webp"
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+            fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/85 to-ink" />
+          <div aria-hidden="true" className="absolute inset-0 bg-ink/45" />
+          {/* Fond les bords dans la page : sans ça, une ligne de coupe nette
+              apparaît sous le hero. */}
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-ink/80 via-transparent to-ink" />
+          {/* Assombrit uniquement la colonne de texte, pour que le blanc reste
+              lisible sans éteindre l'image sur les côtés. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_50%_at_50%_45%,rgba(10,10,11,0.6),transparent_78%)]"
+          />
           <div className="relative mx-auto max-w-3xl px-4 pb-16 text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-acid/40 bg-acid/10 px-4 py-1.5 text-xs font-semibold text-acid">
               Programme partenaire E-Carpet
@@ -285,7 +302,7 @@ export default function AffiliateLandingPage() {
             <h1 className="mt-5 text-balance font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
               Votre communauté économise 10%. Vous en gagnez 10%.
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-balance text-base leading-relaxed text-zinc-300">
+            <p className="mx-auto mt-5 max-w-xl text-balance text-base leading-relaxed text-zinc-200">
               Vous parlez mobilité urbaine à une audience qui roule en trottinette électrique ? Partagez
               votre code E-Carpet : vos abonnés paient le tapis 10% moins cher, et chaque commande vous
               rapporte une commission.
