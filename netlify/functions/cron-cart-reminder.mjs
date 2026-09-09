@@ -38,4 +38,10 @@ export default async () =>
   return `${carts.length} email(s) traité(s)`;
   });
 
-export const config = { schedule: "0 * * * *" };
+// Toutes les 4 h et non plus toutes les heures. La relance part 2 h après
+// l'abandon et reste utile jusqu'à 7 jours : l'email arrive donc entre 2 h et
+// 6 h après, ce qui ne change rien à son efficacité. L'exécution horaire
+// coûtait 720 invocations par mois pour un stock de 4 paniers depuis le
+// lancement — et c'est ce genre de dépense à vide qui a fait dépasser le
+// quota Netlify le 9 septembre 2026, site suspendu à la clé.
+export const config = { schedule: "0 */4 * * *" };

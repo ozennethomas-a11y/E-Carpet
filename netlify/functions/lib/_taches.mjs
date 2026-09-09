@@ -17,10 +17,10 @@ import { notifierTousLesAdmins } from "./_push.mjs";
 // c'est justement l'absence de ligne qui est le signal.
 // Doit rester cohérent avec le `schedule` déclaré dans chaque fonction cron.
 export const TACHES = {
-  "amazon-stock-sync": { label: "Synchronisation stock Amazon", cadenceMinutes: 240 },
-  "cart-reminder": { label: "Relance panier abandonné", cadenceMinutes: 60 },
+  "amazon-stock-sync": { label: "Synchronisation stock Amazon", cadenceMinutes: 360 },
+  "cart-reminder": { label: "Relance panier abandonné", cadenceMinutes: 240 },
   "review-request": { label: "Demande d'avis (J+7)", cadenceMinutes: 1440 },
-  "social-publish": { label: "Publication réseaux sociaux", cadenceMinutes: 60 },
+  "social-publish": { label: "Publication réseaux sociaux", cadenceMinutes: 360 },
   // Hebdomadaire : 7 × 1440 minutes. La tolérance de 2,5× ne la déclarera donc
   // silencieuse qu'après plus de deux semaines sans exécution, ce qui est le
   // bon ordre de grandeur — un lundi manqué n'est pas encore une panne.

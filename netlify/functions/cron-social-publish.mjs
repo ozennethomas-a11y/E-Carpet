@@ -44,4 +44,11 @@ export default async () =>
   return `${dus.length} post(s) traité(s)`;
   });
 
-export const config = { schedule: "0 * * * *" };
+// Toutes les 6 h. Aucun réseau social n'est connecté à ce jour : cette tâche
+// ne PEUT rien publier, et tournait pourtant 720 fois par mois.
+//
+// À remonter dès que Meta, Instagram ou TikTok seront connectés et que des
+// publications seront réellement programmées : l'heure de publication compte
+// pour la portée, et un décalage de 6 h n'est pas acceptable pour un vrai
+// calendrier éditorial. La contrainte est le budget de crédits, pas le code.
+export const config = { schedule: "0 */6 * * *" };

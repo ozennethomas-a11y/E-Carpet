@@ -19,4 +19,7 @@ export default async () =>
     return `${resultat.commandesTraitees} commande(s), ${resultat.quantiteTotale} unité(s) déduite(s)${sku}`;
   });
 
-export const config = { schedule: "0 */4 * * *" };
+// Toutes les 6 h au lieu de 4 h. Le stock Amazon reste la synchronisation la
+// plus sensible — une rupture non répercutée fait vendre ce qu'on n'a pas —
+// mais 4 passages par jour suffisent au rythme de ventes constaté.
+export const config = { schedule: "0 */6 * * *" };
