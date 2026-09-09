@@ -95,7 +95,7 @@ const ETAPES_CONNU = [
 const FAQ = [
   {
     q: "Combien ça me coûte ?",
-    r: "Rien. Pas de frais d'entrée, pas d'achat de produit obligatoire, pas d'abonnement. Vous ne payez jamais E-Carpet — c'est nous qui vous payons.",
+    r: "Rien. Pas de frais d'entrée, pas d'achat de produit obligatoire, pas d'abonnement. Vous ne payez jamais E-Carpet : c'est nous qui vous payons.",
   },
   {
     q: "Quand suis-je payé, et comment ?",
@@ -111,7 +111,7 @@ const FAQ = [
   },
   {
     q: "Et côté déclaration ?",
-    r: "Les commissions sont un revenu : il vous appartient de les déclarer selon votre situation (micro-entreprise ou autre). Nous ne pouvons pas vous conseiller sur ce point — renseignez-vous auprès de votre interlocuteur habituel.",
+    r: "Les commissions sont un revenu : il vous appartient de les déclarer selon votre situation (micro-entreprise ou autre). Nous ne pouvons pas vous conseiller sur ce point, renseignez-vous auprès de votre interlocuteur habituel.",
   },
 ];
 
@@ -195,7 +195,7 @@ function Simulateur({ audience }) {
       <p className="mt-4 text-xs leading-relaxed text-zinc-500">
         Estimation : {eurosPrecis(GAIN_PAR_VENTE)} de commission par tapis, soit {TAUX}% d'un panier de{" "}
         {eurosPrecis(PANIER_APRES_REMISE)} (prix remisé avec votre code). Vos gains réels dépendent de vos
-        ventes — nous ne garantissons aucun revenu.
+        ventes. Nous ne garantissons aucun revenu.
       </p>
     </div>
   );
@@ -339,7 +339,7 @@ export default function AffiliateLandingPage() {
                 ouvrent le lien depuis un message privé. */}
             {lien.nom && (
               <p className="relative mx-auto mt-4 max-w-md text-balance text-sm text-zinc-300">
-                Bonjour <strong className="text-white">{lien.nom}</strong> — votre formulaire est déjà
+                Bonjour <strong className="text-white">{lien.nom}</strong>, votre formulaire est déjà
                 rempli, il ne manque que votre email.
               </p>
             )}
