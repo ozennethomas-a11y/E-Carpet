@@ -7,39 +7,24 @@ const RESEAUX = ["TikTok", "Instagram", "Facebook", "YouTube"];
 
 const EMPTY = { name: "", email: "", promoCode: "", message: "" };
 
-// Le lien envoyé à un créateur déjà connu porte ce qu'on sait de lui, pour
-// qu'il n'ait pas à le retaper : ?nom=…&reseau=TikTok&abonnes=24900&lien=…
+// Provenance de la candidature, lue dans l'URL (?utm_source=…).
 //
-// L'email n'est volontairement JAMAIS transmis dans l'URL. Une adresse dans
-// un lien se retrouve dans l'historique du navigateur, les journaux serveur
-// et les référents — le créateur la saisit lui-même, c'est le seul champ que
-// le pré-remplissage ne touche pas.
-function prealable() {
-  if (typeof window === "undefined") return { form: EMPTY, reseaux: {}, source: null };
+// C'est tout ce que le lien transporte désormais : le formulaire ne
+// pré-remplit plus rien. Chaque créateur saisit lui-même son nom, ses réseaux,
+// son lien de profil et son nombre d'abonnés — ce qu'il déclare fait foi et
+// remplace ce que nous avions noté de notre côté, forcément plus ancien.
+function sourceDuLien() {
+  if (typeof window === "undefined") return null;
   const p = new URLSearchParams(window.location.search);
-  const nom = (p.get("nom") || "").slice(0, 80);
-  const reseau = RESEAUX.find((r) => r.toLowerCase() === (p.get("reseau") || "").toLowerCase());
-  const abonnes = (p.get("abonnes") || "").slice(0, 20);
-  const lien = (p.get("lien") || "").slice(0, 300);
-
-  return {
-    form: { ...EMPTY, name: nom },
-    // Un réseau n'est pré-coché que s'il fait partie de la liste fermée : un
-    // paramètre inventé ne doit pas créer une case qui n'existe pas.
-    reseaux: reseau ? { [reseau]: { link: lien, followers: abonnes } } : {},
-    // utm_source alimente déjà le suivi d'audience (voir track.mjs) ; on le
-    // transmet aussi à la candidature, sinon on saurait compter les
-    // inscriptions sans jamais savoir quelle relance les a produites.
-    source: (p.get("utm_source") || p.get("ref") || "").slice(0, 40) || null,
-  };
+  return (p.get("utm_source") || p.get("ref") || "").slice(0, 40) || null;
 }
 
 export default function AffiliateApplyPage() {
-  const [depart] = useState(prealable);
-  const [form, setForm] = useState(depart.form);
+  const [source] = useState(sourceDuLien);
+  const [form, setForm] = useState(EMPTY);
   // Un réseau peut être sélectionné sans être encore rempli (lien/abonnés
   // vides) : { platform: { link, followers } }.
-  const [reseaux, setReseaux] = useState(depart.reseaux);
+  const [reseaux, setReseaux] = useState({});
   const [conditions, setConditions] = useState(false);
   const [state, setState] = useState("idle"); // idle | envoi | envoye | erreur
   const [erreur, setErreur] = useState("");
@@ -85,7 +70,7 @@ export default function AffiliateApplyPage() {
       const res = await fetch("/api/affiliate-auth?action=apply", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...form, networks, source: depart.source, acceptsTerms: conditions }),
+        body: JSON.stringify({ ...form, networks, source, acceptsTerms: conditions }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);

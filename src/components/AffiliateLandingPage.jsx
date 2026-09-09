@@ -127,25 +127,6 @@ const ETAPES = [
   },
 ];
 
-// Pour un créateur déjà démarché, l'étape « on étudie votre profil » est un
-// contresens : il a reçu le produit, il a publié, il a fait ses preuves. Lui
-// resservir le parcours d'un inconnu le renverrait au point de départ.
-const ETAPES_CONNU = [
-  {
-    titre: "Vous choisissez votre code",
-    texte: "Votre formulaire est déjà rempli. Il ne reste que votre email et le code que vous voulez porter.",
-  },
-  {
-    titre: "On l'active",
-    texte: "Vous avez déjà collaboré avec nous : votre code est activé sans nouvel examen, et vous recevez le lien de votre espace.",
-  },
-  {
-    titre: "Vous partagez, vous gagnez",
-    texte:
-      "Chaque commande passée avec votre code vous rapporte 10%, suivie en direct dans votre espace. Vos abonnés, eux, paient 10% moins cher.",
-  },
-];
-
 const FAQ = [
   {
     q: "Combien ça me coûte ?",
@@ -169,29 +150,15 @@ const FAQ = [
   },
 ];
 
-/**
- * Borne haute du curseur.
- *
- * Sans audience connue, on garde une échelle générique. Quand le lien porte le
- * nombre d'abonnés, le plafond suit : montrer 60 ventes maximum à quelqu'un
- * qui touche 343 000 personnes dévalorise l'offre autant qu'un plafond
- * démesuré la rendrait irréelle pour un compte de 600 abonnés.
- *
- * 2 % de l'audience comme borne haute n'est PAS une prévision de conversion :
- * c'est une échelle de curseur. Le pourcentage affiché sous le résultat laisse
- * chacun juger du réalisme de sa propre hypothèse.
- */
-function bornes(audience) {
-  if (!audience) return { max: 60, defaut: 10 };
-  const max = Math.min(600, Math.max(30, Math.round((audience * 0.02) / 10) * 10));
-  return { max, defaut: Math.max(1, Math.round(max / 5)) };
-}
+// Échelle générique : le lien ne transporte plus l'audience du créateur, le
+// curseur ne peut donc plus s'y adapter. C'est à lui d'estimer combien de
+// tapis sa communauté commanderait, et le simulateur ne fait que traduire son
+// hypothèse en euros.
+const VENTES_MAX = 60;
 
-function Simulateur({ audience }) {
-  const { max, defaut } = bornes(audience);
-  const [ventes, setVentes] = useState(defaut);
+function Simulateur() {
+  const [ventes, setVentes] = useState(10);
   const parMois = ventes * GAIN_PAR_VENTE;
-  const partAudience = audience ? (ventes / audience) * 100 : null;
 
   return (
     <div className="rounded-3xl border border-white/10 bg-slate-deep p-6 sm:p-8">
@@ -206,7 +173,7 @@ function Simulateur({ audience }) {
         id="ventes"
         type="range"
         min="1"
-        max={max}
+        max={VENTES_MAX}
         value={ventes}
         onChange={(e) => setVentes(Number(e.target.value))}
         className="mt-6 w-full cursor-pointer accent-acid"
@@ -217,23 +184,8 @@ function Simulateur({ audience }) {
         <span className="font-semibold text-white">
           {ventes} vente{ventes > 1 ? "s" : ""} / mois
         </span>
-        <span>{max} ventes</span>
+        <span>{VENTES_MAX} ventes</span>
       </div>
-
-      {partAudience != null && (
-        <p className="mt-3 text-center text-xs text-zinc-500">
-          soit{" "}
-          <span className="chiffre">
-            {partAudience.toLocaleString("fr-FR", {
-              minimumFractionDigits: partAudience < 0.1 ? 2 : 1,
-              maximumFractionDigits: partAudience < 0.1 ? 2 : 1,
-            })}
-            {" %"}
-          </span>{" "}
-          de
-          vos <span className="chiffre">{audience.toLocaleString("fr-FR")}</span> abonnés
-        </p>
-      )}
 
       <div id="resultat-simulateur" aria-live="polite" className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-acid/30 bg-acid/10 p-5">
@@ -255,31 +207,7 @@ function Simulateur({ audience }) {
   );
 }
 
-// Le lien envoyé à un créateur déjà démarché porte son nom et ses réseaux
-// (voir AffiliateApplyPage). Deux conséquences ici :
-//
-//  1. Ces paramètres doivent SURVIVRE au clic vers le formulaire. Sans ça, le
-//     pré-remplissage serait perdu entre la page vitrine et l'inscription, et
-//     le créateur devrait tout retaper — exactement ce qu'on voulait éviter.
-//  2. Quelqu'un qui a déjà reçu le tapis et publié n'a pas à lire un
-//     argumentaire de prospection. La page le reconnaît et le dit.
-//
-// Le nom vient de l'URL, donc de nous : il n'est qu'affiché, jamais utilisé
-// pour décider de quoi que ce soit. Un lien bricolé ne donne accès à rien.
-function contexteDuLien() {
-  if (typeof window === "undefined") return { nom: null, requete: "" };
-  const p = new URLSearchParams(window.location.search);
-  return {
-    nom: (p.get("nom") || "").slice(0, 80) || null,
-    // Nombre d'abonnés transmis par le lien : sert uniquement à donner au
-    // simulateur une échelle qui a du sens pour cette personne.
-    audience: Math.max(0, parseInt(p.get("abonnes") || "", 10) || 0) || null,
-    requete: p.toString() ? `?${p.toString()}` : "",
-  };
-}
-
 export default function AffiliateLandingPage() {
-  const [lien] = useState(contexteDuLien);
   // La barre collante ne doit apparaître que lorsque le bouton du hero est
   // sorti de l'écran. Sans ça, les deux se chevauchent au premier coup d'œil
   // sur mobile — deux fois le même appel à l'action à deux centimètres l'un
@@ -304,7 +232,11 @@ export default function AffiliateLandingPage() {
     return () => observateur.disconnect();
   }, []);
 
-  const versInscription = () => navigate(`/influenceurs/inscription${lien.requete}`);
+  // Le paramètre de provenance est transmis tel quel : c'est la seule chose
+  // que le lien porte encore, et elle permet de savoir quelle relance a
+  // converti. Tout le reste est saisi par le créateur lui-même.
+  const versInscription = () =>
+    navigate(`/influenceurs/inscription${typeof window === "undefined" ? "" : window.location.search}`);
 
   return (
     <>
@@ -374,7 +306,11 @@ export default function AffiliateLandingPage() {
               </span>
 
               <h1 className="relative mt-5 text-balance font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
-                Votre communauté économise 10%. Vous en gagnez 10%.
+                {/* Sans chiffre : les deux 10% sont énoncés juste dessous par la
+                  première carte, et un pourcentage répété à deux endroits
+                  perd sa force au lieu de la doubler. Le titre porte l'idée,
+                  le sous-titre le montant, les cartes le détail. */}
+              Votre communauté y gagne. Vous aussi.
               </h1>
             </div>
 
@@ -391,24 +327,16 @@ export default function AffiliateLandingPage() {
                 repoussait l'argument principal hors du premier écran sur
                 mobile — soit exactement là où arrivent les créateurs qui
                 ouvrent le lien depuis un message privé. */}
-            {lien.nom && (
-              <p className="relative mx-auto mt-4 max-w-md text-balance text-sm text-zinc-300">
-                Bonjour <strong className="text-white">{lien.nom}</strong>, votre formulaire est déjà
-                rempli, il ne manque que votre email.
-              </p>
-            )}
             <button
               ref={boutonHero}
               onClick={versInscription}
               className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-acid px-8 py-4 font-display text-base font-bold text-white transition-transform hover:scale-[1.03] cursor-pointer"
             >
-              {lien.nom ? "Activer mon code" : "Devenir partenaire"}
+              Devenir partenaire
               <ArrowIcon className="h-4 w-4" />
             </button>
             <p className="relative mt-4 text-xs text-zinc-400">
-              {lien.nom
-                ? "Gratuit · Sans exclusivité · Il ne reste que 2 champs à remplir"
-                : "Gratuit · Sans exclusivité · Inscription en 2 minutes"}
+              Gratuit · Sans exclusivité · Inscription en 2 minutes
             </p>
           </div>
         </div>
@@ -497,15 +425,15 @@ export default function AffiliateLandingPage() {
           <h2 id="simulateur-titre" className="sr-only">
             Simulateur de gains
           </h2>
-          <Simulateur audience={lien.audience} />
+          <Simulateur />
         </section>
 
         <section className="mx-auto mt-16 max-w-3xl px-4" aria-labelledby="etapes-titre">
           <h2 id="etapes-titre" className="text-center font-display text-2xl font-bold text-white">
-            {lien.nom ? "Ce qu'il vous reste à faire" : "Comment ça marche"}
+            Comment ça marche
           </h2>
           <ol className="mt-8 grid gap-6 sm:grid-cols-3">
-            {(lien.nom ? ETAPES_CONNU : ETAPES).map((e, i) => (
+            {ETAPES.map((e, i) => (
               <li key={e.titre}>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-acid font-display text-sm font-bold text-white">
                   {i + 1}
@@ -589,7 +517,7 @@ export default function AffiliateLandingPage() {
               onClick={versInscription}
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-acid px-8 py-4 font-display text-base font-bold text-white transition-transform hover:scale-[1.03] cursor-pointer"
             >
-              {lien.nom ? "Activer mon code" : "Devenir partenaire"}
+              Devenir partenaire
               <ArrowIcon className="h-4 w-4" />
             </button>
             <p className="relative mt-4 text-xs text-zinc-400">
@@ -611,7 +539,7 @@ export default function AffiliateLandingPage() {
           onClick={versInscription}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-acid px-6 py-3.5 font-display text-sm font-bold text-white cursor-pointer"
         >
-          {lien.nom ? "Activer mon code" : "Devenir partenaire"}
+          Devenir partenaire
           <ArrowIcon className="h-4 w-4" />
         </button>
       </div>
