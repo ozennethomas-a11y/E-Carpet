@@ -31,10 +31,16 @@ const eurosPrecis = (n) =>
 // rythme au lieu de paraître pauvres.
 const AVANTAGES = [
   {
-    chiffre: "10 % + 10 %",
+    // Le seul avantage à deux versants : au lieu de l'écrire, on le montre.
+    // Deux colonnes identiques, deux fois le même chiffre — la réciprocité se
+    // voit avant d'être lue, et c'est elle qui lève l'objection « je ne veux
+    // pas vendre à ma communauté ».
+    duo: [
+      { chiffre: "10 %", label: "Vous gagnez" },
+      { chiffre: "10 %", label: "Votre communauté aussi" },
+    ],
     titre: "Vous gagnez, votre communauté aussi",
-    texte:
-      "Votre code donne 10% de remise à vos abonnés et vous rapporte 10% sur chaque commande. Vous ne leur vendez rien : vous leur faites une faveur.",
+    texte: "Vous ne leur vendez rien : vous leur faites une faveur.",
   },
   {
     chiffre: "Dès 20 €",
@@ -367,15 +373,41 @@ export default function AffiliateLandingPage() {
           <h2 id="avantages-titre" className="sr-only">
             Pourquoi c'est simple à porter
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          {/* Trois colonnes en grand écran : la carte double occupe la
+              première ligne entière, les trois autres remplissent exactement
+              la seconde. En deux colonnes, la dernière restait orpheline. */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {AVANTAGES.map((a) => (
               <div
                 key={a.titre}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07]"
+                className={`rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-acid/30 hover:bg-white/[0.07] ${
+                  a.duo ? "sm:col-span-2 lg:col-span-3" : ""
+                }`}
               >
-                <div className="chiffre font-display text-3xl font-bold leading-none text-acid">{a.chiffre}</div>
-                <h3 className="mt-3 font-display text-base font-bold text-white">{a.titre}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                {a.duo ? (
+                  <>
+                    {/* Pleine largeur et coupé en deux : c'est l'argument
+                        principal de la page, il ne doit pas avoir le même
+                        poids qu'une carte parmi quatre. */}
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      {a.duo.map((d, i) => (
+                        <div key={d.label} className={i === 1 ? "border-l border-white/10 pl-4" : "pr-4"}>
+                          <div className="chiffre font-display text-4xl font-bold leading-none text-acid sm:text-5xl">
+                            {d.chiffre}
+                          </div>
+                          <h3 className="mt-3 font-display text-sm font-bold text-white sm:text-base">{d.label}</h3>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-5 text-center text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="chiffre font-display text-3xl font-bold leading-none text-acid">{a.chiffre}</div>
+                    <h3 className="mt-3 font-display text-base font-bold text-white">{a.titre}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-400">{a.texte}</p>
+                  </>
+                )}
               </div>
             ))}
           </div>
